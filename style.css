@@ -19,6 +19,7 @@ body {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     padding: 20px;
     text-align: center;
+    max-width: 95%;
 }
 
 h1 {
@@ -31,6 +32,7 @@ canvas {
     border: 2px solid #ddd;
     border-radius: 5px;
     margin: 10px 0;
+    max-width: 100%;
 }
 
 .score-container {
@@ -62,4 +64,54 @@ button:hover {
     color: #666;
     font-size: 0.9rem;
     margin-top: 15px;
+}
+
+/* 移动端控制样式 */
+.mobile-controls {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    margin: 15px 0;
+}
+
+.direction-btn {
+    width: 60px;
+    height: 60px;
+    margin: 5px;
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    background-color: #3f51b5;
+}
+
+.direction-btn:active {
+    background-color: #303f9f;
+}
+
+.horizontal-controls {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+/* 媒体查询适配移动设备 */
+@media (max-width: 768px) {
+    .mobile-controls {
+        display: flex;
+    }
+    
+    .game-container {
+        padding: 15px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
 } 

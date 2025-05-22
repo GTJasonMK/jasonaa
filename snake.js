@@ -4,6 +4,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('start-btn');
     const scoreElement = document.getElementById('score');
+    
+    // 获取方向按钮
+    const upBtn = document.getElementById('up-btn');
+    const downBtn = document.getElementById('down-btn');
+    const leftBtn = document.getElementById('left-btn');
+    const rightBtn = document.getElementById('right-btn');
 
     // 游戏配置
     const gridSize = 20; // 网格大小
@@ -17,6 +23,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let score = 0;
     let gameInterval;
     let isRunning = false;
+    
+    // 触摸控制变量
+    let touchStartX = 0;
+    let touchStartY = 0;
 
     // 颜色
     const colors = {
@@ -188,6 +198,17 @@ document.addEventListener('DOMContentLoaded', () => {
             gameInterval = setInterval(moveSnake, gameSpeed);
         }
     }
+    
+    // 更改方向
+    function changeDirection(newDirection) {
+        // 防止180度转弯（蛇不能直接掉头）
+        if ((newDirection === 'up' && direction !== 'down') ||
+            (newDirection === 'down' && direction !== 'up') ||
+            (newDirection === 'left' && direction !== 'right') ||
+            (newDirection === 'right' && direction !== 'left')) {
+            nextDirection = newDirection;
+        }
+    }
 
     // 键盘事件监听
     document.addEventListener('keydown', (event) => {
@@ -219,6 +240,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
         }
+    });
+    
+    // 触摸事件监听 - 滑动控制
+    canvas.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        e.preventDefault(); // 防止页面滚动
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => {
+        if (!touchStartX || !touchStartY) return;
+        
+        const touchEndX = e.touches[0].clientX;
+        const touchEndY = e.touches[0].clientY;
+        
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+        
+        // 判断滑动方向（水平或垂直滑动距离更大的方向）
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // 水平滑动
+            changeDirection(dx > 0 ? 'right' : 'left');
+        } else {
+            // 垂直滑动
+            changeDirection(dy > 0 ? 'down' : 'up');
+        }
+        
+        // 重置起始点，允许在同一次触摸中多次改变方向
+        touchStartX = touchEndX;
+        touchStartY = touchEndY;
+        
+        e.preventDefault(); // 防止页面滚动
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', () => {
+        touchStartX = 0;
+        touchStartY = 0;
+    });
+    
+    // 方向按钮事件监听
+    upBtn.addEventListener('click', () => changeDirection('up'));
+    downBtn.addEventListener('click', () => changeDirection('down'));
+    leftBtn.addEventListener('click', () => changeDirection('left'));
+    rightBtn.addEventListener('click', () => changeDirection('right'));
+    
+    // 防止方向按钮触摸时页面滚动
+    [upBtn, downBtn, leftBtn, rightBtn].forEach(btn => {
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+        }, { passive: false });
     });
 
     // 按钮点击事件
