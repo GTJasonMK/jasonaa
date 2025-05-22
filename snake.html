@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇游戏 - 多功能娱乐平台</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="games.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <a href="index.html" class="back-btn">← 返回首页</a>
+            <h1>贪吃蛇游戏</h1>
+        </div>
+        <div class="score-container">
+            <span>得分: </span>
+            <span id="score">0</span>
+        </div>
+        <canvas id="game" width="400" height="400"></canvas>
+        
+        <!-- 移动端虚拟方向按钮 -->
+        <div class="mobile-controls">
+            <button id="up-btn" class="direction-btn">↑</button>
+            <div class="horizontal-controls">
+                <button id="left-btn" class="direction-btn">←</button>
+                <button id="right-btn" class="direction-btn">→</button>
+            </div>
+            <button id="down-btn" class="direction-btn">↓</button>
+        </div>
+        
+        <div class="controls">
+            <button id="start-btn">开始游戏</button>
+            <p class="instructions">使用方向键、WASD或触摸屏按钮控制蛇的移动</p>
+        </div>
+    </div>
+    <script src="snake.js"></script>
+</body>
+</html> 

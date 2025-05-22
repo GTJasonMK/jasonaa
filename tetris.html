@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄罗斯方块 - 多功能娱乐平台</title>
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="games.css">
+    <link rel="stylesheet" href="tetris_styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>俄罗斯方块</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">返回首页</a></li>
+                    <li><a href="settings.html">设置</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="tetris-container">
+                <div class="game-area">
+                    <div id="tetris-board" class="tetris-board">
+                        <!-- 方块将通过JavaScript动态创建 -->
+                    </div>
+                    
+                    <div class="tetris-info">
+                        <div class="stats">
+                            <h3>下一个方块</h3>
+                            <div id="next-piece" class="next-piece">
+                                <!-- 下一个方块预览 -->
+                            </div>
+                        </div>
+                        
+                        <div class="stats">
+                            <h3>游戏统计</h3>
+                            <div class="stat-item">
+                                <span>分数:</span>
+                                <span id="score">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>等级:</span>
+                                <span id="level">1</span>
+                            </div>
+                            <div class="stat-item">
+                                <span>消除行数:</span>
+                                <span id="lines">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="start-btn">开始游戏</button>
+                    <button id="pause-btn">暂停</button>
+                    <button id="reset-btn">重新开始</button>
+                </div>
+                
+                <div id="mobile-controls" class="mobile-controls" style="display: none;">
+                    <div class="mobile-btn left" id="mobile-left">⬅</div>
+                    <div class="mobile-btn rotate" id="mobile-rotate">⟳</div>
+                    <div class="mobile-btn right" id="mobile-right">➡</div>
+                    <div class="mobile-btn pause" id="mobile-pause">⏸</div>
+                    <div class="mobile-btn down" id="mobile-down">⬇</div>
+                    <div class="mobile-btn drop" id="mobile-drop">⏬</div>
+                </div>
+                
+                <div id="keyboard-info" class="keyboard-info">
+                    <h3>键盘控制</h3>
+                    <p>← → : 左右移动</p>
+                    <p>↑ : 旋转</p>
+                    <p>↓ : 加速下落</p>
+                    <p>空格 : 直接落到底部</p>
+                    <p>P : 暂停/继续</p>
+                </div>
+                
+                <div id="game-over" class="game-over-overlay">
+                    <h2>游戏结束!</h2>
+                    <p>您的得分: <span id="final-score">0</span></p>
+                    <button id="restart-btn">再来一次</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2023 多功能娱乐平台 | <a href="https://github.com/yourusername/webgame" target="_blank">GitHub Pages</a></p>
+        </footer>
+    </div>
+
+    <!-- 加载游戏脚本 -->
+    <script src="tetris.js"></script>
+</body>
+</html> 

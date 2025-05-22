@@ -3,33 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>贪吃蛇游戏</title>
-    <link rel="stylesheet" href="style.css">
+    <title>多功能娱乐平台</title>
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="music.css">
+    <style>
+        .settings-link {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .settings-link a {
+            display: flex;
+            align-items: center;
+            color: #ffffff;
+            font-weight: bold;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            background-color: rgba(70, 130, 180, 0.8);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .settings-link a:hover {
+            background-color: rgba(70, 130, 180, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .settings-icon {
+            display: inline-block;
+            margin-right: 8px;
+            width: 20px;
+            height: 20px;
+            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIj48L2NpcmNsZT48cGF0aCBkPSJNMTkuNCAyMi40TDEyIDEybDQuNy00LjdNOC43IDE5LjJMNi4xIDE0LjVNMTYuMiA4LjlsLTEuOS00LjdNNy43IDcuOGwzLjgtMy44Ii8+PC9zdmc+');
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        @media (max-width: 600px) {
+            .settings-link {
+                position: static;
+                text-align: right;
+                padding: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>贪吃蛇游戏</h1>
-        <div class="score-container">
-            <span>得分: </span>
-            <span id="score">0</span>
-        </div>
-        <canvas id="game" width="400" height="400"></canvas>
-        
-        <!-- 移动端虚拟方向按钮 -->
-        <div class="mobile-controls">
-            <button id="up-btn" class="direction-btn">↑</button>
-            <div class="horizontal-controls">
-                <button id="left-btn" class="direction-btn">←</button>
-                <button id="right-btn" class="direction-btn">→</button>
-            </div>
-            <button id="down-btn" class="direction-btn">↓</button>
+    <div class="container">
+        <!-- 设置链接（独立放置） -->
+        <div class="settings-link">
+            <a href="settings.html">
+                <span class="settings-icon"></span>
+                设置
+            </a>
         </div>
         
-        <div class="controls">
-            <button id="start-btn">开始游戏</button>
-            <p class="instructions">使用方向键、WASD或触摸屏按钮控制蛇的移动</p>
-        </div>
+        <header>
+            <h1>多功能娱乐平台</h1>
+            <nav>
+                <ul>
+                    <li><a href="#games" class="active">游戏</a></li>
+                    <li><a href="#music">音乐练习</a></li>
+                    <!-- 未来可以添加更多板块 -->
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <!-- 游戏板块 -->
+            <section id="games" class="section active">
+                <h2>游戏中心</h2>
+                <div class="game-grid">
+                    <div class="game-card" data-game="snake">
+                        <div class="game-icon">
+                            <img src="images/snake-icon.png" alt="贪吃蛇" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzRDQUY1MCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xMCA4YTIgMiAwIDEgMSA0IDBINyIvPjxwYXRoIGQ9Ik0yIDhoMnY3YzAgMS42Ni44IDMgMi45NSAzSDEwdi01aDRWN2g0djEwYzAgMi0xIDMtMyAzaC0zYy0xLjk5IDAtNCAxLTQgM1Y5eiIvPjwvc3ZnPg=='">
+                        </div>
+                        <h3>贪吃蛇</h3>
+                        <p>经典的贪吃蛇游戏，移动蛇吃掉食物，不断变长</p>
+                    </div>
+                    
+                    <!-- 已完成的俄罗斯方块游戏 -->
+                    <div class="game-card" data-game="tetris">
+                        <div class="game-icon">
+                            <img src="images/tetris-icon.png" alt="俄罗斯方块" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNGNTFCNSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiLz48cmVjdCB4PSI4IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0Ii8+PHJlY3QgeD0iMTIiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiLz48cmVjdCB4PSIxMiIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNCIvPjxyZWN0IHg9IjgiIHk9IjEyIiB3aWR0aD0iNCIgaGVpZ2h0PSI0Ii8+PHJlY3QgeD0iOCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNCIvPjxyZWN0IHg9IjgiIHk9IjE2IiB3aWR0aD0iNCIgaGVpZ2h0PSI0Ii8+PHJlY3QgeD0iNCIgeT0iMTYiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiLz48L3N2Zz4='">
+                        </div>
+                        <h3>俄罗斯方块</h3>
+                        <p>经典的俄罗斯方块游戏，通过旋转和移动方块完成消除</p>
+                    </div>
+                    
+                    <div class="game-card coming-soon">
+                        <div class="game-icon">
+                            <img src="images/memory-icon.png" alt="记忆游戏" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGNTcyMiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PHJlY3QgeD0iMTYiIHk9IjIiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PHJlY3QgeD0iMiIgeT0iMTYiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iNiIgaGVpZ2h0PSI2IiByeD0iMSIvPjxyZWN0IHg9IjkiIHk9IjkiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PC9zdmc+'">
+                        </div>
+                        <h3>记忆游戏</h3>
+                        <p>敬请期待</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 音乐板块 -->
+            <section id="music" class="section">
+                <h2>音乐练习</h2>
+                <div class="music-options">
+                    <div class="music-card" data-mode="scales">
+                        <h3>音阶练习</h3>
+                        <p>练习各种音阶，提高音乐技巧</p>
+                    </div>
+                    <div class="music-card" data-mode="single-note">
+                        <h3>单音辨听</h3>
+                        <p>训练辨别单个音符的能力</p>
+                    </div>
+                    <div class="music-card" data-mode="multi-note">
+                        <h3>多音辨听</h3>
+                        <p>训练辨别和弦和多个音符的能力</p>
+                    </div>
+                </div>
+                <div id="music-app" class="music-container">
+                    <!-- 这里将根据选择加载不同的音乐练习内容 -->
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>© 2023 多功能娱乐平台 | <a href="https://github.com/yourusername/webgame" target="_blank">GitHub Pages</a></p>
+        </footer>
     </div>
-    <script src="snake.js"></script>
+
+    <script src="config.js"></script>
+    <script src="main.js"></script>
+    <script src="music.js"></script>
 </body>
 </html> 
