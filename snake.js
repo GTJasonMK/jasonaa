@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '30px Microsoft YaHei';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('游戏结束，菜逼牛猪鸡!', canvas.width / 2, canvas.height / 2 - 30);
+        ctx.fillText('游戏结束，菜鸡小牛!', canvas.width / 2, canvas.height / 2 - 30);
         
         ctx.font = '20px Microsoft YaHei';
         ctx.fillText(`最终得分: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
@@ -279,18 +279,32 @@ document.addEventListener('DOMContentLoaded', () => {
         touchStartY = 0;
     });
     
-    // 方向按钮事件监听
+    // 方向按钮事件监听 - 使用touchstart替代click以解决iOS上的延迟问题
+    upBtn.addEventListener('touchstart', (e) => {
+        changeDirection('up');
+        e.preventDefault();
+    }, { passive: false });
+    
+    downBtn.addEventListener('touchstart', (e) => {
+        changeDirection('down');
+        e.preventDefault();
+    }, { passive: false });
+    
+    leftBtn.addEventListener('touchstart', (e) => {
+        changeDirection('left');
+        e.preventDefault();
+    }, { passive: false });
+    
+    rightBtn.addEventListener('touchstart', (e) => {
+        changeDirection('right');
+        e.preventDefault();
+    }, { passive: false });
+    
+    // 保留click事件用于非触摸设备
     upBtn.addEventListener('click', () => changeDirection('up'));
     downBtn.addEventListener('click', () => changeDirection('down'));
     leftBtn.addEventListener('click', () => changeDirection('left'));
     rightBtn.addEventListener('click', () => changeDirection('right'));
-    
-    // 防止方向按钮触摸时页面滚动
-    [upBtn, downBtn, leftBtn, rightBtn].forEach(btn => {
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-        }, { passive: false });
-    });
 
     // 按钮点击事件
     startBtn.addEventListener('click', () => {
@@ -299,6 +313,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         startGame();
     });
+    
+    // 为开始按钮也添加touchstart事件
+    startBtn.addEventListener('touchstart', (e) => {
+        if (startBtn.textContent === '重新开始') {
+            initGame();
+        }
+        startGame();
+        e.preventDefault();
+    }, { passive: false });
 
     // 初始化游戏
     initGame();
