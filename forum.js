@@ -169,7 +169,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // 加载问题列表
+    // 提取帖子内容中的标签
+    function extractLabelFromContent(body) {
+        // 查找 "**分类**: 标签名" 格式的内容
+        const labelMatch = body.match(/\*\*分类\*\*\s*:\s*([^\n]+)/);
+        return labelMatch ? labelMatch[1].trim() : null;
+    }
+    
+    // 修改加载问题列表函数，支持从内容中筛选标签
     function loadIssues() {
         // 显示加载状态
         issuesList.innerHTML = '<div class="loading">加载中...</div>';
@@ -182,9 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
             page: currentPage
         });
         
-        // 添加标签过滤
-        if (currentLabel) {
-            params.append('labels', currentLabel);
+        // 添加标签过滤 - 如果选择了标签，我们需要获取所有issue然后在客户端筛选
+        // 因为我们需要检查内容中的标签
+        const selectedLabel = currentLabel;
+        if (selectedLabel) {
+            // 先尝试使用API过滤
+            params.append('labels', selectedLabel);
         }
         
         // 添加搜索查询
@@ -228,6 +238,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 return issue.title !== CONFIG_ISSUE_TITLE;
             });
             
+            // 如果选择了标签，我们需要额外检查内容中的标签
+            if (selectedLabel && issues.length === 0) {
+                // 如果API筛选没有结果，尝试获取所有issue并在客户端筛选
+                return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=open&per_page=${perPage}&page=${currentPage}`, {
+                    method: 'GET',
+                    headers: getRequestHeaders()
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('加载论坛内容失败');
+                    }
+                    const newLinkHeader = response.headers.get('Link');
+                    return response.json().then(allIssues => {
+                        // 过滤掉配置Issue
+                        allIssues = allIssues.filter(issue => {
+                            // 检查是否有配置标签
+                            if (issue.labels && issue.labels.length > 0) {
+                                return !issue.labels.some(label => label.name === CONFIG_ISSUE_LABEL);
+                            }
+                            // 检查标题是否匹配配置Issue标题
+                            return issue.title !== CONFIG_ISSUE_TITLE;
+                        });
+                        
+                        // 在客户端筛选标签，包括内容中的标签
+                        const filteredIssues = allIssues.filter(issue => {
+                            // 检查API标签
+                            if (issue.labels && issue.labels.length > 0) {
+                                if (issue.labels.some(label => label.name === selectedLabel)) {
+                                    return true;
+                                }
+                            }
+                            
+                            // 检查内容中的标签
+                            if (issue.body) {
+                                const contentLabel = extractLabelFromContent(issue.body);
+                                return contentLabel === selectedLabel;
+                            }
+                            
+                            return false;
+                        });
+                        
+                        return { data: filteredIssues, linkHeader: newLinkHeader };
+                    });
+                });
+            }
+            
+            return { issues, linkHeader };
+        })
+        .then(({ issues, linkHeader }) => {
             // 检查是否有结果
             if (issues.length === 0) {
                 issuesList.innerHTML = '<div class="no-results">没有找到讨论</div>';
@@ -269,10 +328,18 @@ document.addEventListener('DOMContentLoaded', () => {
             issueElement.className = 'issue-item';
             issueElement.setAttribute('data-issue-number', issue.number);
             
-            // 获取标签
+            // 获取标签 - 先从labels中获取，如果没有则尝试从内容中提取
+            let label = null;
             let labelHTML = '';
+            
             if (issue.labels && issue.labels.length > 0) {
-                const label = issue.labels[0].name;
+                label = issue.labels[0].name;
+            } else if (issue.body) {
+                // 尝试从内容中提取标签
+                label = extractLabelFromContent(issue.body);
+            }
+            
+            if (label) {
                 labelHTML = `<span class="issue-label" data-label="${label}">${label}</span>`;
             }
             
@@ -455,9 +522,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const createdDate = new Date(issue.created_at);
             detailDate.textContent = `发布于: ${createdDate.toLocaleDateString('zh-CN')}`;
             
-            // 显示标签
+            // 显示标签 - 先从labels中获取，如果没有则尝试从内容中提取
+            let label = null;
             if (issue.labels && issue.labels.length > 0) {
-                const label = issue.labels[0].name;
+                label = issue.labels[0].name;
+            } else if (issue.body) {
+                // 尝试从内容中提取标签
+                label = extractLabelFromContent(issue.body);
+            }
+            
+            if (label) {
                 detailLabel.innerHTML = `<span class="issue-label" data-label="${label}">${label}</span>`;
             } else {
                 detailLabel.innerHTML = '';
@@ -696,14 +770,17 @@ document.addEventListener('DOMContentLoaded', () => {
         submitButton.disabled = true;
         submitButton.textContent = '发表中...';
         
+        // 创建基本的issue数据
+        const issueData = {
+            title: title,
+            body: body
+        };
+        
+        // 先创建Issue，不包含标签
         fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues`, {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({
-                title: title,
-                body: body,
-                labels: label ? [label] : []
-            })
+            body: JSON.stringify(issueData)
         })
         .then(response => {
             checkRateLimit(response);
@@ -711,6 +788,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('创建讨论失败');
             }
             return response.json();
+        })
+        .then(issue => {
+            // 如果指定了标签，再添加标签
+            if (label) {
+                // 在描述中添加标签信息，即使无法直接添加标签
+                const labelPart = `\n\n**分类**: ${label}`;
+                
+                // 更新Issue，添加标签信息到内容中
+                return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}`, {
+                    method: 'PATCH',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        body: body + labelPart
+                    })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        console.warn('更新标签信息失败，但帖子已创建');
+                    }
+                    return response.json();
+                })
+                .then(updatedIssue => {
+                    // 如果用户是仓库所有者或管理员，尝试添加标签
+                    if (authData.username === REPO_OWNER || isAdmin()) {
+                        return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}/labels`, {
+                            method: 'POST',
+                            headers: getRequestHeaders(),
+                            body: JSON.stringify({ labels: [label] })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                console.warn('添加标签失败，但帖子已创建并更新');
+                            }
+                            return updatedIssue; // 返回更新后的issue
+                        })
+                        .catch(error => {
+                            console.error('添加标签失败:', error);
+                            return updatedIssue; // 返回更新后的issue
+                        });
+                    } else {
+                        // 非管理员用户返回更新后的issue
+                        return updatedIssue;
+                    }
+                });
+            } else {
+                // 如果没有标签，直接返回创建的issue
+                return issue;
+            }
         })
         .then(issue => {
             // 清空表单
@@ -752,10 +877,18 @@ document.addEventListener('DOMContentLoaded', () => {
         issueElement.className = 'issue-item';
         issueElement.setAttribute('data-issue-number', issue.number);
         
-        // 获取标签
+        // 获取标签 - 先从labels中获取，如果没有则尝试从内容中提取
+        let label = null;
         let labelHTML = '';
+        
         if (issue.labels && issue.labels.length > 0) {
-            const label = issue.labels[0].name;
+            label = issue.labels[0].name;
+        } else if (issue.body) {
+            // 尝试从内容中提取标签
+            label = extractLabelFromContent(issue.body);
+        }
+        
+        if (label) {
             labelHTML = `<span class="issue-label" data-label="${label}">${label}</span>`;
         }
         
