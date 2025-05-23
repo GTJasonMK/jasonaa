@@ -186,9 +186,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error('加载论坛内容失败');
             }
-            return response.json();
+            // 保存headers信息
+            const linkHeader = response.headers.get('Link');
+            return response.json().then(data => {
+                return { data, linkHeader }; // 返回数据和头信息
+            });
         })
-        .then(data => {
+        .then(({ data, linkHeader }) => {
             // 如果是搜索结果，数据结构不同
             const issues = currentSearchQuery ? data.items : data;
             
@@ -209,8 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 // 对于非搜索查询，我们需要计算总页数
                 // 从Link头获取信息
-                const linkHeader = response.headers.get('Link');
-                if (linkHeader) {
+                if (linkHeader) { // 使用保存的linkHeader
                     const totalPages = parseLinkHeader(linkHeader);
                     renderPagination(totalPages);
                 } else {
