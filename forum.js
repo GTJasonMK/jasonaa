@@ -6,8 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const REPO_OWNER = '13108387302'; // 需要更新为您的GitHub用户名
     const REPO_NAME = 'jasonaa'; // 需要更新为您的仓库名
     
-    // 管理员用户名列表
-    const ADMIN_USERS = ['13108387302','cabbage-hair']; // 这里添加管理员的GitHub用户名
+    // 管理员用户名列表 - 默认仓库所有者为管理员
+    let ADMIN_USERS = [REPO_OWNER];
+    
+    // 配置Issue的标签和标题
+    const CONFIG_ISSUE_LABEL = "forum-config";
+    const CONFIG_ISSUE_TITLE = "Forum Configuration";
     
     // 页面元素
     const authContainer = document.getElementById('auth-container');
@@ -75,12 +79,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     // 初始化函数
-    function init() {
+    async function init() {
         // 检查本地存储中是否有令牌
         loadAuthData();
         
         // 加载用户个人资料
         loadUserProfile();
+        
+        // 加载管理员列表
+        if (isAuthenticated()) {
+            await loadAdminUsers();
+        }
         
         // 设置事件监听器
         setupEventListeners();
@@ -207,7 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(({ data, linkHeader }) => {
             // 如果是搜索结果，数据结构不同
-            const issues = currentSearchQuery ? data.items : data;
+            let issues = currentSearchQuery ? data.items : data;
+            
+            // 过滤掉配置Issue
+            issues = issues.filter(issue => {
+                // 检查是否有配置标签
+                if (issue.labels && issue.labels.length > 0) {
+                    return !issue.labels.some(label => label.name === CONFIG_ISSUE_LABEL);
+                }
+                // 检查标题是否匹配配置Issue标题
+                return issue.title !== CONFIG_ISSUE_TITLE;
+            });
             
             // 检查是否有结果
             if (issues.length === 0) {
@@ -843,6 +862,9 @@ document.addEventListener('DOMContentLoaded', () => {
             avatarUrl: ''
         };
         
+        // 重置管理员列表为默认值
+        ADMIN_USERS = [REPO_OWNER];
+        
         // 从本地存储移除
         localStorage.removeItem('forumAuthData');
         
@@ -1070,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 处理个人资料表单提交
-    function handleProfileSubmit(e) {
+    async function handleProfileSubmit(e) {
         e.preventDefault();
         
         const nicknameInput = document.getElementById('user-nickname');
@@ -1085,6 +1107,37 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 保存个人资料
         saveUserProfile();
+        
+        // 处理管理员设置（如果存在）
+        const adminUsernameInput = document.getElementById('admin-username');
+        if (adminUsernameInput && isAdmin()) {
+            const adminUsername = adminUsernameInput.value.trim();
+            if (adminUsername) {
+                // 显示加载指示器
+                const submitButton = document.querySelector('#admin-form button[type="submit"]');
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerText = '添加中...';
+                }
+                
+                // 如果输入了用户名，则添加为管理员
+                if (await addAdmin(adminUsername)) {
+                    showRateLimitWarning(document.getElementById('admin-form'), `已添加 ${adminUsername} 为管理员`, 'success');
+                    // 更新管理员列表显示
+                    updateAdminsList();
+                } else {
+                    showRateLimitWarning(document.getElementById('admin-form'), `用户 ${adminUsername} 已经是管理员或添加失败`, 'error');
+                }
+                // 清空输入框
+                adminUsernameInput.value = '';
+                
+                // 恢复按钮状态
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerText = '添加';
+                }
+            }
+        }
         
         // 显示成功消息
         showRateLimitWarning(document.getElementById('profile-form'), '个人资料已更新', 'success');
@@ -1174,6 +1227,11 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('click', () => {
                 const tabId = button.getAttribute('data-tab');
                 showTabContent(tabId);
+                
+                // 如果切换到个人资料页并且是管理员，显示管理员设置
+                if (tabId === 'profile' && isAdmin()) {
+                    showAdminSettings();
+                }
             });
         });
         
@@ -1677,6 +1735,269 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('获取评论reaction ID失败:', error);
             return null;
         });
+    }
+    
+    // 加载管理员列表
+    async function loadAdminUsers() {
+        // 首先尝试查找配置Issue
+        const configIssue = await findConfigIssue();
+        
+        if (configIssue && configIssue.body) {
+            try {
+                // 尝试解析配置Issue的内容
+                const config = JSON.parse(configIssue.body);
+                
+                // 确保仓库所有者始终是管理员
+                if (config.admins && Array.isArray(config.admins)) {
+                    ADMIN_USERS = config.admins;
+                    if (!ADMIN_USERS.includes(REPO_OWNER)) {
+                        ADMIN_USERS.push(REPO_OWNER);
+                    }
+                } else {
+                    ADMIN_USERS = [REPO_OWNER];
+                }
+            } catch (e) {
+                console.error('解析管理员数据失败:', e);
+                ADMIN_USERS = [REPO_OWNER];
+                
+                // 配置错误时更新配置
+                await saveAdminUsers();
+            }
+        } else {
+            // 如果不存在配置Issue，创建一个
+            ADMIN_USERS = [REPO_OWNER];
+            await saveAdminUsers();
+        }
+        
+        // 更新界面中的管理员列表
+        updateAdminsList();
+    }
+    
+    // 保存管理员列表
+    async function saveAdminUsers() {
+        // 确保仓库所有者始终是管理员
+        if (!ADMIN_USERS.includes(REPO_OWNER)) {
+            ADMIN_USERS.push(REPO_OWNER);
+        }
+        
+        // 准备配置数据
+        const configData = JSON.stringify({ admins: ADMIN_USERS });
+        
+        // 查找是否已存在配置Issue
+        const configIssue = await findConfigIssue();
+        
+        if (configIssue) {
+            // 更新配置Issue
+            await updateIssue(configIssue.number, configData);
+        } else {
+            // 创建新配置Issue
+            await createConfigIssue(configData);
+        }
+    }
+    
+    // 添加管理员
+    async function addAdmin(username) {
+        if (!username || !isAdmin()) return false;
+        
+        // 检查用户名是否已存在
+        if (!ADMIN_USERS.includes(username)) {
+            ADMIN_USERS.push(username);
+            await saveAdminUsers();
+            return true;
+        }
+        return false;
+    }
+    
+    // 移除管理员
+    async function removeAdmin(username) {
+        if (!username || !isAdmin() || username === REPO_OWNER) return false;
+        
+        const index = ADMIN_USERS.indexOf(username);
+        if (index !== -1) {
+            ADMIN_USERS.splice(index, 1);
+            await saveAdminUsers();
+            return true;
+        }
+        return false;
+    }
+    
+    // 更新管理员列表显示
+    function updateAdminsList() {
+        const adminsList = document.getElementById('admins-list');
+        if (!adminsList || !isAdmin()) return;
+        
+        adminsList.innerHTML = '';
+        
+        ADMIN_USERS.forEach(admin => {
+            const adminItem = document.createElement('div');
+            adminItem.className = 'admin-item';
+            
+            // 仓库所有者不能被移除
+            if (admin === REPO_OWNER) {
+                adminItem.innerHTML = `
+                    <span class="admin-name">${admin}</span>
+                    <span class="admin-owner-badge">站长</span>
+                `;
+            } else {
+                adminItem.innerHTML = `
+                    <span class="admin-name">${admin}</span>
+                    <button class="remove-admin-btn" data-username="${admin}">移除</button>
+                `;
+            }
+            
+            adminsList.appendChild(adminItem);
+        });
+        
+        // 添加移除管理员的事件监听
+        const removeButtons = adminsList.querySelectorAll('.remove-admin-btn');
+        removeButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const username = button.getAttribute('data-username');
+                if (confirm(`确定要移除管理员 ${username} 吗？`)) {
+                    // 禁用按钮并显示加载状态
+                    button.disabled = true;
+                    button.innerText = '移除中...';
+                    
+                    if (await removeAdmin(username)) {
+                        updateAdminsList();
+                        showRateLimitWarning(document.getElementById('admin-form'), `已移除管理员 ${username}`, 'success');
+                    } else {
+                        button.disabled = false;
+                        button.innerText = '移除';
+                        showRateLimitWarning(document.getElementById('admin-form'), `移除管理员 ${username} 失败`, 'error');
+                    }
+                }
+            });
+        });
+    }
+    
+    // 显示管理员设置
+    function showAdminSettings() {
+        // 检查是否已有管理员设置区域
+        let adminSection = document.querySelector('.admin-settings');
+        if (adminSection) {
+            // 已存在，仅更新列表
+            updateAdminsList();
+            return;
+        }
+        
+        // 如果不存在且用户是管理员，创建设置区域
+        if (isAdmin()) {
+            const profileContainer = document.querySelector('.profile-container');
+            if (!profileContainer) return;
+            
+            // 创建管理员设置区域
+            adminSection = document.createElement('div');
+            adminSection.className = 'admin-settings';
+            adminSection.innerHTML = `
+                <h3>管理员设置</h3>
+                <form id="admin-form">
+                    <div class="form-group">
+                        <label for="admin-username">添加管理员:</label>
+                        <input type="text" id="admin-username" placeholder="输入GitHub用户名">
+                        <button type="submit" class="primary-button">添加</button>
+                    </div>
+                    <div class="form-group">
+                        <label>当前管理员列表:</label>
+                        <div id="admins-list" class="admins-list"></div>
+                    </div>
+                    <small>管理员设置通过GitHub Issue同步，所有用户都能看到最新的管理员列表</small>
+                </form>
+            `;
+            
+            // 将管理员设置添加到个人资料页面
+            profileContainer.appendChild(adminSection);
+            
+            // 更新管理员列表
+            updateAdminsList();
+            
+            // 添加表单提交事件
+            const adminForm = document.getElementById('admin-form');
+            adminForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleProfileSubmit(e);
+            });
+        }
+    }
+    
+    // 查找配置Issue
+    async function findConfigIssue() {
+        try {
+            // 构建查询参数
+            const params = new URLSearchParams({
+                labels: CONFIG_ISSUE_LABEL,
+                state: 'open',
+                creator: REPO_OWNER
+            });
+            
+            // 发起请求
+            const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues?${params.toString()}`, {
+                method: 'GET',
+                headers: getRequestHeaders()
+            });
+            
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('查找配置失败');
+            }
+            
+            const issues = await response.json();
+            return issues.length > 0 ? issues[0] : null;
+        } catch (error) {
+            console.error('查找配置Issue失败:', error);
+            return null;
+        }
+    }
+    
+    // 创建配置Issue
+    async function createConfigIssue(configData) {
+        try {
+            const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues`, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    title: CONFIG_ISSUE_TITLE,
+                    body: configData,
+                    labels: [CONFIG_ISSUE_LABEL],
+                    // 添加一个随机字符，使配置Issue看起来像一个加密内容
+                    // 这只是一种视觉提示，表明这是系统配置
+                    body: `<!-- SYSTEM_CONFIG DO NOT MODIFY MANUALLY -->\n${configData}\n<!-- END_OF_CONFIG -->`
+                })
+            });
+            
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('创建配置失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('创建配置Issue失败:', error);
+            return null;
+        }
+    }
+    
+    // 更新Issue内容
+    async function updateIssue(issueNumber, issueBody) {
+        try {
+            const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}`, {
+                method: 'PATCH',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ 
+                    body: `<!-- SYSTEM_CONFIG DO NOT MODIFY MANUALLY -->\n${issueBody}\n<!-- END_OF_CONFIG -->`
+                })
+            });
+            
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('更新配置失败');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('更新Issue失败:', error);
+            return null;
+        }
     }
     
     // 初始化
