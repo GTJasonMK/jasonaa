@@ -1,0 +1,492 @@
+/* 论坛页面样式 */
+.auth-container {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.auth-panel {
+    padding: 20px;
+}
+
+.auth-panel h3 {
+    margin-top: 0;
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.auth-message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.auth-message.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.auth-message.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.form-group input, 
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 16px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: #777;
+    font-size: 12px;
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.primary-button {
+    padding: 10px 25px;
+    background-color: #4682b4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.primary-button:hover {
+    background-color: #3a6d96;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.secondary-button {
+    padding: 8px 15px;
+    background-color: #e0e0e0;
+    color: #333;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.secondary-button:hover {
+    background-color: #d0d0d0;
+}
+
+.auth-help {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.auth-help a {
+    color: #4682b4;
+    text-decoration: none;
+}
+
+.auth-help a:hover {
+    text-decoration: underline;
+}
+
+/* 论坛内容样式 */
+.forum-container {
+    margin-top: 20px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px 15px;
+    background-color: #f0f8ff;
+    border-radius: 4px;
+}
+
+#user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 10px;
+    background-size: cover;
+    background-position: center;
+}
+
+#user-name {
+    font-weight: bold;
+    margin-right: auto;
+}
+
+/* 标签页样式 */
+.forum-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: #666;
+    position: relative;
+}
+
+.tab-button.active {
+    color: #4682b4;
+}
+
+.tab-button.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: #4682b4;
+}
+
+.tab-content {
+    padding: 10px 0;
+}
+
+/* 过滤和搜索 */
+.forum-filters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+#filter-label {
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    width: 150px;
+}
+
+.search-box {
+    display: flex;
+}
+
+#search-input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    width: 200px;
+}
+
+#search-button {
+    padding: 8px 15px;
+    background-color: #4682b4;
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+}
+
+/* 讨论列表 */
+.issues-list {
+    margin-bottom: 20px;
+}
+
+.issue-item {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background-color: white;
+}
+
+.issue-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-color: #aaa;
+}
+
+.issue-item h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.issue-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 14px;
+    color: #666;
+}
+
+.issue-meta > span {
+    margin-right: 15px;
+}
+
+.issue-label {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+
+.issue-label[data-label="游戏"] {
+    background-color: #4caf50;
+}
+
+.issue-label[data-label="音乐"] {
+    background-color: #2196f3;
+}
+
+.issue-label[data-label="问题"] {
+    background-color: #f44336;
+}
+
+.issue-label[data-label="建议"] {
+    background-color: #ff9800;
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* 分页 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.page-button {
+    padding: 6px 12px;
+    margin: 0 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.page-button.active {
+    background-color: #4682b4;
+    color: white;
+    border-color: #4682b4;
+}
+
+.page-button:hover:not(.active) {
+    background-color: #f0f0f0;
+}
+
+/* 帖子详情 */
+.issue-detail {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+#back-to-list {
+    margin-bottom: 20px;
+}
+
+.issue-header {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+}
+
+.issue-header h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 24px;
+    color: #333;
+}
+
+.issue-body {
+    padding: 15px 0;
+    line-height: 1.6;
+    font-size: 16px;
+    color: #333;
+}
+
+/* 代码和Markdown格式 */
+.issue-body pre, 
+.comment-content pre {
+    background-color: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: monospace;
+}
+
+.issue-body code,
+.comment-content code {
+    background-color: #f5f5f5;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+/* 评论区 */
+.comments-section {
+    margin-top: 30px;
+}
+
+.comments-section h4 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.comments-list {
+    margin-bottom: 30px;
+}
+
+.comment-item {
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    background-color: #fafafa;
+}
+
+.comment-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.comment-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin-right: 10px;
+    background-size: cover;
+    background-position: center;
+}
+
+.comment-author {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.comment-date {
+    font-size: 14px;
+    color: #777;
+}
+
+.comment-content {
+    line-height: 1.5;
+}
+
+.comment-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 4px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .forum-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #filter-label {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+    
+    #search-input {
+        flex-grow: 1;
+    }
+    
+    .issue-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .issue-meta > span {
+        margin-bottom: 5px;
+    }
+}
+
+/* 频率限制警告 */
+.rate-limit-warning {
+    background-color: #fff3e0;
+    border: 1px solid #ffcc80;
+    color: #e65100;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.rate-limit-warning::before {
+    content: "⚠️";
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+/* 禁用状态 */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+button:disabled:hover {
+    transform: none;
+    box-shadow: none;
+} 

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多功能娱乐平台 - 论坛</title>
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="forum.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>多功能娱乐平台 - 论坛</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.html">首页</a></li>
+                    <li><a href="#" class="active">论坛</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <main>
+            <section id="forum" class="section active">
+                <div class="auth-container" id="auth-container">
+                    <div class="auth-panel" id="login-panel">
+                        <h3>用户登录</h3>
+                        <div class="auth-message" id="login-message"></div>
+                        <form id="login-form">
+                            <div class="form-group">
+                                <label for="login-username">GitHub 用户名:</label>
+                                <input type="text" id="login-username" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="login-token">GitHub 个人访问令牌:</label>
+                                <input type="password" id="login-token" required>
+                                <small>需要 <code>public_repo</code> 权限</small>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="primary-button">登录</button>
+                            </div>
+                        </form>
+                        <div class="auth-help">
+                            <p>如何获取个人访问令牌? <a href="https://github.com/settings/tokens" target="_blank">点击这里</a></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="forum-container" id="forum-container" style="display: none;">
+                    <div class="user-info" id="user-info">
+                        <span id="user-avatar"></span>
+                        <span id="user-name"></span>
+                        <button id="logout-button" class="secondary-button">登出</button>
+                    </div>
+
+                    <div class="forum-tabs">
+                        <button class="tab-button active" data-tab="discussions">讨论区</button>
+                        <button class="tab-button" data-tab="create">发表新贴</button>
+                    </div>
+
+                    <div class="tab-content" id="discussions-tab">
+                        <div class="forum-filters">
+                            <select id="filter-label">
+                                <option value="">所有主题</option>
+                                <option value="游戏">游戏</option>
+                                <option value="音乐">音乐</option>
+                                <option value="问题">问题</option>
+                                <option value="建议">建议</option>
+                            </select>
+                            <div class="search-box">
+                                <input type="text" id="search-input" placeholder="搜索...">
+                                <button id="search-button">搜索</button>
+                            </div>
+                        </div>
+
+                        <div class="issues-list" id="issues-list">
+                            <!-- 动态加载的讨论列表 -->
+                            <div class="loading">加载中...</div>
+                        </div>
+
+                        <div class="pagination" id="pagination">
+                            <!-- 分页控制 -->
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="create-tab" style="display: none;">
+                        <form id="create-issue-form">
+                            <div class="form-group">
+                                <label for="issue-title">标题:</label>
+                                <input type="text" id="issue-title" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="issue-label">主题:</label>
+                                <select id="issue-label" required>
+                                    <option value="游戏">游戏</option>
+                                    <option value="音乐">音乐</option>
+                                    <option value="问题">问题</option>
+                                    <option value="建议">建议</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="issue-body">内容:</label>
+                                <textarea id="issue-body" rows="10" required></textarea>
+                                <small>支持 Markdown 格式</small>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="primary-button">发表</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="issue-detail" id="issue-detail" style="display: none;">
+                    <button id="back-to-list" class="secondary-button">返回列表</button>
+                    
+                    <div class="issue-content">
+                        <div class="issue-header">
+                            <h3 id="detail-title"></h3>
+                            <div class="issue-meta">
+                                <span id="detail-author"></span>
+                                <span id="detail-date"></span>
+                                <span id="detail-label"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="issue-body" id="detail-body">
+                            <!-- 动态加载的讨论内容 -->
+                        </div>
+                        
+                        <div class="comments-section">
+                            <h4>评论 (<span id="comments-count">0</span>)</h4>
+                            <div class="comments-list" id="comments-list">
+                                <!-- 动态加载的评论列表 -->
+                            </div>
+                            
+                            <div class="comment-form">
+                                <h4>发表评论</h4>
+                                <form id="comment-form">
+                                    <div class="form-group">
+                                        <textarea id="comment-body" rows="5" required></textarea>
+                                        <small>支持 Markdown 格式</small>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="primary-button">提交评论</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>© 2023 多功能娱乐平台 | <a href="https://github.com/yourusername/webgame" target="_blank">GitHub Pages</a></p>
+        </footer>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="forum.js"></script>
+</body>
+</html> 
