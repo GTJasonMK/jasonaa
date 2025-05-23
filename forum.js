@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const REPO_OWNER = '13108387302'; // 需要更新为您的GitHub用户名
     const REPO_NAME = 'jasonaa'; // 需要更新为您的仓库名
     
+    // 管理员用户名列表
+    const ADMIN_USERS = ['13108387302']; // 这里添加管理员的GitHub用户名
+    
     // 页面元素
     const authContainer = document.getElementById('auth-container');
     const forumContainer = document.getElementById('forum-container');
@@ -248,6 +251,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const createdDate = new Date(issue.created_at);
             const formattedDate = createdDate.toLocaleDateString('zh-CN');
             
+            // 添加删除帖子的按钮（仅管理员可见）
+            const deleteButtonHTML = isAdmin() ? 
+                `<button class="delete-issue-btn" data-issue-number="${issue.number}">删除</button>` : '';
+            
             issueElement.innerHTML = `
                 <h3>${issue.title}</h3>
                 <div class="issue-meta">
@@ -255,12 +262,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span>发布于: ${formattedDate}</span>
                     ${labelHTML}
                     <span>评论: ${issue.comments}</span>
+                    ${deleteButtonHTML}
                 </div>
             `;
             
             // 添加点击事件
-            issueElement.addEventListener('click', () => {
-                loadIssueDetails(issue.number);
+            issueElement.addEventListener('click', (e) => {
+                // 如果点击的是删除按钮，则执行删除操作
+                if (e.target.classList.contains('delete-issue-btn')) {
+                    e.stopPropagation(); // 阻止事件冒泡
+                    if (confirm('确定要删除这个帖子吗？此操作不可撤销。')) {
+                        deleteIssue(issue.number);
+                    }
+                } else {
+                    loadIssueDetails(issue.number);
+                }
             });
             
             issuesList.appendChild(issueElement);
@@ -423,14 +439,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const createdDate = new Date(comment.created_at);
                 const formattedDate = createdDate.toLocaleDateString('zh-CN');
                 
+                // 添加删除评论按钮（仅管理员可见）
+                const deleteButtonHTML = isAdmin() ? 
+                    `<button class="delete-comment-btn" data-comment-id="${comment.id}">删除</button>` : '';
+                
                 commentElement.innerHTML = `
                     <div class="comment-header">
                         <div class="comment-avatar" style="background-image: url(${comment.user.avatar_url})"></div>
                         <span class="comment-author">${comment.user.login}</span>
                         <span class="comment-date">${formattedDate}</span>
+                        ${deleteButtonHTML}
                     </div>
                     <div class="comment-content">${comment.body}</div>
                 `;
+                
+                // 添加删除评论的事件监听器
+                const deleteButton = commentElement.querySelector('.delete-comment-btn');
+                if (deleteButton) {
+                    deleteButton.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 阻止事件冒泡
+                        if (confirm('确定要删除这条评论吗？此操作不可撤销。')) {
+                            deleteComment(comment.id);
+                        }
+                    });
+                }
                 
                 commentsList.appendChild(commentElement);
             });
@@ -611,6 +643,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (authData.avatar_url) {
             userAvatar.style.backgroundImage = `url(${authData.avatar_url})`;
         }
+        
+        // 显示管理员标识（如果是管理员）
+        const adminBadge = document.getElementById('admin-badge');
+        if (adminBadge) {
+            if (isAdmin()) {
+                adminBadge.style.display = 'inline-block';
+            } else {
+                adminBadge.style.display = 'none';
+            }
+        }
     }
     
     // 显示登录表单
@@ -787,6 +829,65 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSearchQuery = ''; // 清除搜索条件
             searchInput.value = '';
             loadIssues();
+        });
+    }
+    
+    // 检查当前用户是否为管理员
+    function isAdmin() {
+        return isAuthenticated() && ADMIN_USERS.includes(authData.username);
+    }
+    
+    // 删除帖子
+    function deleteIssue(issueNumber) {
+        if (!isAdmin()) {
+            showRateLimitWarning(issuesList, '你没有权限执行此操作', 'error');
+            return;
+        }
+        
+        fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}`, {
+            method: 'PATCH',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ state: 'closed' })
+        })
+        .then(response => {
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('删除帖子失败');
+            }
+            return response.json();
+        })
+        .then(() => {
+            showRateLimitWarning(issuesList, '帖子已成功删除', 'success');
+            loadIssues(); // 重新加载列表
+        })
+        .catch(error => {
+            console.error('删除帖子失败:', error);
+            showRateLimitWarning(issuesList, `删除失败: ${error.message}`, 'error');
+        });
+    }
+    
+    // 删除评论
+    function deleteComment(commentId) {
+        if (!isAdmin()) {
+            showRateLimitWarning(commentsList, '你没有权限执行此操作', 'error');
+            return;
+        }
+        
+        fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: getRequestHeaders()
+        })
+        .then(response => {
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('删除评论失败');
+            }
+            showRateLimitWarning(commentsList, '评论已成功删除', 'success');
+            loadComments(currentIssueNumber); // 重新加载评论
+        })
+        .catch(error => {
+            console.error('删除评论失败:', error);
+            showRateLimitWarning(commentsList, `删除失败: ${error.message}`, 'error');
         });
     }
     

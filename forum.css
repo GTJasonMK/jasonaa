@@ -489,4 +489,39 @@ button:disabled {
 button:disabled:hover {
     transform: none;
     box-shadow: none;
+}
+
+/* 删除按钮样式 */
+.delete-issue-btn,
+.delete-comment-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.3s;
+}
+
+.delete-issue-btn:hover,
+.delete-comment-btn:hover {
+    background-color: #d32f2f;
+}
+
+.delete-comment-btn {
+    float: right;
+    margin-top: 2px;
+}
+
+/* 管理员标识 */
+.admin-badge {
+    background-color: #ff9800;
+    color: white;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 12px;
+    margin-left: 10px;
+    font-weight: bold;
 } 
