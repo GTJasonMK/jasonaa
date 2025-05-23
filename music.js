@@ -4,35 +4,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioCache = {};
     let currentAudio = null;
     
-    // 音符定义
+    // 音符定义 - 将#替换为s(sharp)，以适应URL规范
     const NOTES = {
         'C4': 'C4',
-        'C#4': 'C#4',
+        'Cs4': 'Cs4', // 原C#4
         'D4': 'D4',
-        'D#4': 'D#4',
+        'Ds4': 'Ds4', // 原D#4
         'E4': 'E4',
         'F4': 'F4',
-        'F#4': 'F#4',
+        'Fs4': 'Fs4', // 原F#4
         'G4': 'G4',
-        'G#4': 'G#4',
+        'Gs4': 'Gs4', // 原G#4
         'A4': 'A4',
-        'A#4': 'A#4',
+        'As4': 'As4', // 原A#4
         'B4': 'B4',
         'C5': 'C5'
     };
     
-    // 音阶定义 - 根据main.py中的定义
+    // 音阶定义 - 更新音符名称
     const SCALES = {
         '大调音阶': ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'],
         'C大调': ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'],
-        'G大调': ['G4', 'A4', 'B4', 'C4', 'D4', 'E4', 'F#4'],
-        'D大调': ['D4', 'E4', 'F#4', 'G4', 'A4', 'B4', 'C#4'],
-        'A大调': ['A4', 'B4', 'C#4', 'D4', 'E4', 'F#4', 'G#4'],
-        'E大调': ['E4', 'F#4', 'G#4', 'A4', 'B4', 'C#4', 'D#4'],
-        'B大调': ['B4', 'C#4', 'D#4', 'E4', 'F#4', 'G#4', 'A#4'],
+        'G大调': ['G4', 'A4', 'B4', 'C4', 'D4', 'E4', 'Fs4'], // 原F#4
+        'D大调': ['D4', 'E4', 'Fs4', 'G4', 'A4', 'B4', 'Cs4'], // 原F#4, C#4
+        'A大调': ['A4', 'B4', 'Cs4', 'D4', 'E4', 'Fs4', 'Gs4'], // 原C#4, F#4, G#4
+        'E大调': ['E4', 'Fs4', 'Gs4', 'A4', 'B4', 'Cs4', 'Ds4'], // 原F#4, G#4, C#4, D#4
+        'B大调': ['B4', 'Cs4', 'Ds4', 'E4', 'Fs4', 'Gs4', 'As4'], // 原C#4, D#4, F#4, G#4, A#4
         '自然小调': ['A4', 'B4', 'C4', 'D4', 'E4', 'F4', 'G4', 'A5'],
         '五声音阶': ['C4', 'D4', 'E4', 'G4', 'A4', 'C5'],
-        '布鲁斯音阶': ['C4', 'E4', 'F4', 'F#4', 'G4', 'B4', 'C5']
+        '布鲁斯音阶': ['C4', 'E4', 'F4', 'Fs4', 'G4', 'B4', 'C5'] // 原F#4
     };
     
     // 和弦定义
@@ -44,12 +44,22 @@ document.addEventListener('DOMContentLoaded', () => {
         '小七和弦': [0, 3, 7, 10]      // 小七和弦
     };
     
-    // 音域范围选项
+    // 音域范围选项 - 更新音符名称
     const RANGE_OPTIONS = [
         { name: "基础", notes: ["C4", "D4", "E4", "F4", "G4", "A4", "B4"] },
-        { name: "进阶", notes: ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4"] },
-        { name: "扩展", notes: ["C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4", "C5"] }
+        { name: "进阶", notes: ["C4", "Cs4", "D4", "Ds4", "E4", "F4", "Fs4", "G4", "Gs4", "A4", "As4", "B4"] }, // 替换所有#为s
+        { name: "扩展", notes: ["C4", "Cs4", "D4", "Ds4", "E4", "F4", "Fs4", "G4", "Gs4", "A4", "As4", "B4", "C5"] } // 替换所有#为s
     ];
+    
+    // 音符符号映射，用于转换音符名称
+    const NOTE_MAPPING = {
+        'C#4': 'Cs4',
+        'D#4': 'Ds4',
+        'F#4': 'Fs4',
+        'G#4': 'Gs4',
+        'A#4': 'As4',
+        'B#4': 'Bs4'
+    };
     
     // 预加载音频文件
     function preloadAudio() {
@@ -63,29 +73,80 @@ document.addEventListener('DOMContentLoaded', () => {
     function loadAudio(note) {
         if (audioCache[note]) return audioCache[note];
         
+        // 创建一个静音的音频对象作为备用
+        const createSilentAudio = () => {
+            const silentAudio = new Audio();
+            silentAudio.volume = 0;
+            // 为了避免后续播放错误，设置一个空白的AudioContext
+            return silentAudio;
+        };
+        
         // 尝试加载WAV文件，如果失败则尝试M4A文件
         const audio = new Audio();
         audio.preload = 'auto';
         
-        // 先尝试加载WAV
-        audio.src = `sounds/${note}.wav`;
+        // 标记该音符是否已成功加载
+        let loaded = false;
         
-        // 如果WAV加载失败，尝试加载M4A
-        audio.onerror = () => {
-            console.log(`无法加载WAV文件: ${note}.wav, 尝试M4A格式`);
-            audio.src = `sounds/${note}.m4a`;
+        // 使用Promise包装加载过程
+        const loadWithFallback = new Promise((resolve, reject) => {
+            // 先尝试加载WAV - 使用适合URL的文件名
+            audio.src = `sounds/${note}.wav`;
             
+            // 如果WAV加载失败，尝试加载M4A
             audio.onerror = () => {
-                console.error(`无法加载音频文件: ${note}`);
+                console.log(`无法加载WAV文件: ${note}.wav, 尝试M4A格式`);
+                audio.src = `sounds/${note}.m4a`;
+                
+                audio.onerror = () => {
+                    console.error(`无法加载音频文件: ${note}，将使用静音替代`);
+                    reject(new Error(`无法加载音频文件: ${note}`));
+                };
+                
+                audio.oncanplaythrough = () => {
+                    loaded = true;
+                    resolve(audio);
+                };
             };
-        };
+            
+            audio.oncanplaythrough = () => {
+                loaded = true;
+                resolve(audio);
+            };
+            
+            // 设置超时，防止加载卡住
+            setTimeout(() => {
+                if (!loaded) {
+                    reject(new Error(`加载音频文件超时: ${note}`));
+                }
+            }, 3000);
+        });
         
-        audioCache[note] = audio;
+        // 处理加载结果
+        loadWithFallback.catch(error => {
+            console.warn(`音频加载失败，使用静音替代: ${error.message}`);
+            return createSilentAudio();
+        }).then(resultAudio => {
+            audioCache[note] = resultAudio;
+        });
+        
+        // 在加载失败的情况下，先返回静音音频对象，防止程序崩溃
+        if (!loaded) {
+            const tempAudio = createSilentAudio();
+            audioCache[note] = tempAudio;
+            return tempAudio;
+        }
+        
         return audio;
     }
     
     // 播放单个音符
     function playNote(note, callback) {
+        // 如果是旧格式音符名称(带#)，转换为新格式(s)
+        if (NOTE_MAPPING[note]) {
+            note = NOTE_MAPPING[note];
+        }
+        
         if (!audioCache[note]) {
             loadAudio(note);
         }
@@ -172,6 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // 如果是旧格式音符名称(带#)，转换为新格式(s)
+        if (NOTE_MAPPING[rootNote]) {
+            rootNote = NOTE_MAPPING[rootNote];
+        }
+        
         stopAllSounds();
         
         // 计算和弦中的所有音符
@@ -242,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         playScale,
         playChord,
         generateRandomMelody,
-        playMelody
+        playMelody,
+        noteMapping: NOTE_MAPPING // 导出映射以便外部代码也能使用
     };
 }); 
