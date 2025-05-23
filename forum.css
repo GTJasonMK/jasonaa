@@ -1,4 +1,81 @@
 /* 论坛页面样式 */
+/* 修改header布局 */
+header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+    flex-grow: 1;
+}
+
+header nav {
+    display: flex;
+    margin-right: 20px;
+}
+
+header nav ul {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+header nav ul li {
+    margin-right: 15px;
+}
+
+header nav ul li a {
+    text-decoration: none;
+    color: #4682b4;
+    font-weight: bold;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+header nav ul li a.active {
+    background-color: #4682b4;
+    color: white;
+}
+
+/* 修改用户信息区域 */
+.user-info {
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    background-color: #f0f8ff;
+    border-radius: 4px;
+}
+
+#user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background-size: cover;
+    background-position: center;
+}
+
+#user-name {
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 14px;
+}
+
+#logout-button {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
 .auth-container {
     max-width: 500px;
     margin: 0 auto;
@@ -129,29 +206,9 @@
 
 /* 论坛内容样式 */
 .forum-container {
-    margin-top: 20px;
-}
-
-.user-info {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    padding: 10px 15px;
-    background-color: #f0f8ff;
-    border-radius: 4px;
-}
-
-#user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    margin-right: 10px;
-    background-size: cover;
-    background-position: center;
-}
-
-#user-name {
-    font-weight: bold;
+    margin-top: 10px;
+    max-width: 960px;
+    margin-left: auto;
     margin-right: auto;
 }
 
@@ -226,31 +283,36 @@
     cursor: pointer;
 }
 
-/* 讨论列表 */
+/* 讨论列表 - 增加样式突出展示 */
 .issues-list {
     margin-bottom: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 15px;
 }
 
 .issue-item {
-    padding: 15px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    margin-bottom: 10px;
-    transition: all 0.2s ease;
+    padding: 18px;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
     cursor: pointer;
-    background-color: white;
+    background-color: #fafafa;
 }
 
 .issue-item:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border-color: #aaa;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    border-color: #4682b4;
 }
 
 .issue-item h3 {
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     color: #333;
+    font-size: 18px;
 }
 
 .issue-meta {
@@ -323,12 +385,14 @@
     background-color: #f0f0f0;
 }
 
-/* 帖子详情 */
+/* 帖子详情 - 增强样式 */
 .issue-detail {
     background-color: white;
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    padding: 25px;
+    max-width: 900px;
+    margin: 0 auto;
 }
 
 #back-to-list {
@@ -343,14 +407,14 @@
 
 .issue-header h3 {
     margin-top: 0;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     font-size: 24px;
     color: #333;
 }
 
 .issue-body {
     padding: 15px 0;
-    line-height: 1.6;
+    line-height: 1.7;
     font-size: 16px;
     color: #333;
 }
@@ -373,15 +437,20 @@
     font-family: monospace;
 }
 
-/* 评论区 */
+/* 评论区 - 增强视觉效果 */
 .comments-section {
     margin-top: 30px;
+    background-color: #fafafa;
+    border-radius: 8px;
+    padding: 20px;
 }
 
 .comments-section h4 {
     font-size: 18px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     color: #333;
+    border-bottom: 2px solid #eaeaea;
+    padding-bottom: 10px;
 }
 
 .comments-list {
@@ -389,22 +458,25 @@
 }
 
 .comment-item {
-    padding: 15px;
+    padding: 18px;
     border: 1px solid #eee;
-    border-radius: 4px;
+    border-radius: 8px;
     margin-bottom: 15px;
-    background-color: #fafafa;
+    background-color: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .comment-header {
     display: flex;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 8px;
 }
 
 .comment-avatar {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     margin-right: 10px;
     background-size: cover;
@@ -422,17 +494,36 @@
 }
 
 .comment-content {
-    line-height: 1.5;
+    line-height: 1.6;
 }
 
 .comment-form {
     background-color: #f9f9f9;
     padding: 20px;
-    border-radius: 4px;
+    border-radius: 8px;
+    border: 1px solid #eaeaea;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+    header {
+        flex-direction: column;
+    }
+    
+    header h1 {
+        margin-bottom: 15px;
+    }
+    
+    header nav {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+    
+    .user-info {
+        width: 100%;
+        justify-content: center;
+    }
+    
     .forum-filters {
         flex-direction: column;
         align-items: stretch;

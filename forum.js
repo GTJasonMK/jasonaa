@@ -644,6 +644,9 @@ document.addEventListener('DOMContentLoaded', () => {
             userAvatar.style.backgroundImage = `url(${authData.avatar_url})`;
         }
         
+        // 显示用户信息区域
+        userInfo.style.display = 'flex';
+        
         // 显示管理员标识（如果是管理员）
         const adminBadge = document.getElementById('admin-badge');
         if (adminBadge) {
@@ -660,6 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
         authContainer.style.display = 'block';
         forumContainer.style.display = 'none';
         issueDetail.style.display = 'none';
+        userInfo.style.display = 'none';
         
         // 清除登录表单
         loginForm.reset();

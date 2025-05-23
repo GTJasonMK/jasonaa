@@ -17,6 +17,12 @@
                     <li><a href="#" class="active">论坛</a></li>
                 </ul>
             </nav>
+            <div class="user-info" id="user-info" style="display: none;">
+                <span id="user-avatar"></span>
+                <span id="user-name"></span>
+                <span id="admin-badge" style="display: none;" class="admin-badge">管理员</span>
+                <button id="logout-button" class="secondary-button">登出</button>
+            </div>
         </header>
         
         <main>
@@ -46,13 +52,6 @@
                 </div>
                 
                 <div class="forum-container" id="forum-container" style="display: none;">
-                    <div class="user-info" id="user-info">
-                        <span id="user-avatar"></span>
-                        <span id="user-name"></span>
-                        <span id="admin-badge" style="display: none;" class="admin-badge">管理员</span>
-                        <button id="logout-button" class="secondary-button">登出</button>
-                    </div>
-
                     <div class="forum-tabs">
                         <button class="tab-button active" data-tab="discussions">讨论区</button>
                         <button class="tab-button" data-tab="create">发表新贴</button>
@@ -74,12 +73,10 @@
                         </div>
 
                         <div class="issues-list" id="issues-list">
-                            <!-- 动态加载的讨论列表 -->
                             <div class="loading">加载中...</div>
                         </div>
 
                         <div class="pagination" id="pagination">
-                            <!-- 分页控制 -->
                         </div>
                     </div>
 
@@ -124,13 +121,11 @@
                         </div>
                         
                         <div class="issue-body" id="detail-body">
-                            <!-- 动态加载的讨论内容 -->
                         </div>
                         
                         <div class="comments-section">
                             <h4>评论 (<span id="comments-count">0</span>)</h4>
                             <div class="comments-list" id="comments-list">
-                                <!-- 动态加载的评论列表 -->
                             </div>
                             
                             <div class="comment-form">
