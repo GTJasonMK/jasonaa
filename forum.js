@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const REPO_NAME = 'jasonaa'; // 需要更新为您的仓库名
     
     // 管理员用户名列表
-    const ADMIN_USERS = ['13108387302']; // 这里添加管理员的GitHub用户名
+    const ADMIN_USERS = ['13108387302','cabbage-hair']; // 这里添加管理员的GitHub用户名
     
     // 页面元素
     const authContainer = document.getElementById('auth-container');
