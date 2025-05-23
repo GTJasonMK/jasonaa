@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return labelMatch ? labelMatch[1].trim() : null;
     }
     
-    // 修改加载问题列表函数，支持从内容中筛选标签
+    // 修改加载问题列表函数，支持从内容中筛选标签和实现本地搜索
     function loadIssues() {
         // 显示加载状态
         issuesList.innerHTML = '<div class="loading">加载中...</div>';
@@ -197,16 +197,31 @@ document.addEventListener('DOMContentLoaded', () => {
             params.append('labels', selectedLabel);
         }
         
-        // 添加搜索查询
-        if (currentSearchQuery) {
-            // GitHub API的搜索格式: q=搜索词+repo:用户名/仓库名
+        // 如果有搜索查询但不太复杂，使用GitHub搜索API
+        let useGitHubSearch = false;
+        if (currentSearchQuery && !currentSearchQuery.includes(':')) {
+            useGitHubSearch = true;
+            // GitHub API的搜索格式
             url = `${GITHUB_API_URL}/search/issues`;
             params = new URLSearchParams({
-                q: `${currentSearchQuery}+repo:${REPO_OWNER}/${REPO_NAME}+is:issue`,
+                q: `${currentSearchQuery} repo:${REPO_OWNER}/${REPO_NAME} type:issue state:open`,
                 per_page: perPage,
                 page: currentPage
             });
         }
+        
+        // 如果是较复杂的搜索或者有筛选条件，采用本地搜索更可靠
+        if (currentSearchQuery && (!useGitHubSearch || currentLabel)) {
+            // 获取所有issue然后在本地过滤
+            params = new URLSearchParams({
+                state: 'open',
+                per_page: 100, // 获取较大数量以便本地搜索
+                page: 1
+            });
+            url = `${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues`;
+        }
+        
+        console.log("搜索URL:", `${url}?${params.toString()}`);
         
         // 发送请求
         fetch(`${url}?${params.toString()}`, {
@@ -226,67 +241,100 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(({ data, linkHeader }) => {
             // 如果是搜索结果，数据结构不同
-            let issues = currentSearchQuery ? data.items : data;
+            let issues = [];
+            let totalCount = 0;
+            let usingLocalSearch = false;
+            
+            if (useGitHubSearch && !currentLabel) {
+                // 搜索API返回的结构是 {total_count, incomplete_results, items}
+                console.log("GitHub搜索返回结果:", data);
+                if (data && Array.isArray(data.items)) {
+                    issues = data.items;
+                    totalCount = data.total_count || 0;
+                } else {
+                    console.error('搜索结果格式异常:', data);
+                    issues = [];
+                    totalCount = 0;
+                }
+                
+                // 如果GitHub搜索没有结果，降级到本地搜索
+                if (issues.length === 0 && currentSearchQuery) {
+                    console.log("GitHub搜索无结果，降级到本地搜索");
+                    return fetchAllIssuesForSearch();
+                }
+            } else if (currentSearchQuery) {
+                // 本地搜索模式
+                console.log("使用本地搜索模式");
+                usingLocalSearch = true;
+                if (Array.isArray(data)) {
+                    issues = performLocalSearch(data, currentSearchQuery);
+                    totalCount = issues.length;
+                } else {
+                    console.error('本地搜索数据格式异常:', data);
+                    return fetchAllIssuesForSearch();
+                }
+            } else {
+                // 普通API返回的就是issue数组
+                if (Array.isArray(data)) {
+                    issues = data;
+                } else {
+                    console.error('返回数据格式异常:', data);
+                    issues = [];
+                }
+            }
+            
+            // 确保issues是数组
+            if (!Array.isArray(issues)) {
+                console.error('非预期的数据格式:', issues);
+                issues = [];
+            }
             
             // 过滤掉配置Issue
             issues = issues.filter(issue => {
+                if (!issue) return false;
+                
                 // 检查是否有配置标签
                 if (issue.labels && issue.labels.length > 0) {
-                    return !issue.labels.some(label => label.name === CONFIG_ISSUE_LABEL);
+                    return !issue.labels.some(label => label && label.name === CONFIG_ISSUE_LABEL);
                 }
                 // 检查标题是否匹配配置Issue标题
                 return issue.title !== CONFIG_ISSUE_TITLE;
             });
             
             // 如果选择了标签，我们需要额外检查内容中的标签
-            if (selectedLabel && issues.length === 0) {
+            if (selectedLabel && issues.length === 0 && !currentSearchQuery) {
                 // 如果API筛选没有结果，尝试获取所有issue并在客户端筛选
-                return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=open&per_page=${perPage}&page=${currentPage}`, {
-                    method: 'GET',
-                    headers: getRequestHeaders()
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('加载论坛内容失败');
-                    }
-                    const newLinkHeader = response.headers.get('Link');
-                    return response.json().then(allIssues => {
-                        // 过滤掉配置Issue
-                        allIssues = allIssues.filter(issue => {
-                            // 检查是否有配置标签
-                            if (issue.labels && issue.labels.length > 0) {
-                                return !issue.labels.some(label => label.name === CONFIG_ISSUE_LABEL);
-                            }
-                            // 检查标题是否匹配配置Issue标题
-                            return issue.title !== CONFIG_ISSUE_TITLE;
-                        });
-                        
-                        // 在客户端筛选标签，包括内容中的标签
-                        const filteredIssues = allIssues.filter(issue => {
-                            // 检查API标签
-                            if (issue.labels && issue.labels.length > 0) {
-                                if (issue.labels.some(label => label.name === selectedLabel)) {
-                                    return true;
-                                }
-                            }
-                            
-                            // 检查内容中的标签
-                            if (issue.body) {
-                                const contentLabel = extractLabelFromContent(issue.body);
-                                return contentLabel === selectedLabel;
-                            }
-                            
-                            return false;
-                        });
-                        
-                        return { data: filteredIssues, linkHeader: newLinkHeader };
-                    });
+                return fetchAllIssuesForSearch().then(result => {
+                    const { allIssues, newLinkHeader } = result;
+                    
+                    // 在客户端筛选标签，包括内容中的标签
+                    const filteredIssues = filterIssuesByLabel(allIssues, selectedLabel);
+                    
+                    // 返回筛选后的issues和分页信息
+                    return { 
+                        issues: filteredIssues, 
+                        linkHeader: newLinkHeader,
+                        totalCount: filteredIssues.length,
+                        usingLocalSearch: true
+                    };
                 });
             }
             
-            return { issues, linkHeader };
+            // 如果不需要额外筛选，直接返回结果
+            return { 
+                issues, 
+                linkHeader,
+                totalCount,
+                usingLocalSearch
+            };
         })
-        .then(({ issues, linkHeader }) => {
+        .then(({ issues, linkHeader, totalCount, usingLocalSearch }) => {
+            // 确保issues是数组
+            if (!Array.isArray(issues)) {
+                console.error('非预期的数据格式:', issues);
+                issues = [];
+            }
+            
             // 检查是否有结果
             if (issues.length === 0) {
                 issuesList.innerHTML = '<div class="no-results">没有找到讨论</div>';
@@ -294,12 +342,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
+            // 如果使用本地搜索，实现客户端分页
+            if (usingLocalSearch) {
+                const startIndex = (currentPage - 1) * perPage;
+                const endIndex = startIndex + perPage;
+                const pageIssues = issues.slice(startIndex, endIndex);
+                
+                // 计算总页数
+                const totalPages = Math.ceil(issues.length / perPage);
+                
+                // 渲染问题列表
+                renderIssuesList(pageIssues);
+                renderPagination(totalPages);
+                return;
+            }
+            
             // 渲染问题列表
             renderIssuesList(issues);
             
             // 检查是否为搜索查询，以获取正确的总数
-            if (currentSearchQuery) {
-                const totalPages = Math.ceil(data.total_count / perPage);
+            if (currentSearchQuery && totalCount > 0) {
+                const totalPages = Math.ceil(totalCount / perPage);
                 renderPagination(totalPages);
             } else {
                 // 对于非搜索查询，我们需要计算总页数
@@ -316,6 +379,110 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => {
             console.error('加载问题失败:', error);
             issuesList.innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
+        });
+    }
+    
+    // 获取所有issue用于本地搜索
+    function fetchAllIssuesForSearch() {
+        return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues?state=open&per_page=100`, {
+            method: 'GET',
+            headers: getRequestHeaders()
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('加载论坛内容失败');
+            }
+            const newLinkHeader = response.headers.get('Link');
+            return response.json().then(allIssues => {
+                // 确保allIssues是数组
+                if (!Array.isArray(allIssues)) {
+                    console.error('非预期的数据格式:', allIssues);
+                    allIssues = [];
+                }
+                
+                // 过滤掉配置Issue
+                allIssues = allIssues.filter(issue => {
+                    if (!issue) return false;
+                    
+                    // 检查是否有配置标签
+                    if (issue.labels && issue.labels.length > 0) {
+                        return !issue.labels.some(label => label && label.name === CONFIG_ISSUE_LABEL);
+                    }
+                    // 检查标题是否匹配配置Issue标题
+                    return issue.title !== CONFIG_ISSUE_TITLE;
+                });
+                
+                // 如果存在搜索关键词，进行本地搜索
+                let filteredIssues = allIssues;
+                if (currentSearchQuery) {
+                    filteredIssues = performLocalSearch(allIssues, currentSearchQuery);
+                }
+                
+                return { 
+                    allIssues,
+                    filteredIssues, 
+                    newLinkHeader 
+                };
+            });
+        });
+    }
+    
+    // 执行本地搜索
+    function performLocalSearch(issues, query) {
+        console.log(`执行本地搜索，关键词: "${query}"`);
+        query = query.toLowerCase().trim();
+        
+        // 如果查询为空，返回原始数据
+        if (!query) return issues;
+        
+        return issues.filter(issue => {
+            if (!issue) return false;
+            
+            // 搜索标题
+            if (issue.title && issue.title.toLowerCase().includes(query)) {
+                return true;
+            }
+            
+            // 搜索内容
+            if (issue.body && issue.body.toLowerCase().includes(query)) {
+                return true;
+            }
+            
+            // 搜索评论数量 (例如 "0条评论")
+            const commentStr = `${issue.comments}条评论`;
+            if (commentStr.includes(query)) {
+                return true;
+            }
+            
+            // 搜索用户名
+            if (issue.user && issue.user.login && 
+                issue.user.login.toLowerCase().includes(query)) {
+                return true;
+            }
+            
+            return false;
+        });
+    }
+    
+    // 根据标签过滤issue
+    function filterIssuesByLabel(allIssues, label) {
+        return allIssues.filter(issue => {
+            if (!issue) return false;
+            
+            // 检查API标签
+            if (issue.labels && issue.labels.length > 0) {
+                if (issue.labels.some(l => l && l.name === label)) {
+                    return true;
+                }
+            }
+            
+            // 检查内容中的标签
+            if (issue.body) {
+                const contentLabel = extractLabelFromContent(issue.body);
+                return contentLabel === label;
+            }
+            
+            return false;
         });
     }
     
