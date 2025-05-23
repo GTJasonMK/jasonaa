@@ -606,6 +606,61 @@ button:disabled:hover {
     margin-top: 2px;
 }
 
+/* 点赞功能样式 */
+.like-container {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.like-button {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 10px;
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.like-button:hover {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+.like-button.active {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #1976d2;
+}
+
+.like-button .like-icon {
+    margin-right: 6px;
+    font-size: 16px;
+}
+
+.like-button .like-count {
+    font-weight: bold;
+}
+
+.like-button.active .like-icon {
+    color: #1976d2;
+}
+
+.comment-item .like-container {
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+
+.comment-item .like-button {
+    padding: 3px 8px;
+    font-size: 12px;
+}
+
 /* 管理员标识 */
 .admin-badge {
     background-color: #ff9800;

@@ -266,6 +266,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             
+            // 添加点赞功能
+            const likeContainer = document.createElement('div');
+            likeContainer.className = 'like-container';
+            
+            // 获取点赞数据，将在loadIssueLikes函数中填充
+            const likeButton = document.createElement('button');
+            likeButton.className = 'like-button';
+            likeButton.innerHTML = `
+                <span class="like-icon">👍</span>
+                <span class="like-count">...</span>
+            `;
+            likeButton.setAttribute('data-issue-number', issue.number);
+            
+            // 添加点击事件，处理点赞
+            likeButton.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止冒泡，防止触发帖子详情查看
+                toggleIssueLike(issue.number, likeButton);
+            });
+            
+            likeContainer.appendChild(likeButton);
+            issueElement.appendChild(likeContainer);
+            
+            // 加载点赞状态和数量
+            loadIssueLikes(issue.number, likeButton);
+            
             // 添加点击事件
             issueElement.addEventListener('click', (e) => {
                 // 如果点击的是删除按钮，则执行删除操作
@@ -274,7 +299,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (confirm('确定要删除这个帖子吗？此操作不可撤销。')) {
                         deleteIssue(issue.number);
                     }
-                } else {
+                } else if (!e.target.closest('.like-button')) {
+                    // 如果点击的不是点赞按钮，则查看帖子详情
                     loadIssueDetails(issue.number);
                 }
             });
@@ -396,6 +422,37 @@ document.addEventListener('DOMContentLoaded', () => {
             // 转换Markdown(需要添加Markdown库)
             detailBody.innerHTML = issue.body;
             
+            // 添加点赞功能到详情页面
+            const detailContainer = document.querySelector('.issue-content');
+            const existingLikeContainer = detailContainer.querySelector('.like-container');
+            
+            if (existingLikeContainer) {
+                existingLikeContainer.remove(); // 移除已有的点赞容器（如果有）
+            }
+            
+            const likeContainer = document.createElement('div');
+            likeContainer.className = 'like-container';
+            
+            const likeButton = document.createElement('button');
+            likeButton.className = 'like-button';
+            likeButton.innerHTML = `
+                <span class="like-icon">👍</span>
+                <span class="like-count">...</span>
+            `;
+            likeButton.setAttribute('data-issue-number', issue.number);
+            
+            likeButton.addEventListener('click', () => {
+                toggleIssueLike(issue.number, likeButton);
+            });
+            
+            likeContainer.appendChild(likeButton);
+            
+            // 将点赞容器插入到帖子内容之后
+            detailBody.insertAdjacentElement('afterend', likeContainer);
+            
+            // 加载点赞状态和数量
+            loadIssueLikes(issue.number, likeButton);
+            
             // 加载评论
             loadComments(issueNumber);
         })
@@ -434,6 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
             comments.forEach(comment => {
                 const commentElement = document.createElement('div');
                 commentElement.className = 'comment-item';
+                commentElement.setAttribute('data-comment-id', comment.id);
                 
                 // 格式化日期
                 const createdDate = new Date(comment.created_at);
@@ -452,6 +510,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="comment-content">${comment.body}</div>
                 `;
+                
+                // 添加点赞功能
+                const likeContainer = document.createElement('div');
+                likeContainer.className = 'like-container';
+                
+                const likeButton = document.createElement('button');
+                likeButton.className = 'like-button';
+                likeButton.innerHTML = `
+                    <span class="like-icon">👍</span>
+                    <span class="like-count">...</span>
+                `;
+                likeButton.setAttribute('data-comment-id', comment.id);
+                
+                // 添加点击事件
+                likeButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleCommentLike(comment.id, likeButton);
+                });
+                
+                likeContainer.appendChild(likeButton);
+                commentElement.appendChild(likeContainer);
+                
+                // 加载点赞状态和数量
+                loadCommentLikes(comment.id, likeButton);
                 
                 // 添加删除评论的事件监听器
                 const deleteButton = commentElement.querySelector('.delete-comment-btn');
@@ -633,6 +715,31 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         
+        // 添加点赞功能
+        const likeContainer = document.createElement('div');
+        likeContainer.className = 'like-container';
+        
+        // 获取点赞数据，将在loadIssueLikes函数中填充
+        const likeButton = document.createElement('button');
+        likeButton.className = 'like-button';
+        likeButton.innerHTML = `
+            <span class="like-icon">👍</span>
+            <span class="like-count">...</span>
+        `;
+        likeButton.setAttribute('data-issue-number', issue.number);
+        
+        // 添加点击事件，处理点赞
+        likeButton.addEventListener('click', (e) => {
+            e.stopPropagation(); // 阻止冒泡，防止触发帖子详情查看
+            toggleIssueLike(issue.number, likeButton);
+        });
+        
+        likeContainer.appendChild(likeButton);
+        issueElement.appendChild(likeContainer);
+        
+        // 加载点赞状态和数量
+        loadIssueLikes(issue.number, likeButton);
+        
         // 添加点击事件
         issueElement.addEventListener('click', (e) => {
             // 如果点击的是删除按钮，则执行删除操作
@@ -641,7 +748,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (confirm('确定要删除这个帖子吗？此操作不可撤销。')) {
                     deleteIssue(issue.number);
                 }
-            } else {
+            } else if (!e.target.closest('.like-button')) {
+                // 如果点击的不是点赞按钮，则查看帖子详情
                 loadIssueDetails(issue.number);
             }
         });
@@ -1044,6 +1152,310 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentElement.style.opacity = '1';
                 commentElement.style.pointerEvents = 'auto';
             }
+        });
+    }
+    
+    // 加载帖子点赞状态和数量
+    function loadIssueLikes(issueNumber, buttonElement) {
+        // 获取点赞计数元素
+        const countElement = buttonElement.querySelector('.like-count');
+        
+        // 获取帖子的reactions
+        fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/reactions`, {
+            method: 'GET',
+            headers: {
+                ...getRequestHeaders(),
+                'Accept': 'application/vnd.github.squirrel-girl-preview+json' // 需要特定的预览头部
+            }
+        })
+        .then(response => {
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('加载点赞数据失败');
+            }
+            return response.json();
+        })
+        .then(reactions => {
+            // 筛选出thumbs_up类型的reactions
+            const thumbsUp = reactions.filter(reaction => reaction.content === '+1');
+            
+            // 更新计数
+            countElement.textContent = thumbsUp.length;
+            
+            // 检查当前用户是否已点赞
+            if (isAuthenticated()) {
+                const userLiked = thumbsUp.some(reaction => reaction.user.login === authData.username);
+                if (userLiked) {
+                    buttonElement.classList.add('active');
+                } else {
+                    buttonElement.classList.remove('active');
+                }
+            }
+        })
+        .catch(error => {
+            console.error(`加载点赞数据失败 (Issue #${issueNumber}):`, error);
+            countElement.textContent = '-';
+        });
+    }
+    
+    // 点赞或取消点赞帖子
+    function toggleIssueLike(issueNumber, buttonElement) {
+        // 如果用户未登录，则提示登录
+        if (!isAuthenticated()) {
+            showRateLimitWarning(issuesList, '请先登录后再点赞', 'error');
+            return;
+        }
+        
+        // 禁用按钮，防止重复点击
+        buttonElement.disabled = true;
+        
+        // 检查用户是否已点赞
+        const isAlreadyLiked = buttonElement.classList.contains('active');
+        const countElement = buttonElement.querySelector('.like-count');
+        const currentCount = parseInt(countElement.textContent) || 0;
+        
+        // 根据当前状态决定操作：点赞或取消点赞
+        if (isAlreadyLiked) {
+            // 取消点赞需要先获取reaction ID
+            getReactionId(issueNumber).then(reactionId => {
+                if (!reactionId) {
+                    buttonElement.disabled = false;
+                    return;
+                }
+                
+                // 发送删除reaction请求
+                fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/reactions/${reactionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        ...getRequestHeaders(),
+                        'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+                    }
+                })
+                .then(response => {
+                    checkRateLimit(response);
+                    if (!response.ok) {
+                        throw new Error('取消点赞失败');
+                    }
+                    
+                    // 更新UI
+                    buttonElement.classList.remove('active');
+                    countElement.textContent = Math.max(0, currentCount - 1);
+                    buttonElement.disabled = false;
+                })
+                .catch(error => {
+                    console.error('取消点赞失败:', error);
+                    buttonElement.disabled = false;
+                });
+            });
+        } else {
+            // 点赞操作
+            fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/reactions`, {
+                method: 'POST',
+                headers: {
+                    ...getRequestHeaders(),
+                    'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+                },
+                body: JSON.stringify({ content: '+1' }) // +1 表示点赞
+            })
+            .then(response => {
+                checkRateLimit(response);
+                if (!response.ok) {
+                    throw new Error('点赞失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // 更新UI
+                buttonElement.classList.add('active');
+                countElement.textContent = currentCount + 1;
+                buttonElement.disabled = false;
+            })
+            .catch(error => {
+                console.error('点赞失败:', error);
+                buttonElement.disabled = false;
+            });
+        }
+    }
+    
+    // 获取用户对指定issue的reaction ID
+    function getReactionId(issueNumber) {
+        return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/reactions`, {
+            method: 'GET',
+            headers: {
+                ...getRequestHeaders(),
+                'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+            }
+        })
+        .then(response => {
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('获取reactions失败');
+            }
+            return response.json();
+        })
+        .then(reactions => {
+            // 查找当前用户的点赞reaction
+            const userReaction = reactions.find(
+                reaction => reaction.user.login === authData.username && reaction.content === '+1'
+            );
+            
+            return userReaction ? userReaction.id : null;
+        })
+        .catch(error => {
+            console.error('获取reaction ID失败:', error);
+            return null;
+        });
+    }
+    
+    // 加载评论点赞状态和数量
+    function loadCommentLikes(commentId, buttonElement) {
+        // 获取点赞计数元素
+        const countElement = buttonElement.querySelector('.like-count');
+        
+        // 获取评论的reactions
+        fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}/reactions`, {
+            method: 'GET',
+            headers: {
+                ...getRequestHeaders(),
+                'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+            }
+        })
+        .then(response => {
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('加载评论点赞数据失败');
+            }
+            return response.json();
+        })
+        .then(reactions => {
+            // 筛选出thumbs_up类型的reactions
+            const thumbsUp = reactions.filter(reaction => reaction.content === '+1');
+            
+            // 更新计数
+            countElement.textContent = thumbsUp.length;
+            
+            // 检查当前用户是否已点赞
+            if (isAuthenticated()) {
+                const userLiked = thumbsUp.some(reaction => reaction.user.login === authData.username);
+                if (userLiked) {
+                    buttonElement.classList.add('active');
+                } else {
+                    buttonElement.classList.remove('active');
+                }
+            }
+        })
+        .catch(error => {
+            console.error(`加载评论点赞数据失败 (Comment #${commentId}):`, error);
+            countElement.textContent = '-';
+        });
+    }
+    
+    // 点赞或取消点赞评论
+    function toggleCommentLike(commentId, buttonElement) {
+        // 如果用户未登录，则提示登录
+        if (!isAuthenticated()) {
+            showRateLimitWarning(commentsList, '请先登录后再点赞', 'error');
+            return;
+        }
+        
+        // 禁用按钮，防止重复点击
+        buttonElement.disabled = true;
+        
+        // 检查用户是否已点赞
+        const isAlreadyLiked = buttonElement.classList.contains('active');
+        const countElement = buttonElement.querySelector('.like-count');
+        const currentCount = parseInt(countElement.textContent) || 0;
+        
+        // 根据当前状态决定操作：点赞或取消点赞
+        if (isAlreadyLiked) {
+            // 取消点赞需要先获取reaction ID
+            getCommentReactionId(commentId).then(reactionId => {
+                if (!reactionId) {
+                    buttonElement.disabled = false;
+                    return;
+                }
+                
+                // 发送删除reaction请求
+                fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}/reactions/${reactionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        ...getRequestHeaders(),
+                        'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+                    }
+                })
+                .then(response => {
+                    checkRateLimit(response);
+                    if (!response.ok) {
+                        throw new Error('取消评论点赞失败');
+                    }
+                    
+                    // 更新UI
+                    buttonElement.classList.remove('active');
+                    countElement.textContent = Math.max(0, currentCount - 1);
+                    buttonElement.disabled = false;
+                })
+                .catch(error => {
+                    console.error('取消评论点赞失败:', error);
+                    buttonElement.disabled = false;
+                });
+            });
+        } else {
+            // 点赞操作
+            fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}/reactions`, {
+                method: 'POST',
+                headers: {
+                    ...getRequestHeaders(),
+                    'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+                },
+                body: JSON.stringify({ content: '+1' })
+            })
+            .then(response => {
+                checkRateLimit(response);
+                if (!response.ok) {
+                    throw new Error('评论点赞失败');
+                }
+                return response.json();
+            })
+            .then(() => {
+                // 更新UI
+                buttonElement.classList.add('active');
+                countElement.textContent = currentCount + 1;
+                buttonElement.disabled = false;
+            })
+            .catch(error => {
+                console.error('评论点赞失败:', error);
+                buttonElement.disabled = false;
+            });
+        }
+    }
+    
+    // 获取用户对指定评论的reaction ID
+    function getCommentReactionId(commentId) {
+        return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}/reactions`, {
+            method: 'GET',
+            headers: {
+                ...getRequestHeaders(),
+                'Accept': 'application/vnd.github.squirrel-girl-preview+json'
+            }
+        })
+        .then(response => {
+            checkRateLimit(response);
+            if (!response.ok) {
+                throw new Error('获取评论reactions失败');
+            }
+            return response.json();
+        })
+        .then(reactions => {
+            // 查找当前用户的点赞reaction
+            const userReaction = reactions.find(
+                reaction => reaction.user.login === authData.username && reaction.content === '+1'
+            );
+            
+            return userReaction ? userReaction.id : null;
+        })
+        .catch(error => {
+            console.error('获取评论reaction ID失败:', error);
+            return null;
         });
     }
     
