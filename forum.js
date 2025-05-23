@@ -67,10 +67,20 @@ document.addEventListener('DOMContentLoaded', () => {
         token: ''
     };
     
+    // 用户个人资料
+    let userProfile = {
+        nickname: '',
+        signature: '',
+        avatarUrl: ''
+    };
+    
     // 初始化函数
     function init() {
         // 检查本地存储中是否有令牌
         loadAuthData();
+        
+        // 加载用户个人资料
+        loadUserProfile();
         
         // 设置事件监听器
         setupEventListeners();
@@ -255,15 +265,25 @@ document.addEventListener('DOMContentLoaded', () => {
             const deleteButtonHTML = isAdmin() ? 
                 `<button class="delete-issue-btn" data-issue-number="${issue.number}">删除</button>` : '';
             
+            // 获取用户显示名称和签名
+            const displayName = getDisplayName(issue.user.login);
+            const signature = getUserSignature(issue.user.login);
+            const signatureHTML = signature ? `<span class="user-signature">${signature}</span>` : '';
+            
+            // 如果显示名称与GitHub用户名不同，添加一个小标签显示GitHub用户名
+            const usernameBadgeHTML = (displayName !== issue.user.login) ? 
+                `<span class="user-badge">${issue.user.login}</span>` : '';
+            
             issueElement.innerHTML = `
                 <h3>${issue.title}</h3>
                 <div class="issue-meta">
-                    <span>作者: ${issue.user.login}</span>
+                    <span>作者: ${displayName}${usernameBadgeHTML}</span>
                     <span>发布于: ${formattedDate}</span>
                     ${labelHTML}
                     <span>评论: ${issue.comments}</span>
                     ${deleteButtonHTML}
                 </div>
+                ${signatureHTML}
             `;
             
             // 添加点赞功能
@@ -403,9 +423,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return response.json();
         })
         .then(issue => {
+            // 获取自定义用户信息
+            const displayName = getDisplayName(issue.user.login);
+            const usernameBadgeHTML = (displayName !== issue.user.login) ? 
+                `<span class="user-badge">${issue.user.login}</span>` : '';
+            
             // 更新详情内容
             detailTitle.textContent = issue.title;
-            detailAuthor.textContent = `作者: ${issue.user.login}`;
+            detailAuthor.innerHTML = `作者: ${displayName}${usernameBadgeHTML}`;
             
             // 格式化日期
             const createdDate = new Date(issue.created_at);
@@ -421,6 +446,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 转换Markdown(需要添加Markdown库)
             detailBody.innerHTML = issue.body;
+            
+            // 添加用户签名（如果有）
+            const signature = getUserSignature(issue.user.login);
+            if (signature) {
+                const signatureElement = document.createElement('div');
+                signatureElement.className = 'user-signature';
+                signatureElement.textContent = signature;
+                detailBody.insertAdjacentElement('beforebegin', signatureElement);
+            }
             
             // 添加点赞功能到详情页面
             const detailContainer = document.querySelector('.issue-content');
@@ -493,6 +527,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentElement.className = 'comment-item';
                 commentElement.setAttribute('data-comment-id', comment.id);
                 
+                // 获取自定义用户信息
+                const displayName = getDisplayName(comment.user.login);
+                const avatarUrl = getAvatarUrl(comment.user.login, comment.user.avatar_url);
+                const signature = getUserSignature(comment.user.login);
+                const usernameBadgeHTML = (displayName !== comment.user.login) ? 
+                    `<span class="user-badge">${comment.user.login}</span>` : '';
+                const signatureHTML = signature ? 
+                    `<div class="user-signature">${signature}</div>` : '';
+                
                 // 格式化日期
                 const createdDate = new Date(comment.created_at);
                 const formattedDate = createdDate.toLocaleDateString('zh-CN');
@@ -503,11 +546,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 commentElement.innerHTML = `
                     <div class="comment-header">
-                        <div class="comment-avatar" style="background-image: url(${comment.user.avatar_url})"></div>
-                        <span class="comment-author">${comment.user.login}</span>
+                        <div class="comment-avatar" style="background-image: url(${avatarUrl})"></div>
+                        <span class="comment-author">${displayName}${usernameBadgeHTML}</span>
                         <span class="comment-date">${formattedDate}</span>
                         ${deleteButtonHTML}
                     </div>
+                    ${signatureHTML}
                     <div class="comment-content">${comment.body}</div>
                 `;
                 
@@ -704,15 +748,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const deleteButtonHTML = isAdmin() ? 
             `<button class="delete-issue-btn" data-issue-number="${issue.number}">删除</button>` : '';
         
+        // 获取用户显示名称和签名
+        const displayName = getDisplayName(issue.user.login);
+        const signature = getUserSignature(issue.user.login);
+        const signatureHTML = signature ? `<span class="user-signature">${signature}</span>` : '';
+        
+        // 如果显示名称与GitHub用户名不同，添加一个小标签显示GitHub用户名
+        const usernameBadgeHTML = (displayName !== issue.user.login) ? 
+            `<span class="user-badge">${issue.user.login}</span>` : '';
+        
         issueElement.innerHTML = `
             <h3>${issue.title}</h3>
             <div class="issue-meta">
-                <span>作者: ${issue.user.login}</span>
+                <span>作者: ${displayName}${usernameBadgeHTML}</span>
                 <span>发布于: ${formattedDate}</span>
                 ${labelHTML}
                 <span>评论: ${issue.comments}</span>
                 ${deleteButtonHTML}
             </div>
+            ${signatureHTML}
         `;
         
         // 添加点赞功能
@@ -780,6 +834,13 @@ document.addEventListener('DOMContentLoaded', () => {
         authData = {
             username: '',
             token: ''
+        };
+        
+        // 清空用户个人资料显示
+        userProfile = {
+            nickname: '',
+            signature: '',
+            avatarUrl: ''
         };
         
         // 从本地存储移除
@@ -963,6 +1024,143 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
+    // 加载用户个人资料
+    function loadUserProfile() {
+        if (!isAuthenticated()) return;
+        
+        const storedProfile = localStorage.getItem(`userProfile_${authData.username}`);
+        if (storedProfile) {
+            try {
+                userProfile = JSON.parse(storedProfile);
+                
+                // 填充个人资料表单
+                const nicknameInput = document.getElementById('user-nickname');
+                const signatureInput = document.getElementById('user-signature');
+                const avatarUrlInput = document.getElementById('user-avatar-url');
+                const avatarPreview = document.getElementById('avatar-preview');
+                
+                if (nicknameInput) {
+                    nicknameInput.value = userProfile.nickname || '';
+                }
+                
+                if (signatureInput) {
+                    signatureInput.value = userProfile.signature || '';
+                }
+                
+                if (avatarUrlInput) {
+                    avatarUrlInput.value = userProfile.avatarUrl || '';
+                }
+                
+                if (avatarPreview) {
+                    const avatarUrl = userProfile.avatarUrl || authData.avatar_url;
+                    avatarPreview.style.backgroundImage = avatarUrl ? `url(${avatarUrl})` : 'none';
+                }
+            } catch (e) {
+                console.error('解析用户资料失败:', e);
+                localStorage.removeItem(`userProfile_${authData.username}`);
+            }
+        }
+    }
+    
+    // 保存用户个人资料
+    function saveUserProfile() {
+        if (!isAuthenticated()) return;
+        
+        localStorage.setItem(`userProfile_${authData.username}`, JSON.stringify(userProfile));
+    }
+    
+    // 处理个人资料表单提交
+    function handleProfileSubmit(e) {
+        e.preventDefault();
+        
+        const nicknameInput = document.getElementById('user-nickname');
+        const signatureInput = document.getElementById('user-signature');
+        const avatarUrlInput = document.getElementById('user-avatar-url');
+        
+        userProfile = {
+            nickname: nicknameInput.value.trim(),
+            signature: signatureInput.value.trim(),
+            avatarUrl: avatarUrlInput.value.trim()
+        };
+        
+        // 保存个人资料
+        saveUserProfile();
+        
+        // 显示成功消息
+        showRateLimitWarning(document.getElementById('profile-form'), '个人资料已更新', 'success');
+    }
+    
+    // 获取用户显示名称
+    function getDisplayName(username) {
+        // 如果是当前用户，且设置了昵称，则使用昵称
+        if (isAuthenticated() && authData.username === username && userProfile.nickname) {
+            return userProfile.nickname;
+        }
+        
+        // 获取存储的其他用户资料
+        const storedProfile = localStorage.getItem(`userProfile_${username}`);
+        if (storedProfile) {
+            try {
+                const profile = JSON.parse(storedProfile);
+                if (profile.nickname) {
+                    return profile.nickname;
+                }
+            } catch (e) {
+                console.error('解析其他用户资料失败:', e);
+            }
+        }
+        
+        // 默认返回GitHub用户名
+        return username;
+    }
+    
+    // 获取用户头像URL
+    function getAvatarUrl(username, defaultUrl) {
+        // 如果是当前用户，且设置了头像，则使用自定义头像
+        if (isAuthenticated() && authData.username === username && userProfile.avatarUrl) {
+            return userProfile.avatarUrl;
+        }
+        
+        // 获取存储的其他用户资料
+        const storedProfile = localStorage.getItem(`userProfile_${username}`);
+        if (storedProfile) {
+            try {
+                const profile = JSON.parse(storedProfile);
+                if (profile.avatarUrl) {
+                    return profile.avatarUrl;
+                }
+            } catch (e) {
+                console.error('解析其他用户头像失败:', e);
+            }
+        }
+        
+        // 默认返回GitHub头像
+        return defaultUrl;
+    }
+    
+    // 获取用户签名
+    function getUserSignature(username) {
+        // 如果是当前用户，且设置了签名，则使用签名
+        if (isAuthenticated() && authData.username === username && userProfile.signature) {
+            return userProfile.signature;
+        }
+        
+        // 获取存储的其他用户资料
+        const storedProfile = localStorage.getItem(`userProfile_${username}`);
+        if (storedProfile) {
+            try {
+                const profile = JSON.parse(storedProfile);
+                if (profile.signature) {
+                    return profile.signature;
+                }
+            } catch (e) {
+                console.error('解析其他用户签名失败:', e);
+            }
+        }
+        
+        return '';
+    }
+    
     // 设置事件监听器
     function setupEventListeners() {
         // 登录表单提交
@@ -1012,6 +1210,28 @@ document.addEventListener('DOMContentLoaded', () => {
             searchInput.value = '';
             loadIssues();
         });
+        
+        // 个人资料表单提交
+        const profileForm = document.getElementById('profile-form');
+        if (profileForm) {
+            profileForm.addEventListener('submit', handleProfileSubmit);
+        }
+        
+        // 头像URL输入框实时预览
+        const avatarUrlInput = document.getElementById('user-avatar-url');
+        const avatarPreview = document.getElementById('avatar-preview');
+        if (avatarUrlInput && avatarPreview) {
+            avatarUrlInput.addEventListener('input', () => {
+                const url = avatarUrlInput.value.trim();
+                if (url) {
+                    avatarPreview.style.backgroundImage = `url(${url})`;
+                } else {
+                    // 使用GitHub头像作为默认值
+                    avatarPreview.style.backgroundImage = authData.avatar_url ? 
+                        `url(${authData.avatar_url})` : 'none';
+                }
+            });
+        }
     }
     
     // 检查当前用户是否为管理员
