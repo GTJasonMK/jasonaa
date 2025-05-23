@@ -575,16 +575,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // 切换到讨论列表标签页
             showTabContent('discussions');
             
-            // 重新加载讨论列表
-            currentPage = 1;
-            loadIssues();
-            
             // 恢复按钮
             submitButton.disabled = false;
             submitButton.textContent = '发表';
             
             // 提示成功
             showRateLimitWarning(issuesList, '发表成功！', 'success');
+            
+            // 移除"没有找到讨论"提示（如果存在）
+            const noResults = issuesList.querySelector('.no-results');
+            if (noResults) {
+                noResults.remove();
+            }
+            
+            // 将新帖子添加到列表顶部，无需重新加载整个列表
+            addNewIssueToList(issue);
         })
         .catch(error => {
             console.error('创建讨论失败:', error);
@@ -594,6 +599,71 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.disabled = false;
             submitButton.textContent = '发表';
         });
+    }
+    
+    // 将新发布的帖子添加到列表顶部
+    function addNewIssueToList(issue) {
+        const issueElement = document.createElement('div');
+        issueElement.className = 'issue-item';
+        issueElement.setAttribute('data-issue-number', issue.number);
+        
+        // 获取标签
+        let labelHTML = '';
+        if (issue.labels && issue.labels.length > 0) {
+            const label = issue.labels[0].name;
+            labelHTML = `<span class="issue-label" data-label="${label}">${label}</span>`;
+        }
+        
+        // 格式化日期
+        const createdDate = new Date(issue.created_at);
+        const formattedDate = createdDate.toLocaleDateString('zh-CN');
+        
+        // 添加删除帖子的按钮（仅管理员可见）
+        const deleteButtonHTML = isAdmin() ? 
+            `<button class="delete-issue-btn" data-issue-number="${issue.number}">删除</button>` : '';
+        
+        issueElement.innerHTML = `
+            <h3>${issue.title}</h3>
+            <div class="issue-meta">
+                <span>作者: ${issue.user.login}</span>
+                <span>发布于: ${formattedDate}</span>
+                ${labelHTML}
+                <span>评论: ${issue.comments}</span>
+                ${deleteButtonHTML}
+            </div>
+        `;
+        
+        // 添加点击事件
+        issueElement.addEventListener('click', (e) => {
+            // 如果点击的是删除按钮，则执行删除操作
+            if (e.target.classList.contains('delete-issue-btn')) {
+                e.stopPropagation(); // 阻止事件冒泡
+                if (confirm('确定要删除这个帖子吗？此操作不可撤销。')) {
+                    deleteIssue(issue.number);
+                }
+            } else {
+                loadIssueDetails(issue.number);
+            }
+        });
+        
+        // 设置初始状态（为添加动画做准备）
+        issueElement.style.opacity = '0';
+        issueElement.style.maxHeight = '0';
+        issueElement.style.overflow = 'hidden';
+        issueElement.style.transition = 'all 0.5s ease';
+        
+        // 将新帖子添加到列表顶部
+        if (issuesList.firstChild) {
+            issuesList.insertBefore(issueElement, issuesList.firstChild);
+        } else {
+            issuesList.appendChild(issueElement);
+        }
+        
+        // 触发渲染并应用动画
+        setTimeout(() => {
+            issueElement.style.opacity = '1';
+            issueElement.style.maxHeight = '500px'; // 足够大的高度以适应内容
+        }, 50);
     }
     
     // 登出
@@ -848,6 +918,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // 显示删除中状态
+        const issueElement = document.querySelector(`.issue-item[data-issue-number="${issueNumber}"]`);
+        if (issueElement) {
+            issueElement.style.opacity = '0.5';
+            issueElement.style.pointerEvents = 'none';
+        }
+        
         fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}`, {
             method: 'PATCH',
             headers: getRequestHeaders(),
@@ -862,11 +939,43 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(() => {
             showRateLimitWarning(issuesList, '帖子已成功删除', 'success');
-            loadIssues(); // 重新加载列表
+            
+            // 从DOM中移除这个帖子元素，实现即时视觉反馈
+            if (issueElement) {
+                issueElement.style.height = `${issueElement.offsetHeight}px`; // 设置高度，准备动画
+                
+                // 添加过渡动画
+                issueElement.style.transition = 'all 0.3s ease';
+                issueElement.style.opacity = '0';
+                issueElement.style.height = '0';
+                issueElement.style.marginBottom = '0';
+                issueElement.style.padding = '0';
+                issueElement.style.overflow = 'hidden';
+                
+                // 等待动画完成后移除元素
+                setTimeout(() => {
+                    issueElement.remove();
+                    
+                    // 如果列表为空，显示提示信息
+                    if (issuesList.children.length === 0) {
+                        issuesList.innerHTML = '<div class="no-results">没有找到讨论</div>';
+                        pagination.innerHTML = '';
+                    }
+                }, 300);
+            } else {
+                // 如果找不到元素，则重新加载整个列表
+                loadIssues();
+            }
         })
         .catch(error => {
             console.error('删除帖子失败:', error);
             showRateLimitWarning(issuesList, `删除失败: ${error.message}`, 'error');
+            
+            // 恢复元素状态
+            if (issueElement) {
+                issueElement.style.opacity = '1';
+                issueElement.style.pointerEvents = 'auto';
+            }
         });
     }
     
@@ -875,6 +984,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!isAdmin()) {
             showRateLimitWarning(commentsList, '你没有权限执行此操作', 'error');
             return;
+        }
+        
+        // 找到要删除的评论元素
+        const commentElement = document.querySelector(`.delete-comment-btn[data-comment-id="${commentId}"]`).closest('.comment-item');
+        if (commentElement) {
+            // 显示删除中状态
+            commentElement.style.opacity = '0.5';
+            commentElement.style.pointerEvents = 'none';
         }
         
         fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}`, {
@@ -886,12 +1003,47 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error('删除评论失败');
             }
+            
             showRateLimitWarning(commentsList, '评论已成功删除', 'success');
-            loadComments(currentIssueNumber); // 重新加载评论
+            
+            // 从DOM中移除这个评论元素，实现即时视觉反馈
+            if (commentElement) {
+                // 先更新评论计数
+                const currentCount = parseInt(commentsCount.textContent) || 0;
+                commentsCount.textContent = Math.max(0, currentCount - 1);
+                
+                // 添加过渡动画
+                commentElement.style.height = `${commentElement.offsetHeight}px`; // 设置初始高度
+                commentElement.style.transition = 'all 0.3s ease';
+                commentElement.style.opacity = '0';
+                commentElement.style.height = '0';
+                commentElement.style.marginBottom = '0';
+                commentElement.style.padding = '0';
+                commentElement.style.overflow = 'hidden';
+                
+                // 等待动画完成后移除元素
+                setTimeout(() => {
+                    commentElement.remove();
+                    
+                    // 如果评论列表为空，显示提示信息
+                    if (commentsList.children.length === 0) {
+                        commentsList.innerHTML = '<div class="no-comments">还没有评论</div>';
+                    }
+                }, 300);
+            } else {
+                // 如果找不到元素，则重新加载所有评论
+                loadComments(currentIssueNumber);
+            }
         })
         .catch(error => {
             console.error('删除评论失败:', error);
             showRateLimitWarning(commentsList, `删除失败: ${error.message}`, 'error');
+            
+            // 恢复元素状态
+            if (commentElement) {
+                commentElement.style.opacity = '1';
+                commentElement.style.pointerEvents = 'auto';
+            }
         });
     }
     
