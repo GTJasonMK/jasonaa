@@ -4,63 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>多功能娱乐平台</title>
-    <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="music.css">
-    <style>
-        .settings-link {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            z-index: 100;
-        }
-        
-        .settings-link a {
-            display: flex;
-            align-items: center;
-            color: #ffffff;
-            font-weight: bold;
-            text-decoration: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            background-color: rgba(70, 130, 180, 0.8);
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s;
-        }
-        
-        .settings-link a:hover {
-            background-color: rgba(70, 130, 180, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .settings-icon {
-            display: inline-block;
-            margin-right: 8px;
-            width: 20px;
-            height: 20px;
-            background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIzIj48L2NpcmNsZT48cGF0aCBkPSJNMTkuNCAyMi40TDEyIDEybDQuNy00LjdNOC43IDE5LjJMNi4xIDE0LjVNMTYuMiA4LjlsLTEuOS00LjdNNy43IDcuOGwzLjgtMy44Ii8+PC9zdmc+');
-            background-repeat: no-repeat;
-            background-position: center;
-        }
-        
-        @media (max-width: 600px) {
-            .settings-link {
-                position: static;
-                text-align: right;
-                padding: 10px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/theme.css">
+    <link rel="stylesheet" href="music/music.css">
 </head>
 <body>
     <div class="container">
-        <!-- 设置链接（独立放置） -->
-        <div class="settings-link">
-            <a href="settings.html">
-                <span class="settings-icon"></span>
-                设置
-            </a>
-        </div>
+        <a href="settings/settings.html" class="settings-link" title="设置">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+        </a>
         
         <header>
             <h1>多功能娱乐平台</h1>
@@ -68,91 +23,106 @@
                 <ul>
                     <li><a href="#games" class="active">游戏</a></li>
                     <li><a href="#music">音乐练习</a></li>
-                    <li><a href="#forum">论坛</a></li>
+                    <li><a href="#forum">社区论坛</a></li>
                 </ul>
             </nav>
         </header>
         
-        <main>
-            <!-- 游戏板块 -->
-            <section id="games" class="section active">
-                <h2>游戏中心</h2>
-                <div class="game-grid">
-                    <div class="game-card" data-game="snake">
-                        <div class="game-icon">
-                            <img src="images/snake-icon.png" alt="贪吃蛇" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzRDQUY1MCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0xMCA4YTIgMiAwIDEgMSA0IDBINyIvPjxwYXRoIGQ9Ik0yIDhoMnY3YzAgMS42Ni44IDMgMi45NSAzSDEwdi01aDRWN2g0djEwYzAgMi0xIDMtMyAzaC0zYy0xLjk5IDAtNCAxLTQgM1Y5eiIvPjwvc3ZnPg=='">
-                        </div>
-                        <h3>贪吃蛇</h3>
-                        <p>经典的贪吃蛇游戏，移动蛇吃掉食物，不断变长</p>
-                    </div>
-                    
-                    <!-- 已完成的俄罗斯方块游戏 -->
-                    <div class="game-card" data-game="tetris">
-                        <div class="game-icon">
-                            <img src="images/tetris-icon.png" alt="俄罗斯方块" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzNGNTFCNSIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiLz48cmVjdCB4PSI4IiB5PSI0IiB3aWR0aD0iNCIgaGVpZ2h0PSI0Ii8+PHJlY3QgeD0iMTIiIHk9IjQiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiLz48cmVjdCB4PSIxMiIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNCIvPjxyZWN0IHg9IjgiIHk9IjEyIiB3aWR0aD0iNCIgaGVpZ2h0PSI0Ii8+PHJlY3QgeD0iOCIgeT0iOCIgd2lkdGg9IjQiIGhlaWdodD0iNCIvPjxyZWN0IHg9IjgiIHk9IjE2IiB3aWR0aD0iNCIgaGVpZ2h0PSI0Ii8+PHJlY3QgeD0iNCIgeT0iMTYiIHdpZHRoPSI0IiBoZWlnaHQ9IjQiLz48L3N2Zz4='">
-                        </div>
-                        <h3>俄罗斯方块</h3>
-                        <p>经典的俄罗斯方块游戏，通过旋转和移动方块完成消除</p>
-                    </div>
-                    
-                    <div class="game-card coming-soon">
-                        <div class="game-icon">
-                            <img src="images/memory-icon.png" alt="记忆游戏" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjgiIGhlaWdodD0iMTI4IiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI0ZGNTcyMiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjIiIHk9IjIiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PHJlY3QgeD0iMTYiIHk9IjIiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PHJlY3QgeD0iMiIgeT0iMTYiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PHJlY3QgeD0iMTYiIHk9IjE2IiB3aWR0aD0iNiIgaGVpZ2h0PSI2IiByeD0iMSIvPjxyZWN0IHg9IjkiIHk9IjkiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxIi8+PC9zdmc+'">
-                        </div>
-                        <h3>记忆游戏</h3>
-                        <p>敬请期待</p>
-                    </div>
-                </div>
-            </section>
+        <div class="platform-intro">
+            <h2>欢迎来到多功能娱乐平台</h2>
+            <p>我们提供丰富多样的娱乐和学习体验，从经典游戏到音乐练习，再到互动社区，一站式满足您的休闲时光。无论您是想要放松心情，提升技能，还是结交朋友，这里都能找到适合您的内容。</p>
+        </div>
 
-            <!-- 音乐板块 -->
-            <section id="music" class="section">
-                <h2>音乐练习</h2>
-                <div class="music-options">
-                    <div class="music-card" data-mode="scales">
-                        <h3>音阶练习</h3>
-                        <p>练习各种音阶，提高音乐技巧</p>
+        <div id="games" class="section active module-section">
+            <h2>休闲游戏</h2>
+            <p class="module-intro">精选经典休闲游戏，简单易上手，随时享受游戏乐趣。挑战自己的反应能力、逻辑思维和策略规划，在游戏中放松身心。</p>
+            <div class="game-grid">
+                <div class="game-card" onclick="window.location.href='games/snake/snake.html'">
+                    <div class="game-icon">
+                        <img src="images/snake.svg" alt="贪吃蛇">
                     </div>
-                    <div class="music-card" data-mode="single-note">
-                        <h3>单音辨听</h3>
-                        <p>训练辨别单个音符的能力</p>
-                    </div>
-                    <div class="music-card" data-mode="multi-note">
-                        <h3>多音辨听</h3>
-                        <p>训练辨别和弦和多个音符的能力</p>
-                    </div>
+                    <h3>贪吃蛇</h3>
+                    <p>经典游戏，控制小蛇吃食物，越长越好！</p>
                 </div>
-                <div id="music-app" class="music-container">
-                    <!-- 这里将根据选择加载不同的音乐练习内容 -->
+                <div class="game-card" onclick="window.location.href='games/tetris/tetris.html'">
+                    <div class="game-icon">
+                        <img src="images/tetris.svg" alt="俄罗斯方块">
+                    </div>
+                    <h3>俄罗斯方块</h3>
+                    <p>经典消除类游戏，考验你的空间思维！</p>
                 </div>
-            </section>
+                <div class="game-card" onclick="window.location.href='games/2048/2048.html'">
+                    <div class="game-icon">
+                        <img src="images/2048.svg" alt="2048">
+                    </div>
+                    <h3>2048</h3>
+                    <p>数字合并游戏，尝试合成2048吧！</p>
+                </div>
+                <div class="game-card coming-soon">
+                    <div class="game-icon">
+                        <img src="images/memory.svg" alt="记忆游戏">
+                    </div>
+                    <h3>记忆游戏</h3>
+                    <p>锻炼你的记忆力，匹配所有卡片！</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="music" class="section module-section">
+            <h2>音乐练习</h2>
+            <p class="module-intro">通过互动练习提升您的音乐技能，从音阶练习到多音辨听，帮助您在音乐之路上稳步前进。适合各个水平的音乐爱好者。</p>
+            <div class="music-options">
+                <div class="music-card" id="scales-training">
+                    <h3>音阶练习</h3>
+                    <p>学习和聆听不同音阶的音符组成</p>
+                </div>
+                <div class="music-card" id="single-note">
+                    <h3>单音辨听</h3>
+                    <p>训练您辨别单个音符的能力</p>
+                </div>
+                <div class="music-card" id="multi-note">
+                    <h3>多音辨听</h3>
+                    <p>挑战识别多个音符组成的旋律</p>
+                </div>
+                <div class="music-card" id="rhythm-training">
+                    <h3>节奏训练</h3>
+                    <p>跟随节奏模式，提高您的节奏感（开发中）</p>
+                </div>
+            </div>
             
-            <!-- 论坛板块 -->
-            <section id="forum" class="section">
-                <h2>社区论坛</h2>
-                <div class="forum-preview">
-                    <p class="description">欢迎来到我们的社区论坛！在这里你可以:</p>
-                    <ul class="features-list">
-                        <li>分享游戏心得和技巧</li>
-                        <li>讨论音乐练习方法</li>
-                        <li>提出问题和建议</li>
-                        <li>与其他用户交流互动</li>
-                    </ul>
-                    <div class="forum-card">
-                        <a href="forum.html" class="forum-button">进入论坛</a>
-                        <p>使用GitHub账号登录参与讨论</p>
-                    </div>
+            <div id="scales-training-container" class="music-container"></div>
+            <div id="single-note-container" class="music-container"></div>
+            <div id="multi-note-container" class="music-container"></div>
+            <div id="rhythm-training-container" class="music-container"></div>
+        </div>
+        
+        <div id="forum" class="section module-section">
+            <h2>社区论坛</h2>
+            <p class="module-intro">加入我们充满活力的社区，与志同道合的朋友交流讨论，分享游戏攻略、音乐心得，互相学习和成长。</p>
+            <div class="forum-preview">
+                <p class="description">我们的社区论坛是一个交流和分享的平台，您可以：</p>
+                <ul class="features-list">
+                    <li>分享游戏技巧和高分攻略</li>
+                    <li>讨论音乐学习心得和练习方法</li>
+                    <li>提出建议或报告问题</li>
+                    <li>与其他用户交流互动</li>
+                </ul>
+                <div class="forum-card">
+                    <a href="forum/forum.html" class="forum-button">进入论坛</a>
+                    <p>加入我们的社区，分享您的想法和经验！</p>
                 </div>
-            </section>
-        </main>
+            </div>
+        </div>
         
         <footer>
-            <p>© 2023 多功能娱乐平台 | <a href="https://github.com/yourusername/webgame" target="_blank">GitHub Pages</a></p>
+            <p>&copy; 2023 多功能娱乐平台 | <a href="https://github.com/username/online-games" target="_blank">在 GitHub Pages 上查看</a></p>
         </footer>
     </div>
-
+    
     <script src="config.js"></script>
+    <script src="js/settings-loader.js"></script>
+    <script src="js/theme.js"></script>
     <script src="main.js"></script>
-    <script src="music.js"></script>
+    <script src="music/music.js"></script>
 </body>
 </html> 

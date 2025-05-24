@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>俄罗斯方块 - 网页游戏</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../responsive_games.css">
+    <link rel="stylesheet" href="tetris_styles.css">
+    <link rel="stylesheet" href="../../css/theme.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>俄罗斯方块</h1>
+            <nav>
+                <ul>
+                    <li><a href="../../index.html">返回主页</a></li>
+                    <li><a href="../../settings/settings.html">设置</a></li>
+                </ul>
+            </nav>
+        </header>
+        
+        <div class="game-container tetris-container">
+            <div class="touch-instructions">
+                <p>移动端提示：使用下方按钮控制方块移动，或在游戏区域滑动：</p>
+                <ul>
+                    <li>向左/右滑动 - 移动方块</li>
+                    <li>向上滑动 - 旋转方块</li>
+                    <li>向下滑动 - 加速下落</li>
+                </ul>
+            </div>
+            
+            <div class="game-area">
+                <div class="tetris-board"></div>
+                
+                <div class="tetris-info">
+                    <div class="next-piece-container">
+                        <h3>下一个方块</h3>
+                        <div class="next-piece"></div>
+                    </div>
+                    
+                    <div class="stats">
+                        <h3>游戏统计</h3>
+                        <div class="stat-item">
+                            <span>分数:</span>
+                            <span id="score">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>等级:</span>
+                            <span id="level">1</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>消除行数:</span>
+                            <span id="lines">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="start-btn">开始游戏</button>
+                <button id="pause-btn" disabled>暂停</button>
+                <button id="reset-btn">重新开始</button>
+            </div>
+            
+            <div class="tetris-mobile-controls">
+                <button class="mobile-btn left">←</button>
+                <button class="mobile-btn rotate">↻</button>
+                <button class="mobile-btn right">→</button>
+                <button class="mobile-btn pause">⏸</button>
+                <button class="mobile-btn down">↓</button>
+                <button class="mobile-btn drop">⤓</button>
+            </div>
+        </div>
+        
+        <div class="game-over-overlay">
+            <h2>游戏结束!</h2>
+            <p>您的最终得分: <span class="final-score">0</span></p>
+            <button>再玩一次</button>
+        </div>
+        
+        <div class="game-instructions">
+            <h2>游戏规则</h2>
+            <p>俄罗斯方块是一款经典的方块消除游戏，你需要将不同形状的方块旋转并移动，使其在底部形成完整的一行或多行，从而消除它们。</p>
+            
+            <h3>控制方式:</h3>
+            <ul>
+                <li>← / → 键：左右移动方块</li>
+                <li>↑ 键：旋转方块</li>
+                <li>↓ 键：加速下落</li>
+                <li>空格键：快速下落（硬降）</li>
+                <li>P 键：暂停/继续游戏</li>
+            </ul>
+            
+            <h3>计分规则:</h3>
+            <ul>
+                <li>消除1行：100 × 当前等级</li>
+                <li>消除2行：300 × 当前等级</li>
+                <li>消除3行：500 × 当前等级</li>
+                <li>消除4行：800 × 当前等级</li>
+                <li>硬降：每下落1格得2分</li>
+            </ul>
+            
+            <p>每消除10行提升1个等级，游戏速度会随等级提高而加快。</p>
+        </div>
+    </div>
+    
+    <script src="tetris_script.js"></script>
+    <script src="../../js/settings-loader.js"></script>
+    <script src="../../js/theme.js"></script>
+</body>
+</html> 

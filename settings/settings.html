@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>设置 - 多功能娱乐平台</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/theme.css">
+    <link rel="stylesheet" href="settings.css">
+    <style>
+        /* 设置页面样式 */
+        .settings-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .settings-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--container-bg);
+        }
+        
+        .settings-section h2 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--box-shadow-color);
+            color: var(--header-color);
+        }
+        
+        .setting-item {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .setting-label {
+            flex: 1;
+            min-width: 200px;
+            margin-right: 15px;
+            color: var(--text-color);
+        }
+        
+        .setting-control {
+            flex: 2;
+            min-width: 200px;
+        }
+        
+        .setting-description {
+            flex-basis: 100%;
+            margin-top: 5px;
+            margin-left: 215px;
+            font-size: 0.85em;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        .range-display {
+            margin-left: 10px;
+            width: 40px;
+            display: inline-block;
+            text-align: center;
+            color: var(--text-color);
+        }
+        
+        .buttons-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: var(--button-hover);
+        }
+        
+        #reset-settings {
+            background-color: var(--accent-color);
+        }
+        
+        #reset-settings:hover {
+            background-color: var(--accent-color);
+            opacity: 0.8;
+        }
+
+        /* 选项卡样式在JS中定义 */
+        
+        /* 响应式设计 */
+        @media (max-width: 600px) {
+            .setting-label, .setting-control {
+                flex-basis: 100%;
+                min-width: 100%;
+                margin-right: 0;
+            }
+            
+            .setting-description {
+                margin-left: 0;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>多功能娱乐平台</h1>
+            <nav>
+                <ul>
+                    <li><a href="../index.html">返回主页</a></li>
+                    <li><a href="#" class="active">设置</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <main>
+            <div class="platform-intro">
+                <h2>系统设置</h2>
+                <p>在这里，您可以根据个人喜好自定义平台的各项设置。</p>
+            </div>
+            
+            <div class="settings-container module-section">
+                <!-- 设置选项卡导航 -->
+                <div class="settings-tabs">
+                    <button class="tab-button" data-target="ui-settings-tab">通用设置</button>
+                    <button class="tab-button" data-target="audio-settings-tab">音频设置</button>
+                    <button class="tab-button" data-target="music-settings-tab">音乐练习</button>
+                    <button class="tab-button" data-target="games-settings-tab">游戏设置</button>
+                    <button class="tab-button" data-target="forum-settings-tab">论坛设置</button>
+                </div>
+                
+                <!-- 通用设置选项卡 -->
+                <section class="settings-section" id="ui-settings-tab">
+                    <h2>通用设置</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="theme-select">主题</label>
+                        </div>
+                        <div class="setting-control">
+                            <select id="theme-select">
+                                <option value="light">浅色</option>
+                                <option value="dark" selected>深色</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">应用程序的整体颜色主题</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="font-size-slider">字体大小</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="font-size-slider" min="12" max="20" step="1" value="16">
+                            <span class="range-display" id="font-size-slider-value">16</span> px
+                        </div>
+                        <div class="setting-description">调整应用程序的基础字体大小</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="animation-toggle">界面动画</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="animation-toggle" checked>
+                        </div>
+                        <div class="setting-description">启用或禁用界面动画效果</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="high-contrast-toggle">高对比度模式</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="high-contrast-toggle">
+                        </div>
+                        <div class="setting-description">增加文本与背景间的对比度，提高可读性</div>
+                    </div>
+                </section>
+                
+                <!-- 音频设置选项卡 -->
+                <section class="settings-section" id="audio-settings-tab">
+                    <h2>音频设置</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="volume-slider">主音量</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.8">
+                            <span class="range-display" id="volume-slider-value">0.8</span>
+                        </div>
+                        <div class="setting-description">控制所有音频的播放音量</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="sound-effects-toggle">音效</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="sound-effects-toggle" checked>
+                        </div>
+                        <div class="setting-description">启用或禁用游戏音效</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="note-delay-slider">音符延迟时间</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="note-delay-slider" min="100" max="800" step="50" value="400">
+                            <span class="range-display" id="note-delay-slider-value">400</span> 毫秒
+                        </div>
+                        <div class="setting-description">旋律中音符之间的间隔时间</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="answer-delay-slider">答案反馈延迟</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="answer-delay-slider" min="500" max="2000" step="100" value="1000">
+                            <span class="range-display" id="answer-delay-slider-value">1000</span> 毫秒
+                        </div>
+                        <div class="setting-description">回答后反馈显示的持续时间</div>
+                    </div>
+                </section>
+                
+                <!-- 音乐练习设置选项卡 -->
+                <section class="settings-section" id="music-settings-tab">
+                    <h2>音乐练习设置</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="auto-play-next">自动播放下一题</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="auto-play-next" checked>
+                        </div>
+                        <div class="setting-description">答对后自动播放下一个音符</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="starting-difficulty">初始难度</label>
+                        </div>
+                        <div class="setting-control">
+                            <select id="starting-difficulty">
+                                <option value="0">基础</option>
+                                <option value="1">进阶</option>
+                                <option value="2">扩展</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">音符辨听训练的默认难度级别</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="melody-length">旋律长度</label>
+                        </div>
+                        <div class="setting-control">
+                            <select id="melody-length">
+                                <option value="3">3个音符</option>
+                                <option value="4">4个音符</option>
+                                <option value="5">5个音符</option>
+                                <option value="7">7个音符</option>
+                                <option value="9">9个音符</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">多音辨听训练的默认旋律长度</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="points-per-correct">每题得分</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="points-per-correct" min="5" max="20" step="5" value="10">
+                            <span class="range-display" id="points-per-correct-value">10</span> 分
+                        </div>
+                        <div class="setting-description">每个正确答案获得的分数</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="show-hints">显示提示</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="show-hints" checked>
+                        </div>
+                        <div class="setting-description">在练习中显示辅助提示</div>
+                    </div>
+                </section>
+                
+                <!-- 游戏设置选项卡 -->
+                <section class="settings-section" id="games-settings-tab">
+                    <h2>游戏设置</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="game-speed-slider">游戏速度</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="game-speed-slider" min="1" max="10" step="1" value="5">
+                            <span class="range-display" id="game-speed-slider-value">5</span>
+                        </div>
+                        <div class="setting-description">调整游戏的整体速度</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="vibration-feedback-toggle">震动反馈</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="vibration-feedback-toggle" checked>
+                        </div>
+                        <div class="setting-description">启用或禁用移动设备上的震动反馈</div>
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="snake-color-select">贪吃蛇颜色</label>
+                        </div>
+                        <div class="setting-control">
+                            <select id="snake-color-select">
+                                <option value="green">绿色</option>
+                                <option value="blue">蓝色</option>
+                                <option value="red">红色</option>
+                                <option value="yellow">黄色</option>
+                                <option value="rainbow">彩虹</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">贪吃蛇游戏中蛇的颜色</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="tetris-rotation-toggle">现代旋转系统</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="tetris-rotation-toggle">
+                        </div>
+                        <div class="setting-description">俄罗斯方块中使用现代旋转系统（SRS），否则使用经典旋转系统</div>
+                    </div>
+                </section>
+                
+                <!-- 论坛设置选项卡 -->
+                <section class="settings-section" id="forum-settings-tab">
+                    <h2>论坛设置</h2>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="show-avatars-toggle">显示头像</label>
+                        </div>
+                        <div class="setting-control">
+                            <input type="checkbox" id="show-avatars-toggle" checked>
+                        </div>
+                        <div class="setting-description">在论坛页面显示用户头像</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="comments-per-page">每页评论数</label>
+                        </div>
+                        <div class="setting-control">
+                            <select id="comments-per-page">
+                                <option value="5">5条</option>
+                                <option value="10" selected>10条</option>
+                                <option value="20">20条</option>
+                                <option value="50">50条</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">每页显示的评论数量</div>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <label for="default-sort">默认排序方式</label>
+                        </div>
+                        <div class="setting-control">
+                            <select id="default-sort">
+                                <option value="newest" selected>最新</option>
+                                <option value="oldest">最早</option>
+                                <option value="most-liked">最多点赞</option>
+                            </select>
+                        </div>
+                        <div class="setting-description">帖子和评论的默认排序方式</div>
+                    </div>
+                </section>
+                
+                <!-- 按钮区域 -->
+                <div class="buttons-container">
+                    <button id="save-settings" class="primary-button">保存设置</button>
+                    <button id="reset-settings">恢复默认设置</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2023 多功能娱乐平台</p>
+        </footer>
+    </div>
+
+    <script src="settings.js"></script>
+    <script src="../js/theme.js"></script>
+</body>
+</html> 
+</html> 

@@ -6,9 +6,9 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
-    background-color: #f9f9f9;
+    background-color: var(--forum-container-bg);
     border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px var(--box-shadow-color);
     margin-bottom: 20px;
 }
 
@@ -16,6 +16,7 @@ header h1 {
     margin: 0;
     font-size: 24px;
     flex-grow: 1;
+    color: var(--header-color);
 }
 
 header nav {
@@ -36,14 +37,14 @@ header nav ul li {
 
 header nav ul li a {
     text-decoration: none;
-    color: #4682b4;
+    color: var(--link-color);
     font-weight: bold;
     padding: 5px 10px;
     border-radius: 4px;
 }
 
 header nav ul li a.active {
-    background-color: #4682b4;
+    background-color: var(--primary-color);
     color: white;
 }
 
@@ -52,7 +53,7 @@ header nav ul li a.active {
     display: flex;
     align-items: center;
     padding: 5px 10px;
-    background-color: #f0f8ff;
+    background-color: var(--primary-color-transparent);
     border-radius: 4px;
 }
 
@@ -69,6 +70,7 @@ header nav ul li a.active {
     font-weight: bold;
     margin-right: 8px;
     font-size: 14px;
+    color: var(--text-color);
 }
 
 #logout-button {
@@ -80,9 +82,9 @@ header nav ul li a.active {
     max-width: 500px;
     margin: 0 auto;
     padding: 20px;
-    background-color: #f9f9f9;
+    background-color: var(--forum-container-bg);
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px var(--box-shadow-color);
 }
 
 .auth-panel {
@@ -91,7 +93,7 @@ header nav ul li a.active {
 
 .auth-panel h3 {
     margin-top: 0;
-    color: #333;
+    color: var(--header-color);
     font-size: 24px;
     margin-bottom: 20px;
     text-align: center;
@@ -105,15 +107,15 @@ header nav ul li a.active {
 }
 
 .auth-message.error {
-    background-color: #ffebee;
-    color: #c62828;
-    border: 1px solid #ef9a9a;
+    background-color: var(--accent-color-transparent);
+    color: var(--accent-color);
+    border: 1px solid var(--accent-color);
 }
 
 .auth-message.success {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #a5d6a7;
+    background-color: var(--secondary-color-transparent);
+    color: var(--secondary-color);
+    border: 1px solid var(--secondary-color);
 }
 
 .form-group {
@@ -124,7 +126,7 @@ header nav ul li a.active {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
-    color: #555;
+    color: var(--text-color);
 }
 
 .form-group input, 
@@ -132,9 +134,10 @@ header nav ul li a.active {
 .form-group textarea {
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-shadow-color);
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--forum-input-bg);
+    color: var(--text-color);
     font-size: 16px;
 }
 
@@ -146,7 +149,8 @@ header nav ul li a.active {
 .form-group small {
     display: block;
     margin-top: 5px;
-    color: #777;
+    color: var(--text-color);
+    opacity: 0.7;
     font-size: 12px;
 }
 
@@ -157,7 +161,7 @@ header nav ul li a.active {
 
 .primary-button {
     padding: 10px 25px;
-    background-color: #4682b4;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     border-radius: 4px;
@@ -168,15 +172,15 @@ header nav ul li a.active {
 }
 
 .primary-button:hover {
-    background-color: #3a6d96;
+    background-color: var(--button-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px var(--box-shadow-color);
 }
 
 .secondary-button {
     padding: 8px 15px;
-    background-color: #e0e0e0;
-    color: #333;
+    background-color: var(--card-bg);
+    color: var(--text-color);
     border: none;
     border-radius: 4px;
     cursor: pointer;
@@ -185,23 +189,25 @@ header nav ul li a.active {
 }
 
 .secondary-button:hover {
-    background-color: #d0d0d0;
+    background-color: var(--button-hover);
+    color: white;
 }
 
 .auth-help {
     margin-top: 20px;
     text-align: center;
     font-size: 14px;
-    color: #666;
+    color: var(--text-color);
 }
 
 .auth-help a {
-    color: #4682b4;
+    color: var(--link-color);
     text-decoration: none;
 }
 
 .auth-help a:hover {
     text-decoration: underline;
+    color: var(--link-hover);
 }
 
 /* 论坛内容样式 */
@@ -215,7 +221,7 @@ header nav ul li a.active {
 /* 标签页样式 */
 .forum-tabs {
     display: flex;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--box-shadow-color);
     margin-bottom: 20px;
 }
 
@@ -226,12 +232,12 @@ header nav ul li a.active {
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
-    color: #666;
+    color: var(--text-color);
     position: relative;
 }
 
 .tab-button.active {
-    color: #4682b4;
+    color: var(--primary-color);
 }
 
 .tab-button.active::after {
@@ -241,11 +247,12 @@ header nav ul li a.active {
     left: 0;
     width: 100%;
     height: 3px;
-    background-color: #4682b4;
+    background-color: var(--primary-color);
 }
 
 .tab-content {
     padding: 10px 0;
+    color: var(--text-color);
 }
 
 /* 过滤和搜索 */
@@ -258,9 +265,10 @@ header nav ul li a.active {
 
 #filter-label {
     padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    width: 150px;
+    border-radius: 5px;
+    border: 1px solid var(--box-shadow-color);
+    background-color: var(--forum-input-bg);
+    color: var(--text-color);
 }
 
 .search-box {
@@ -269,58 +277,57 @@ header nav ul li a.active {
 
 #search-input {
     padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px 0 0 4px;
-    width: 200px;
+    border: 1px solid var(--box-shadow-color);
+    border-radius: 5px 0 0 5px;
+    background-color: var(--forum-input-bg);
+    color: var(--text-color);
 }
 
 #search-button {
     padding: 8px 15px;
-    background-color: #4682b4;
+    background-color: var(--primary-color);
     color: white;
     border: none;
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 5px 5px 0;
     cursor: pointer;
 }
 
 /* 讨论列表 - 增加样式突出展示 */
 .issues-list {
     margin-bottom: 20px;
-    background-color: white;
+    background-color: var(--forum-card-bg);
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px var(--box-shadow-color);
     padding: 15px;
 }
 
 .issue-item {
-    padding: 18px;
-    border: 1px solid #eaeaea;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    transition: all 0.3s ease;
+    padding: 15px;
+    background-color: var(--forum-card-bg);
+    border-bottom: 1px solid var(--box-shadow-color);
     cursor: pointer;
-    background-color: #fafafa;
+    transition: all 0.3s ease;
 }
 
 .issue-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-    border-color: #4682b4;
+    background-color: var(--primary-color-transparent);
+    transform: translateY(-2px);
 }
 
 .issue-item h3 {
     margin-top: 0;
-    margin-bottom: 12px;
-    color: #333;
+    margin-bottom: 10px;
     font-size: 18px;
+    color: var(--header-color);
 }
 
 .issue-meta {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
+    flex-wrap: wrap;
     font-size: 14px;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.8;
 }
 
 .issue-meta > span {
@@ -328,34 +335,37 @@ header nav ul li a.active {
 }
 
 .issue-label {
-    display: inline-block;
-    padding: 3px 8px;
+    padding: 2px 8px;
     border-radius: 12px;
     font-size: 12px;
     font-weight: bold;
-    color: white;
 }
 
 .issue-label[data-label="游戏"] {
-    background-color: #4caf50;
+    background-color: var(--forum-issue-label-game);
+    color: var(--primary-color);
 }
 
 .issue-label[data-label="音乐"] {
-    background-color: #2196f3;
+    background-color: var(--forum-issue-label-music);
+    color: var(--secondary-color);
 }
 
 .issue-label[data-label="问题"] {
-    background-color: #f44336;
+    background-color: var(--forum-issue-label-problem);
+    color: var(--accent-color);
 }
 
 .issue-label[data-label="建议"] {
-    background-color: #ff9800;
+    background-color: var(--forum-issue-label-suggestion);
+    color: var(--accent-color);
 }
 
 .loading {
     text-align: center;
     padding: 20px;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.7;
     font-style: italic;
 }
 
@@ -369,27 +379,28 @@ header nav ul li a.active {
 .page-button {
     padding: 6px 12px;
     margin: 0 5px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-shadow-color);
     border-radius: 4px;
-    background-color: white;
+    background-color: var(--forum-card-bg);
+    color: var(--text-color);
     cursor: pointer;
 }
 
 .page-button.active {
-    background-color: #4682b4;
+    background-color: var(--primary-color);
     color: white;
-    border-color: #4682b4;
+    border-color: var(--primary-color);
 }
 
 .page-button:hover:not(.active) {
-    background-color: #f0f0f0;
+    background-color: var(--container-bg);
 }
 
 /* 帖子详情 - 增强样式 */
 .issue-detail {
-    background-color: white;
+    background-color: var(--forum-card-bg);
     border-radius: 8px;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 15px var(--box-shadow-color);
     padding: 25px;
     max-width: 900px;
     margin: 0 auto;
@@ -401,7 +412,7 @@ header nav ul li a.active {
 
 .issue-header {
     padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--box-shadow-color);
     margin-bottom: 20px;
 }
 
@@ -409,20 +420,20 @@ header nav ul li a.active {
     margin-top: 0;
     margin-bottom: 15px;
     font-size: 24px;
-    color: #333;
+    color: var(--header-color);
 }
 
 .issue-body {
     padding: 15px 0;
     line-height: 1.7;
     font-size: 16px;
-    color: #333;
+    color: var(--text-color);
 }
 
 /* 代码和Markdown格式 */
 .issue-body pre, 
 .comment-content pre {
-    background-color: #f5f5f5;
+    background-color: var(--container-bg);
     padding: 15px;
     border-radius: 4px;
     overflow-x: auto;
@@ -431,7 +442,7 @@ header nav ul li a.active {
 
 .issue-body code,
 .comment-content code {
-    background-color: #f5f5f5;
+    background-color: var(--container-bg);
     padding: 2px 5px;
     border-radius: 3px;
     font-family: monospace;
@@ -440,7 +451,7 @@ header nav ul li a.active {
 /* 评论区 - 增强视觉效果 */
 .comments-section {
     margin-top: 30px;
-    background-color: #fafafa;
+    background-color: var(--container-bg);
     border-radius: 8px;
     padding: 20px;
 }
@@ -448,8 +459,8 @@ header nav ul li a.active {
 .comments-section h4 {
     font-size: 18px;
     margin-bottom: 20px;
-    color: #333;
-    border-bottom: 2px solid #eaeaea;
+    color: var(--header-color);
+    border-bottom: 2px solid var(--box-shadow-color);
     padding-bottom: 10px;
 }
 
@@ -459,18 +470,18 @@ header nav ul li a.active {
 
 .comment-item {
     padding: 18px;
-    border: 1px solid #eee;
+    border: 1px solid var(--box-shadow-color);
     border-radius: 8px;
     margin-bottom: 15px;
-    background-color: white;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    background-color: var(--forum-card-bg);
+    box-shadow: 0 1px 3px var(--box-shadow-color);
 }
 
 .comment-header {
     display: flex;
     align-items: center;
     margin-bottom: 12px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--box-shadow-color);
     padding-bottom: 8px;
 }
 
@@ -486,22 +497,25 @@ header nav ul li a.active {
 .comment-author {
     font-weight: bold;
     margin-right: 10px;
+    color: var(--text-color);
 }
 
 .comment-date {
     font-size: 14px;
-    color: #777;
+    color: var(--text-color);
+    opacity: 0.7;
 }
 
 .comment-content {
     line-height: 1.6;
+    color: var(--text-color);
 }
 
 .comment-form {
-    background-color: #f9f9f9;
+    background-color: var(--container-bg);
     padding: 20px;
     border-radius: 8px;
-    border: 1px solid #eaeaea;
+    border: 1px solid var(--box-shadow-color);
 }
 
 /* 响应式设计 */
@@ -581,9 +595,9 @@ header nav ul li a.active {
 
 /* 频率限制警告 */
 .rate-limit-warning {
-    background-color: #fff3e0;
-    border: 1px solid #ffcc80;
-    color: #e65100;
+    background-color: var(--accent-color-transparent);
+    border: 1px solid var(--accent-color);
+    color: var(--accent-color);
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 15px;
@@ -612,20 +626,21 @@ button:disabled:hover {
 /* 删除按钮样式 */
 .delete-issue-btn,
 .delete-comment-btn {
-    background-color: #f44336;
+    background-color: var(--accent-color);
     color: white;
     border: none;
+    padding: 5px 10px;
     border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
     cursor: pointer;
-    margin-left: 10px;
-    transition: background-color 0.3s;
+    font-size: 12px;
+    margin-right: 5px;
+    transition: all 0.3s ease;
 }
 
 .delete-issue-btn:hover,
 .delete-comment-btn:hover {
-    background-color: #d32f2f;
+    background-color: var(--accent-color);
+    opacity: 0.8;
 }
 
 .delete-comment-btn {
@@ -643,26 +658,26 @@ button:disabled:hover {
 
 .like-button {
     background: none;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-shadow-color);
     border-radius: 4px;
     padding: 5px 10px;
     display: flex;
     align-items: center;
     font-size: 14px;
-    color: #666;
+    color: var(--text-color);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .like-button:hover {
-    background-color: #f0f0f0;
-    border-color: #ccc;
+    background-color: var(--container-bg);
+    border-color: var(--primary-color);
 }
 
 .like-button.active {
-    background-color: #e3f2fd;
-    border-color: #90caf9;
-    color: #1976d2;
+    background-color: var(--primary-color-transparent);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
 }
 
 .like-button .like-icon {
@@ -675,7 +690,7 @@ button:disabled:hover {
 }
 
 .like-button.active .like-icon {
-    color: #1976d2;
+    color: var(--primary-color);
 }
 
 .comment-item .like-container {
@@ -693,18 +708,18 @@ button:disabled:hover {
     max-width: 700px;
     margin: 0 auto;
     padding: 20px;
-    background-color: white;
+    background-color: var(--forum-card-bg);
     border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 10px var(--box-shadow-color);
 }
 
 .profile-container h3 {
     margin-top: 0;
     margin-bottom: 20px;
-    color: #333;
+    color: var(--header-color);
     font-size: 24px;
     text-align: center;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--box-shadow-color);
     padding-bottom: 15px;
 }
 
@@ -713,10 +728,10 @@ button:disabled:hover {
     height: 100px;
     border-radius: 50%;
     margin: 10px 0;
-    background-color: #f5f5f5;
+    background-color: var(--container-bg);
     background-size: cover;
     background-position: center;
-    border: 1px solid #ddd;
+    border: 1px solid var(--box-shadow-color);
 }
 
 .user-badge {
@@ -724,13 +739,14 @@ button:disabled:hover {
     padding: 2px 6px;
     border-radius: 10px;
     margin-left: 6px;
-    background-color: #e3f2fd;
-    color: #1976d2;
+    background-color: var(--primary-color-transparent);
+    color: var(--primary-color);
 }
 
 .user-signature {
     font-style: italic;
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.7;
     margin-top: 5px;
     font-size: 13px;
     line-height: 1.4;
@@ -741,12 +757,12 @@ button:disabled:hover {
 .admin-settings {
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--box-shadow-color);
 }
 
 .admin-settings h3 {
     margin-top: 0;
-    color: #333;
+    color: var(--header-color);
     font-size: 20px;
     text-align: center;
     margin-bottom: 15px;
@@ -755,10 +771,10 @@ button:disabled:hover {
 .admins-list {
     max-height: 250px;
     overflow-y: auto;
-    border: 1px solid #eee;
+    border: 1px solid var(--box-shadow-color);
     border-radius: 4px;
     padding: 10px;
-    background-color: #fafafa;
+    background-color: var(--container-bg);
     margin-top: 10px;
 }
 
@@ -767,7 +783,7 @@ button:disabled:hover {
     justify-content: space-between;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--box-shadow-color);
 }
 
 .admin-item:last-child {
@@ -776,11 +792,11 @@ button:disabled:hover {
 
 .admin-name {
     font-weight: bold;
-    color: #333;
+    color: var(--text-color);
 }
 
 .admin-owner-badge {
-    background-color: #ff9800;
+    background-color: var(--accent-color);
     color: white;
     border-radius: 4px;
     padding: 2px 6px;
@@ -789,7 +805,7 @@ button:disabled:hover {
 }
 
 .remove-admin-btn {
-    background-color: #f44336;
+    background-color: var(--accent-color);
     color: white;
     border: none;
     border-radius: 4px;
@@ -799,12 +815,13 @@ button:disabled:hover {
 }
 
 .remove-admin-btn:hover {
-    background-color: #d32f2f;
+    background-color: var(--accent-color);
+    opacity: 0.8;
 }
 
 /* 管理员标识 */
 .admin-badge {
-    background-color: #ff9800;
+    background-color: var(--accent-color);
     color: white;
     border-radius: 4px;
     padding: 2px 6px;

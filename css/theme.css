@@ -1,0 +1,149 @@
+/* 主题颜色系统 */
+:root {
+    /* 深色主题为默认 */
+    --bg-color: #2c3e50;
+    --container-bg: #34495e;
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --text-color: #ecf0f1;
+    --header-color: #ffffff;
+    --link-color: #3498db;
+    --link-hover: #1abc9c;
+    --button-bg: #3498db;
+    --button-hover: #2980b9;
+    --card-bg: #34495e;
+    --box-shadow-color: rgba(0, 0, 0, 0.2);
+    
+    /* 半透明颜色变量 */
+    --primary-color-transparent: rgba(52, 152, 219, 0.3);
+    --secondary-color-transparent: rgba(46, 204, 113, 0.3);
+    --accent-color: #e74c3c;
+    --accent-color-transparent: rgba(231, 76, 60, 0.3);
+    
+    /* 游戏特定颜色 */
+    --tetris-board-bg: #333;
+    --tetris-board-border: #555;
+    --tetris-cell-bg: #1a1a1a;
+    --tetris-stats-bg: #444;
+    --tetris-button-bg: #72c3dc;
+    --tetris-button-hover: #5da8c0;
+    
+    --game2048-board-bg: #bbada0;
+    --game2048-cell-bg: #cdc1b4;
+    --game2048-button-bg: #8f7a66;
+    --game2048-button-hover: #9f8b77;
+    
+    --snake-board-bg: #333;
+    --snake-food: #e74c3c;
+    --snake-body: #3498db;
+    
+    /* 音乐模块特定颜色 */
+    --music-card-bg: #2c3e50;
+    --music-card-active: #3498db;
+    --note-correct: #2ecc71;
+    --note-incorrect: #e74c3c;
+    --piano-white-key: #ffffff;
+    --piano-black-key: #1a1a1a;
+    
+    /* 论坛模块特定颜色 */
+    --forum-container-bg: #34495e;
+    --forum-card-bg: #2c3e50;
+    --forum-input-bg: #34495e;
+    --forum-issue-label-game: rgba(52, 152, 219, 0.3);
+    --forum-issue-label-music: rgba(46, 204, 113, 0.3);
+    --forum-issue-label-problem: rgba(231, 76, 60, 0.3);
+    --forum-issue-label-suggestion: rgba(255, 193, 7, 0.3);
+}
+
+/* 明亮主题 */
+.light-theme {
+    --bg-color: #f5f7fa;
+    --container-bg: #ffffff;
+    --primary-color: #3498db;
+    --secondary-color: #2ecc71;
+    --text-color: #333333;
+    --header-color: #2c3e50;
+    --link-color: #3498db;
+    --link-hover: #1abc9c;
+    --button-bg: #3498db;
+    --button-hover: #2980b9;
+    --card-bg: #ffffff;
+    --box-shadow-color: rgba(0, 0, 0, 0.1);
+    
+    /* 半透明颜色变量 */
+    --primary-color-transparent: rgba(52, 152, 219, 0.2);
+    --secondary-color-transparent: rgba(46, 204, 113, 0.2);
+    --accent-color: #e74c3c;
+    --accent-color-transparent: rgba(231, 76, 60, 0.2);
+    
+    /* 游戏特定颜色 */
+    --tetris-board-bg: #e5e5e5;
+    --tetris-board-border: #bbbbbb;
+    --tetris-cell-bg: #f5f5f5;
+    --tetris-stats-bg: #f0f0f0;
+    --tetris-button-bg: #72c3dc;
+    --tetris-button-hover: #5da8c0;
+    
+    --game2048-board-bg: #bbada0;
+    --game2048-cell-bg: #cdc1b4;
+    --game2048-button-bg: #8f7a66;
+    --game2048-button-hover: #9f8b77;
+    
+    --snake-board-bg: #e5e5e5;
+    --snake-food: #e74c3c;
+    --snake-body: #3498db;
+    
+    /* 音乐模块特定颜色 */
+    --music-card-bg: #f0f0f0;
+    --music-card-active: #3498db;
+    --note-correct: #2ecc71;
+    --note-incorrect: #e74c3c;
+    --piano-white-key: #ffffff;
+    --piano-black-key: #1a1a1a;
+    
+    /* 论坛模块特定颜色 */
+    --forum-container-bg: #f5f5f5;
+    --forum-card-bg: #ffffff;
+    --forum-input-bg: #ffffff;
+    --forum-issue-label-game: rgba(52, 152, 219, 0.2);
+    --forum-issue-label-music: rgba(46, 204, 113, 0.2);
+    --forum-issue-label-problem: rgba(231, 76, 60, 0.2);
+    --forum-issue-label-suggestion: rgba(255, 193, 7, 0.2);
+}
+
+/* 主题切换按钮样式 */
+.theme-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: var(--button-bg);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 8px var(--box-shadow-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    background-color: var(--button-hover);
+}
+
+/* 媒体查询适配移动设备 */
+@media (max-width: 768px) {
+    .theme-toggle {
+        width: 40px;
+        height: 40px;
+        bottom: 10px;
+        right: 10px;
+        font-size: 16px;
+    }
+} 
