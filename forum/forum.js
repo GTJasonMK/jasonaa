@@ -161,53 +161,144 @@ document.addEventListener('DOMContentLoaded', () => {
         authenticateUser(username, token);
     }
     
-    // 验证用户
-    function authenticateUser(username, token) {
+    // 验证用户 - 完全阻止没有gist权限的用户登录
+    async function authenticateUser(username, token) {
         // 显示加载消息
         showMessage(loginMessage, '正在验证...', '');
         
-        // 使用令牌验证GitHub API
-        fetch(`${GITHUB_API_URL}/user`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `token ${token}`,
-                'Accept': 'application/vnd.github.v3+json'
+        try {
+            // 步骤1: 基本认证 - 验证token是否有效
+            const userResponse = await fetch(`${GITHUB_API_URL}/user`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            checkRateLimit(userResponse);
+            if (!userResponse.ok) {
+                throw new Error(`Token无效，HTTP状态: ${userResponse.status}`);
             }
-        })
-        .then(response => {
-            checkRateLimit(response);
-            if (!response.ok) {
-                throw new Error('认证失败');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.login.toLowerCase() === username.toLowerCase()) {
-                // 保存认证数据
-                authData = {
-                    username: data.login,
-                    token: token,
-                    avatar_url: data.avatar_url
-                };
-                
-                // 保存到本地存储
-                saveAuthData();
-                
-                // 显示成功消息
-                showMessage(loginMessage, '登录成功！正在加载论坛...', 'success');
-                
-                // 显示论坛内容
-                setTimeout(() => {
-                    showForumContent();
-                    loadIssues();
-                }, 1000);
-            } else {
+            
+            const userData = await userResponse.json();
+            if (userData.login.toLowerCase() !== username.toLowerCase()) {
                 throw new Error('令牌与用户名不匹配');
             }
-        })
-        .catch(error => {
+            
+            // 步骤2: 严格检查gist权限
+            showMessage(loginMessage, '正在检查gist权限...', '');
+            const hasGistPermission = await checkGistPermission(token);
+            
+            if (!hasGistPermission) {
+                throw new Error('令牌缺少gist权限。请创建一个同时具有public_repo和gist权限的令牌。');
+            }
+            
+            // 步骤3: 所有检查通过，完成登录
+            authData = {
+                username: userData.login,
+                token: token,
+                avatar_url: userData.avatar_url,
+                hasGistPermission: true
+            };
+            
+            // 保存到本地存储
+            saveAuthData();
+            
+            // 显示成功消息
+            showMessage(loginMessage, '登录成功！正在加载论坛...', 'success');
+            
+            // 显示论坛内容
+            setTimeout(() => {
+                showForumContent();
+                loadIssues();
+            }, 2000);
+            
+        } catch (error) {
             console.error('认证错误:', error);
-            showMessage(loginMessage, '认证失败: ' + error.message, 'error');
+            showMessage(loginMessage, '登录失败: ' + error.message, 'error');
+        }
+    }
+    
+    // 检查令牌是否具有gist权限 - 使用更可靠的方法
+    async function checkGistPermission(token) {
+        try {
+            // 尝试创建一个临时私有Gist，这是最准确的权限检查方法
+            const testGistResponse = await fetch(`${GITHUB_API_URL}/gists`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    description: "权限测试Gist - 将被立即删除",
+                    public: false,
+                    files: {
+                        "permission_test.txt": {
+                            content: "这是一个临时文件，用于测试Token是否有gist权限。"
+                        }
+                    }
+                })
+            });
+            
+            // 如果响应不是201 Created，则没有gist权限
+            if (testGistResponse.status !== 201) {
+                console.log("Gist权限检查失败，HTTP状态:", testGistResponse.status);
+                return false;
+            }
+            
+            // 获取临时Gist的ID，然后删除它
+            const gistData = await testGistResponse.json();
+            if (gistData && gistData.id) {
+                // 删除测试Gist
+                try {
+                    await fetch(`${GITHUB_API_URL}/gists/${gistData.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                } catch (deleteError) {
+                    console.error("删除测试Gist失败:", deleteError);
+                    // 即使删除失败，我们已经确认有gist权限
+                }
+                
+                console.log("Gist权限检查成功");
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('检查gist权限失败:', error);
+            return false;
+        }
+    }
+    
+    // 显示权限警告
+    function showPermissionWarning() {
+        // 创建警告元素
+        const warningElement = document.createElement('div');
+        warningElement.className = 'permission-warning';
+        warningElement.innerHTML = `
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-content">
+                <h4>权限不足提示</h4>
+                <p>当前令牌缺少gist权限，您的个人资料信息只能保存在本地设备，无法跨设备同步。</p>
+                <p>建议：<a href="https://github.com/settings/tokens" target="_blank">创建新的访问令牌</a>，同时勾选 <code>public_repo</code> 和 <code>gist</code> 权限。</p>
+                <button class="close-warning">我知道了</button>
+            </div>
+        `;
+        
+        // 添加到页面
+        const forumContainer = document.getElementById('forum-container');
+        forumContainer.insertBefore(warningElement, forumContainer.firstChild);
+        
+        // 添加关闭按钮事件
+        const closeButton = warningElement.querySelector('.close-warning');
+        closeButton.addEventListener('click', () => {
+            warningElement.style.display = 'none';
         });
     }
     
@@ -1405,6 +1496,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (storedData) {
             try {
                 authData = JSON.parse(storedData);
+                
+                // 如果没有权限信息，添加一个默认值
+                if (typeof authData.hasGistPermission === 'undefined') {
+                    // 先假设没有权限，后续会重新检查
+                    authData.hasGistPermission = false;
+                }
             } catch (e) {
                 console.error('解析认证数据失败:', e);
                 localStorage.removeItem('forumAuthData');
@@ -1422,6 +1519,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // 初始化检查状态
         statusElement.className = 'gist-sync-status checking';
         statusElement.querySelector('.status-text').textContent = '检查同步状态...';
+        
+        // 检查是否有gist权限
+        if (!authData.hasGistPermission) {
+            statusElement.className = 'gist-sync-status not-synced';
+            statusElement.querySelector('.status-text').textContent = '无法同步到Gist（令牌缺少gist权限）';
+            return false;
+        }
         
         try {
             // 检查是否有Gist ID
@@ -2649,17 +2753,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // 先保存到localStorage作为备份
         localStorage.setItem(`userProfile_${authData.username}`, JSON.stringify(userProfile));
         
-        // 尝试保存到Gist
+        // 更新Gist同步状态元素
+        const statusElement = document.getElementById('gist-sync-status');
+        
+        // 检查是否有gist权限
+        if (!authData.hasGistPermission) {
+            // 没有权限，显示提示
+            if (statusElement) {
+                statusElement.className = 'gist-sync-status not-synced';
+                statusElement.querySelector('.status-text').textContent = '无法同步到Gist（令牌缺少gist权限）';
+            }
+            return false;
+        }
+        
+        // 有权限，尝试保存到Gist
         try {
             const gistData = await createOrUpdateProfileGist(userProfile);
             
             // 更新Gist同步状态
-            if (gistData) {
-                const statusElement = document.getElementById('gist-sync-status');
-                if (statusElement) {
-                    statusElement.className = 'gist-sync-status synced';
-                    statusElement.querySelector('.status-text').textContent = '已同步到Gist (刚刚)';
-                }
+            if (gistData && statusElement) {
+                statusElement.className = 'gist-sync-status synced';
+                statusElement.querySelector('.status-text').textContent = '已同步到Gist (刚刚)';
             }
             
             return !!gistData;
@@ -2667,7 +2781,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('保存用户个人资料失败:', error);
             
             // 更新Gist同步状态为错误
-            const statusElement = document.getElementById('gist-sync-status');
             if (statusElement) {
                 statusElement.className = 'gist-sync-status error';
                 statusElement.querySelector('.status-text').textContent = `同步失败: ${error.message}`;
