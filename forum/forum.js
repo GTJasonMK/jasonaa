@@ -169,11 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // 步骤1: 基本认证 - 验证token是否有效
             const userResponse = await fetch(`${GITHUB_API_URL}/user`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
+            method: 'GET',
+            headers: {
+                'Authorization': `token ${token}`,
+                'Accept': 'application/vnd.github.v3+json'
+            }
             });
             
             checkRateLimit(userResponse);
@@ -195,23 +195,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // 步骤3: 所有检查通过，完成登录
-            authData = {
+                authData = {
                 username: userData.login,
-                token: token,
+                    token: token,
                 avatar_url: userData.avatar_url,
                 hasGistPermission: true
-            };
-            
-            // 保存到本地存储
-            saveAuthData();
-            
-            // 显示成功消息
-            showMessage(loginMessage, '登录成功！正在加载论坛...', 'success');
-            
-            // 显示论坛内容
-            setTimeout(() => {
-                showForumContent();
-                loadIssues();
+                };
+                
+                // 保存到本地存储
+                saveAuthData();
+                
+                // 显示成功消息
+                showMessage(loginMessage, '登录成功！正在加载论坛...', 'success');
+                
+                // 显示论坛内容
+                setTimeout(() => {
+                    showForumContent();
+                    loadIssues();
             }, 2000);
             
         } catch (error) {
@@ -830,9 +830,9 @@ document.addEventListener('DOMContentLoaded', () => {
         commentsList.innerHTML = '';
         
         try {
-            // 加载问题详情
+        // 加载问题详情
             const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}`, {
-                headers: getRequestHeaders()
+            headers: getRequestHeaders()
             });
             
             checkRateLimit(response);
@@ -937,7 +937,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/comments`, {
-                headers: getRequestHeaders()
+            headers: getRequestHeaders()
             });
             
             checkRateLimit(response);
@@ -1145,22 +1145,22 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(issue => {
             // 如果指定了标签，并且用户是管理员，尝试添加GitHub标签
             if (label && (authData.username === REPO_OWNER || isAdmin())) {
-                return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}/labels`, {
-                    method: 'POST',
-                    headers: getRequestHeaders(),
-                    body: JSON.stringify({ labels: [label] })
-                })
-                .then(response => {
-                    if (!response.ok) {
+                        return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}/labels`, {
+                            method: 'POST',
+                            headers: getRequestHeaders(),
+                            body: JSON.stringify({ labels: [label] })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
                         console.warn('添加标签失败，但帖子已创建');
-                    }
+                            }
                     return issue; // 返回创建的issue
-                })
-                .catch(error => {
-                    console.error('添加标签失败:', error);
+                        })
+                        .catch(error => {
+                            console.error('添加标签失败:', error);
                     return issue; // 返回创建的issue
-                });
-            } else {
+                        });
+                    } else {
                 // 如果没有标签或非管理员，直接返回创建的issue
                 return issue;
             }
@@ -1595,7 +1595,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `${days}天前`;
         }
     }
-
+    
     // 加载用户个人资料
     async function loadUserProfile() {
         if (!isAuthenticated()) return;
@@ -1608,9 +1608,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 userProfile = gistProfile;
             } else {
                 // 如果Gist加载失败，尝试从localStorage加载
-                const storedProfile = localStorage.getItem(`userProfile_${authData.username}`);
-                if (storedProfile) {
-                    userProfile = JSON.parse(storedProfile);
+        const storedProfile = localStorage.getItem(`userProfile_${authData.username}`);
+        if (storedProfile) {
+                userProfile = JSON.parse(storedProfile);
                 } else {
                     // 初始化新的用户资料
                     userProfile = {
@@ -1620,33 +1620,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                 }
             }
-            
-            // 填充个人资料表单
-            const nicknameInput = document.getElementById('user-nickname');
-            const signatureInput = document.getElementById('user-signature');
-            const avatarUrlInput = document.getElementById('user-avatar-url');
-            const avatarPreview = document.getElementById('avatar-preview');
-            
-            if (nicknameInput) {
-                nicknameInput.value = userProfile.nickname || '';
-            }
-            
-            if (signatureInput) {
-                signatureInput.value = userProfile.signature || '';
-            }
-            
-            if (avatarUrlInput) {
-                avatarUrlInput.value = userProfile.avatarUrl || '';
-            }
-            
-            if (avatarPreview) {
-                const avatarUrl = userProfile.avatarUrl || authData.avatar_url;
-                avatarPreview.style.backgroundImage = avatarUrl ? `url(${avatarUrl})` : 'none';
-            }
+                
+                // 填充个人资料表单
+                const nicknameInput = document.getElementById('user-nickname');
+                const signatureInput = document.getElementById('user-signature');
+                const avatarUrlInput = document.getElementById('user-avatar-url');
+                const avatarPreview = document.getElementById('avatar-preview');
+                
+                if (nicknameInput) {
+                    nicknameInput.value = userProfile.nickname || '';
+                }
+                
+                if (signatureInput) {
+                    signatureInput.value = userProfile.signature || '';
+                }
+                
+                if (avatarUrlInput) {
+                    avatarUrlInput.value = userProfile.avatarUrl || '';
+                }
+                
+                if (avatarPreview) {
+                    const avatarUrl = userProfile.avatarUrl || authData.avatar_url;
+                    avatarPreview.style.backgroundImage = avatarUrl ? `url(${avatarUrl})` : 'none';
+                }
             
             // 检查Gist同步状态
             checkGistSyncStatus();
-        } catch (e) {
+            } catch (e) {
             console.error('加载用户资料失败:', e);
             // 如果出现任何错误，初始化为空资料
             userProfile = {
@@ -1732,13 +1732,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return userProfile.nickname;
         }
         
-        try {
+            try {
             // 尝试从Gist获取
             const profile = await getUserProfileFromGist(username);
             if (profile && profile.nickname) {
-                return profile.nickname;
-            }
-        } catch (e) {
+                    return profile.nickname;
+                }
+            } catch (e) {
             console.error(`获取用户${username}的显示名称失败:`, e);
         }
         
@@ -1753,13 +1753,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return userProfile.avatarUrl;
         }
         
-        try {
+            try {
             // 尝试从Gist获取
             const profile = await getUserProfileFromGist(username);
             if (profile && profile.avatarUrl) {
-                return profile.avatarUrl;
-            }
-        } catch (e) {
+                    return profile.avatarUrl;
+                }
+            } catch (e) {
             console.error(`获取用户${username}的头像URL失败:`, e);
         }
         
@@ -1774,13 +1774,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return userProfile.signature;
         }
         
-        try {
+            try {
             // 尝试从Gist获取
             const profile = await getUserProfileFromGist(username);
             if (profile && profile.signature) {
-                return profile.signature;
-            }
-        } catch (e) {
+                    return profile.signature;
+                }
+            } catch (e) {
             console.error(`获取用户${username}的签名失败:`, e);
         }
         
@@ -1808,7 +1808,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // 如果是管理员，显示管理员设置
                     if (isAdmin()) {
-                        showAdminSettings();
+                    showAdminSettings();
                     }
                 }
             });
