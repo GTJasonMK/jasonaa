@@ -287,52 +287,64 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 触摸事件监听 - 滑动控制
     canvas.addEventListener('touchstart', (e) => {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        e.preventDefault(); // 防止页面滚动
+        const rect = canvas.getBoundingClientRect();
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
+        
+        // 只有当触摸在Canvas区域内时才阻止默认行为
+        if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            e.preventDefault(); // 防止页面滚动
+        }
     }, { passive: false });
     
     canvas.addEventListener('touchmove', (e) => {
         if (!touchStartX || !touchStartY) return;
         
         try {
-            const touchEndX = e.touches[0].clientX;
-            const touchEndY = e.touches[0].clientY;
+            const rect = canvas.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            const touchY = e.touches[0].clientY - rect.top;
             
-            const dx = touchEndX - touchStartX;
-            const dy = touchEndY - touchStartY;
-            
-            // 判断滑动方向（水平或垂直滑动距离更大的方向）
-            // 增加最小滑动距离阈值，避免意外触发
-            const minSwipeDistance = 20;
-            
-            if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) {
-                return; // 滑动距离太小，可能是意外触摸
+            // 只有当触摸在Canvas区域内时才阻止默认行为
+            if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+                const touchEndX = e.touches[0].clientX;
+                const touchEndY = e.touches[0].clientY;
+                
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+                
+                // 判断滑动方向（水平或垂直滑动距离更大的方向）
+                // 增加最小滑动距离阈值，避免意外触发
+                const minSwipeDistance = 20;
+                
+                if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) {
+                    return; // 滑动距离太小，可能是意外触摸
+                }
+                
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    // 水平滑动
+                    changeDirection(dx > 0 ? 'right' : 'left');
+                } else {
+                    // 垂直滑动
+                    changeDirection(dy > 0 ? 'down' : 'up');
+                }
+                
+                // 重置起始点，允许在同一次触摸中多次改变方向
+                touchStartX = touchEndX;
+                touchStartY = touchEndY;
+                e.preventDefault(); // 防止页面滚动
             }
-            
-            if (Math.abs(dx) > Math.abs(dy)) {
-                // 水平滑动
-                changeDirection(dx > 0 ? 'right' : 'left');
-            } else {
-                // 垂直滑动
-                changeDirection(dy > 0 ? 'down' : 'up');
-            }
-            
-            // 重置起始点，允许在同一次触摸中多次改变方向
-            touchStartX = touchEndX;
-            touchStartY = touchEndY;
         } catch (error) {
             console.error('处理触摸事件时出错:', error);
         }
-        
-        e.preventDefault(); // 防止页面滚动
     }, { passive: false });
     
     canvas.addEventListener('touchend', (e) => {
         touchStartX = 0;
         touchStartY = 0;
-        e.preventDefault();
-    }, { passive: false });
+    }, { passive: true });
     
     // 按钮点击事件
     startBtn.addEventListener('click', () => {
@@ -348,8 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
             initGame();
         }
         startGame();
-        e.preventDefault();
-    }, { passive: false });
+    }, { passive: true });
 
     // 初始化游戏
     initGame();

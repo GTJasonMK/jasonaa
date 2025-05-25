@@ -525,22 +525,50 @@ document.addEventListener('DOMContentLoaded', () => {
     let touchEndY = 0;
     
     gameBoard.addEventListener('touchstart', function(e) {
-        touchStartX = e.changedTouches[0].clientX;
-        touchStartY = e.changedTouches[0].clientY;
-        e.preventDefault(); // 防止页面滚动
+        const rect = gameBoard.getBoundingClientRect();
+        const touchX = e.changedTouches[0].clientX - rect.left;
+        const touchY = e.changedTouches[0].clientY - rect.top;
+        
+        // 只在游戏区域内阻止默认行为
+        if (touchX >= 0 && touchX <= gameBoard.offsetWidth && touchY >= 0 && touchY <= gameBoard.offsetHeight) {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+            e.preventDefault(); // 防止页面滚动
+        }
     }, { passive: false });
     
     gameBoard.addEventListener('touchmove', function(e) {
-        e.preventDefault(); // 防止页面滚动
+        if (!touchStartX && !touchStartY) return;
+        
+        const rect = gameBoard.getBoundingClientRect();
+        const touchX = e.changedTouches[0].clientX - rect.left;
+        const touchY = e.changedTouches[0].clientY - rect.top;
+        
+        // 只在游戏区域内阻止默认行为
+        if (touchX >= 0 && touchX <= gameBoard.offsetWidth && touchY >= 0 && touchY <= gameBoard.offsetHeight) {
+            e.preventDefault(); // 防止页面滚动
+        }
     }, { passive: false });
     
     gameBoard.addEventListener('touchend', function(e) {
-        e.preventDefault(); // 防止页面滚动
-        touchEndX = e.changedTouches[0].clientX;
-        touchEndY = e.changedTouches[0].clientY;
+        if (!touchStartX && !touchStartY) return;
         
-        handleSwipe();
-    }, { passive: false });
+        const rect = gameBoard.getBoundingClientRect();
+        const touchX = e.changedTouches[0].clientX - rect.left;
+        const touchY = e.changedTouches[0].clientY - rect.top;
+        
+        // 只在游戏区域内处理触摸结束事件
+        if (touchX >= 0 && touchX <= gameBoard.offsetWidth && touchY >= 0 && touchY <= gameBoard.offsetHeight) {
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+            
+            handleSwipe();
+        }
+        
+        // 重置触摸起始点
+        touchStartX = 0;
+        touchStartY = 0;
+    }, { passive: true });
     
     function handleSwipe() {
         const xDiff = touchEndX - touchStartX;

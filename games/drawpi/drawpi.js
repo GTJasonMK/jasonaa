@@ -292,7 +292,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 开始绘制
     function startDrawing(e) {
-        e.preventDefault();
+        if (e.type !== 'mousedown') { // 对于触摸事件已经在外部处理了preventDefault
+            e.preventDefault();
+        }
         
         // 如果已计算过结果或存在路径，先清除画布
         if (points.length > 0 || pathClosed || hasCalculated) {
@@ -321,7 +323,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 绘制中
     function draw(e) {
-        e.preventDefault();
+        if (e.type !== 'mousemove') { // 对于触摸事件已经在外部处理了preventDefault
+            e.preventDefault();
+        }
         
         if (!isDrawing) return;
         
@@ -336,7 +340,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 结束绘制
     function stopDrawing(e) {
-        e.preventDefault();
+        if (e.type !== 'mouseup' && e.type !== 'mouseout') { // 对于触摸事件已经在外部处理了preventDefault
+            e.preventDefault();
+        }
         
         if (!isDrawing) return;
         isDrawing = false;
@@ -596,9 +602,38 @@ document.addEventListener('DOMContentLoaded', function() {
             canvas.addEventListener('mouseout', stopDrawing);
         } else {
             // 触摸事件
-            canvas.addEventListener('touchstart', startDrawing, { passive: false });
-            canvas.addEventListener('touchmove', draw, { passive: false });
-            canvas.addEventListener('touchend', stopDrawing, { passive: false });
+            canvas.addEventListener('touchstart', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const touchX = e.touches[0].clientX - rect.left;
+                const touchY = e.touches[0].clientY - rect.top;
+                
+                // 只在画布区域内阻止默认行为
+                if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+                    startDrawing(e);
+                }
+            }, { passive: false });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const touchX = e.touches[0].clientX - rect.left;
+                const touchY = e.touches[0].clientY - rect.top;
+                
+                // 只在画布区域内阻止默认行为
+                if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+                    draw(e);
+                }
+            }, { passive: false });
+            
+            canvas.addEventListener('touchend', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const touchX = e.changedTouches[0].clientX - rect.left;
+                const touchY = e.changedTouches[0].clientY - rect.top;
+                
+                // 只在画布区域内处理触摸结束事件
+                if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+                    stopDrawing(e);
+                }
+            }, { passive: true });
         }
         
         // 移除按钮事件，因为我们已经隐藏了按钮

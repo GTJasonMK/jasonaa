@@ -534,75 +534,97 @@ function setupMobileControls() {
     let lastTapTime = 0;
     
     boardElement.addEventListener('touchstart', function(e) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = new Date().getTime();
-        e.preventDefault(); // 防止页面滚动
-    });
+        const rect = boardElement.getBoundingClientRect();
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
+        
+        // 只在游戏区域内阻止默认行为
+        if (touchX >= 0 && touchX <= boardElement.offsetWidth && touchY >= 0 && touchY <= boardElement.offsetHeight) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            touchStartTime = new Date().getTime();
+            e.preventDefault(); // 防止页面滚动
+        }
+    }, { passive: false });
     
     boardElement.addEventListener('touchmove', function(e) {
-        e.preventDefault(); // 防止页面滚动
-    });
+        if (!touchStartX || !touchStartY) return;
+        
+        const rect = boardElement.getBoundingClientRect();
+        const touchX = e.touches[0].clientX - rect.left;
+        const touchY = e.touches[0].clientY - rect.top;
+        
+        // 只在游戏区域内阻止默认行为
+        if (touchX >= 0 && touchX <= boardElement.offsetWidth && touchY >= 0 && touchY <= boardElement.offsetHeight) {
+            e.preventDefault(); // 防止页面滚动
+        }
+    }, { passive: false });
     
     boardElement.addEventListener('touchend', function(e) {
         if (!touchStartX || !touchStartY) return;
-        e.preventDefault(); // 防止页面滚动
         
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const touchEndTime = new Date().getTime();
+        const rect = boardElement.getBoundingClientRect();
+        const touchX = e.changedTouches[0].clientX - rect.left;
+        const touchY = e.changedTouches[0].clientY - rect.top;
         
-        const diffX = touchEndX - touchStartX;
-        const diffY = touchEndY - touchStartY;
-        
-        // 判断是否是快速点击（双击用于硬降）
-        const tapLength = touchEndTime - touchStartTime;
-        if (tapLength < 200 && Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
-            // 检查是否是双击
-            const currentTime = new Date().getTime();
-            const tapInterval = currentTime - lastTapTime;
-            if (tapInterval < 300) {
-                // 双击实现硬降
-                hardDrop();
-                lastTapTime = 0;
-            } else {
-                lastTapTime = currentTime;
-            }
-            touchStartX = null;
-            touchStartY = null;
-            return;
-        }
-        
-        // 需要的最小滑动距离
-        const minSwipeDistance = 30;
-        
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            // 水平滑动
-            if (Math.abs(diffX) > minSwipeDistance) {
-                if (diffX > 0) {
-                    // 向右滑动
-                    movePiece(1, 0);
+        // 只在游戏区域内处理触摸结束事件
+        if (touchX >= 0 && touchX <= boardElement.offsetWidth && touchY >= 0 && touchY <= boardElement.offsetHeight) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const touchEndTime = new Date().getTime();
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            // 判断是否是快速点击（双击用于硬降）
+            const tapLength = touchEndTime - touchStartTime;
+            if (tapLength < 200 && Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+                // 检查是否是双击
+                const currentTime = new Date().getTime();
+                const tapInterval = currentTime - lastTapTime;
+                if (tapInterval < 300) {
+                    // 双击实现硬降
+                    hardDrop();
+                    lastTapTime = 0;
                 } else {
-                    // 向左滑动
-                    movePiece(-1, 0);
+                    lastTapTime = currentTime;
                 }
+                touchStartX = null;
+                touchStartY = null;
+                return;
             }
-        } else {
-            // 垂直滑动
-            if (Math.abs(diffY) > minSwipeDistance) {
-                if (diffY > 0) {
-                    // 向下滑动
-                    movePiece(0, 1);
-                } else {
-                    // 向上滑动
-                    rotatePiece();
+            
+            // 需要的最小滑动距离
+            const minSwipeDistance = 30;
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // 水平滑动
+                if (Math.abs(diffX) > minSwipeDistance) {
+                    if (diffX > 0) {
+                        // 向右滑动
+                        movePiece(1, 0);
+                    } else {
+                        // 向左滑动
+                        movePiece(-1, 0);
+                    }
+                }
+            } else {
+                // 垂直滑动
+                if (Math.abs(diffY) > minSwipeDistance) {
+                    if (diffY > 0) {
+                        // 向下滑动
+                        movePiece(0, 1);
+                    } else {
+                        // 向上滑动
+                        rotatePiece();
+                    }
                 }
             }
         }
         
         touchStartX = null;
         touchStartY = null;
-    });
+    }, { passive: true });
 }
 
 // 窗口加载完毕后初始化游戏
