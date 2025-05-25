@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isRunning) {
             clearInterval(gameInterval);
             isRunning = false;
-            startBtn.textContent = '继续游戏';
+            startBtn.textContent = '暂停游戏';
         } else {
             isRunning = true;
             startBtn.textContent = '暂停游戏';
@@ -347,15 +347,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { passive: true });
     
     // 按钮点击事件
-    startBtn.addEventListener('click', () => {
+    startBtn.addEventListener('click', function() {
+        console.log('点击开始按钮');
         if (startBtn.textContent === '重新开始') {
             initGame();
         }
         startGame();
     });
     
-    // 为开始按钮也添加touchstart事件
-    startBtn.addEventListener('touchstart', (e) => {
+    // 为开始按钮也添加touchend事件，因为在移动设备上可能触发不了click事件
+    startBtn.addEventListener('touchend', function() {
+        console.log('触摸开始按钮');
         if (startBtn.textContent === '重新开始') {
             initGame();
         }
