@@ -321,6 +321,19 @@ header nav ul li a.active {
     color: var(--header-color);
 }
 
+.issue-summary {
+    margin: 10px 0;
+    color: var(--text-color);
+    opacity: 0.8;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
 .issue-meta {
     display: flex;
     align-items: center;
@@ -858,4 +871,52 @@ button:disabled:hover {
 .repo-info button:hover {
     background-color: rgba(76, 175, 80, 0.2);
     transform: scale(1.1);
+}
+
+/* Gist 同步状态指示器样式 */
+.gist-sync-status {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background-color: var(--bg-secondary);
+    font-size: 0.9rem;
+}
+
+.gist-sync-status .status-icon {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.gist-sync-status.synced .status-icon {
+    background-color: #4CAF50;
+}
+
+.gist-sync-status.not-synced .status-icon {
+    background-color: #FFC107;
+}
+
+.gist-sync-status.error .status-icon {
+    background-color: #F44336;
+}
+
+.gist-sync-status.checking .status-icon {
+    background-color: #2196F3;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.6;
+    }
 } 

@@ -213,9 +213,21 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 提取帖子内容中的标签
     function extractLabelFromContent(body) {
-        // 查找 "**分类**: 标签名" 格式的内容
-        const labelMatch = body.match(/\*\*分类\*\*\s*:\s*([^\n]+)/);
-        return labelMatch ? labelMatch[1].trim() : null;
+        if (!body) return null;
+        
+        // 首先尝试从HTML注释风格标签中提取
+        const commentLabelMatch = body.match(/<!--\s*category:(.*?)\s*-->/);
+        if (commentLabelMatch) {
+            return commentLabelMatch[1].trim();
+        }
+        
+        // 向后兼容：如果没有找到HTML注释格式，尝试旧格式
+        const oldLabelMatch = body.match(/\*\*分类\*\*\s*:\s*([^\n]+)/);
+        if (oldLabelMatch) {
+            return oldLabelMatch[1].trim();
+        }
+        
+        return null;
     }
     
     // 修改加载问题列表函数，支持从内容中筛选标签和实现本地搜索
@@ -529,10 +541,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 渲染问题列表
-    function renderIssuesList(issues) {
+    async function renderIssuesList(issues) {
         issuesList.innerHTML = '';
         
-        issues.forEach(issue => {
+        // 使用Promise.all并行处理所有issue以提高性能
+        const issuePromises = issues.map(async (issue) => {
             const issueElement = document.createElement('div');
             issueElement.className = 'issue-item';
             issueElement.setAttribute('data-issue-number', issue.number);
@@ -560,25 +573,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const deleteButtonHTML = isAdmin() ? 
                 `<button class="delete-issue-btn" data-issue-number="${issue.number}">删除</button>` : '';
             
-            // 获取用户显示名称和签名
-            const displayName = getDisplayName(issue.user.login);
-            const signature = getUserSignature(issue.user.login);
+            // 获取用户显示名称和签名 - 等待异步结果
+            const displayName = await getDisplayName(issue.user.login);
+            const signature = await getUserSignature(issue.user.login);
             const signatureHTML = signature ? `<span class="user-signature">${signature}</span>` : '';
             
-            // 如果显示名称与GitHub用户名不同，添加一个小标签显示GitHub用户名
-            const usernameBadgeHTML = (displayName !== issue.user.login) ? 
-                `<span class="user-badge">${issue.user.login}</span>` : '';
+            // 计算摘要 - 避免显示标签在摘要中
+            let summary = '';
+            if (issue.body) {
+                // 移除标签文本
+                let cleanedBody = issue.body.replace(/<!--\s*category:.*?-->/g, '');
+                cleanedBody = cleanedBody.replace(/\*\*分类\*\*\s*:\s*[^\n]+(\n|$)/g, '');
+                
+                // 移除多余空行和空格
+                cleanedBody = cleanedBody.replace(/\n{2,}/g, '\n').trim();
+                
+                // 创建摘要 - 最多显示100个字符
+                summary = cleanedBody.length > 100 ? 
+                    cleanedBody.substring(0, 100) + '...' : 
+                    cleanedBody;
+            }
             
             issueElement.innerHTML = `
                 <h3>${issue.title}</h3>
                 <div class="issue-meta">
-                    <span>作者: ${displayName}${usernameBadgeHTML}</span>
+                    <span>作者: ${displayName}</span>
                     <span>发布于: ${formattedDate}</span>
                     ${labelHTML}
                     <span>评论: ${issue.comments}</span>
                     ${deleteButtonHTML}
                 </div>
                 ${signatureHTML}
+                <p class="issue-summary">${summary}</p>
             `;
             
             // 添加点赞功能
@@ -620,7 +646,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             
-            issuesList.appendChild(issueElement);
+            return issueElement;
+        });
+        
+        // 等待所有异步处理完成，然后添加到DOM
+        const issueElements = await Promise.all(issuePromises);
+        issueElements.forEach(element => {
+            issuesList.appendChild(element);
         });
     }
     
@@ -695,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 加载问题详情
-    function loadIssueDetails(issueNumber) {
+    async function loadIssueDetails(issueNumber) {
         // 显示详情面板
         showIssueDetail();
         
@@ -706,26 +738,25 @@ document.addEventListener('DOMContentLoaded', () => {
         detailBody.innerHTML = '<div class="loading">加载中...</div>';
         commentsList.innerHTML = '';
         
-        // 加载问题详情
-        fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}`, {
-            headers: getRequestHeaders()
-        })
-        .then(response => {
+        try {
+            // 加载问题详情
+            const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}`, {
+                headers: getRequestHeaders()
+            });
+            
             checkRateLimit(response);
             if (!response.ok) {
                 throw new Error('加载问题详情失败');
             }
-            return response.json();
-        })
-        .then(issue => {
-            // 获取自定义用户信息
-            const displayName = getDisplayName(issue.user.login);
-            const usernameBadgeHTML = (displayName !== issue.user.login) ? 
-                `<span class="user-badge">${issue.user.login}</span>` : '';
+            
+            const issue = await response.json();
+            
+            // 获取自定义用户信息 - 等待异步结果
+            const displayName = await getDisplayName(issue.user.login);
             
             // 更新详情内容
             detailTitle.textContent = issue.title;
-            detailAuthor.innerHTML = `作者: ${displayName}${usernameBadgeHTML}`;
+            detailAuthor.innerHTML = `作者: ${displayName}`;
             
             // 格式化日期
             const createdDate = new Date(issue.created_at);
@@ -746,11 +777,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 detailLabel.innerHTML = '';
             }
             
+            // 从内容中移除标签文本
+            let cleanedBody = issue.body;
+            if (cleanedBody) {
+                // 移除"**分类**: 标签名"格式的文本
+                cleanedBody = cleanedBody.replace(/\*\*分类\*\*\s*:\s*[^\n]+(\n|$)/g, '');
+                // 移除多余的空行
+                cleanedBody = cleanedBody.replace(/\n{3,}/g, '\n\n');
+                // 去除开头和结尾的空白
+                cleanedBody = cleanedBody.trim();
+            }
+            
             // 转换Markdown(需要添加Markdown库)
-            detailBody.innerHTML = issue.body;
+            detailBody.innerHTML = cleanedBody;
             
             // 添加用户签名（如果有）
-            const signature = getUserSignature(issue.user.login);
+            const signature = await getUserSignature(issue.user.login);
             if (signature) {
                 const signatureElement = document.createElement('div');
                 signatureElement.className = 'user-signature';
@@ -791,29 +833,29 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 加载评论
             loadComments(issueNumber);
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('加载问题详情失败:', error);
             detailBody.innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
-        });
+        }
     }
     
     // 加载评论
-    function loadComments(issueNumber) {
+    async function loadComments(issueNumber) {
         // 显示加载状态
         commentsList.innerHTML = '<div class="loading">加载评论中...</div>';
         
-        fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/comments`, {
-            headers: getRequestHeaders()
-        })
-        .then(response => {
+        try {
+            const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issueNumber}/comments`, {
+                headers: getRequestHeaders()
+            });
+            
             checkRateLimit(response);
             if (!response.ok) {
                 throw new Error('加载评论失败');
             }
-            return response.json();
-        })
-        .then(comments => {
+            
+            const comments = await response.json();
+            
             // 更新评论数
             commentsCount.textContent = comments.length;
             
@@ -822,19 +864,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // 渲染评论
+            // 渲染评论 - 使用Promise.all并行处理所有评论
             commentsList.innerHTML = '';
-            comments.forEach(comment => {
+            
+            const commentPromises = comments.map(async (comment) => {
                 const commentElement = document.createElement('div');
                 commentElement.className = 'comment-item';
                 commentElement.setAttribute('data-comment-id', comment.id);
                 
-                // 获取自定义用户信息
-                const displayName = getDisplayName(comment.user.login);
-                const avatarUrl = getAvatarUrl(comment.user.login, comment.user.avatar_url);
-                const signature = getUserSignature(comment.user.login);
-                const usernameBadgeHTML = (displayName !== comment.user.login) ? 
-                    `<span class="user-badge">${comment.user.login}</span>` : '';
+                // 获取自定义用户信息 - 等待异步结果
+                const displayName = await getDisplayName(comment.user.login);
+                const avatarUrl = await getAvatarUrl(comment.user.login, comment.user.avatar_url);
+                const signature = await getUserSignature(comment.user.login);
+                
                 const signatureHTML = signature ? 
                     `<div class="user-signature">${signature}</div>` : '';
                 
@@ -849,7 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 commentElement.innerHTML = `
                     <div class="comment-header">
                         <div class="comment-avatar" style="background-image: url(${avatarUrl})"></div>
-                        <span class="comment-author">${displayName}${usernameBadgeHTML}</span>
+                        <span class="comment-author">${displayName}</span>
                         <span class="comment-date">${formattedDate}</span>
                         ${deleteButtonHTML}
                     </div>
@@ -881,9 +923,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 加载点赞状态和数量
                 loadCommentLikes(comment.id, likeButton);
                 
-                // 添加到评论列表中
-                commentsList.appendChild(commentElement);
-                
                 // 添加删除评论的事件监听器
                 const deleteButton = commentElement.querySelector('.delete-comment-btn');
                 if (deleteButton) {
@@ -894,12 +933,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 }
+                
+                return commentElement;
             });
-        })
-        .catch(error => {
+            
+            // 等待所有异步处理完成，然后添加到DOM
+            const commentElements = await Promise.all(commentPromises);
+            commentElements.forEach(element => {
+                commentsList.appendChild(element);
+            });
+        } catch (error) {
             console.error('加载评论失败:', error);
             commentsList.innerHTML = `<div class="error">加载评论失败: ${error.message}</div>`;
-        });
+        }
     }
     
     // 发表评论
@@ -986,6 +1032,12 @@ document.addEventListener('DOMContentLoaded', () => {
             body: body
         };
         
+        // 如果有标签，以隐蔽的方式添加到内容末尾
+        if (label) {
+            // 在内容末尾添加一个HTML注释风格的标签信息，这样在前端可以解析但用户界面不会明显看到
+            issueData.body += `\n\n<!-- category:${label} -->`;
+        }
+        
         // 先创建Issue，不包含标签
         fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues`, {
             method: 'POST',
@@ -1000,50 +1052,25 @@ document.addEventListener('DOMContentLoaded', () => {
             return response.json();
         })
         .then(issue => {
-            // 如果指定了标签，再添加标签
-            if (label) {
-                // 在描述中添加标签信息，即使无法直接添加标签
-                const labelPart = `\n\n**分类**: ${label}`;
-                
-                // 更新Issue，添加标签信息到内容中
-                return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}`, {
-                    method: 'PATCH',
+            // 如果指定了标签，并且用户是管理员，尝试添加GitHub标签
+            if (label && (authData.username === REPO_OWNER || isAdmin())) {
+                return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}/labels`, {
+                    method: 'POST',
                     headers: getRequestHeaders(),
-                    body: JSON.stringify({
-                        body: body + labelPart
-                    })
+                    body: JSON.stringify({ labels: [label] })
                 })
                 .then(response => {
                     if (!response.ok) {
-                        console.warn('更新标签信息失败，但帖子已创建');
+                        console.warn('添加标签失败，但帖子已创建');
                     }
-                    return response.json();
+                    return issue; // 返回创建的issue
                 })
-                .then(updatedIssue => {
-                    // 如果用户是仓库所有者或管理员，尝试添加标签
-                    if (authData.username === REPO_OWNER || isAdmin()) {
-                        return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/${issue.number}/labels`, {
-                            method: 'POST',
-                            headers: getRequestHeaders(),
-                            body: JSON.stringify({ labels: [label] })
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                console.warn('添加标签失败，但帖子已创建并更新');
-                            }
-                            return updatedIssue; // 返回更新后的issue
-                        })
-                        .catch(error => {
-                            console.error('添加标签失败:', error);
-                            return updatedIssue; // 返回更新后的issue
-                        });
-                    } else {
-                        // 非管理员用户返回更新后的issue
-                        return updatedIssue;
-                    }
+                .catch(error => {
+                    console.error('添加标签失败:', error);
+                    return issue; // 返回创建的issue
                 });
             } else {
-                // 如果没有标签，直接返回创建的issue
+                // 如果没有标签或非管理员，直接返回创建的issue
                 return issue;
             }
         })
@@ -1082,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 将新发布的帖子添加到列表顶部
-    function addNewIssueToList(issue) {
+    async function addNewIssueToList(issue) {
         const issueElement = document.createElement('div');
         issueElement.className = 'issue-item';
         issueElement.setAttribute('data-issue-number', issue.number);
@@ -1110,19 +1137,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const deleteButtonHTML = isAdmin() ? 
             `<button class="delete-issue-btn" data-issue-number="${issue.number}">删除</button>` : '';
         
-        // 获取用户显示名称和签名
-        const displayName = getDisplayName(issue.user.login);
-        const signature = getUserSignature(issue.user.login);
+        // 获取用户显示名称和签名 - 等待异步结果
+        const displayName = await getDisplayName(issue.user.login);
+        const signature = await getUserSignature(issue.user.login);
         const signatureHTML = signature ? `<span class="user-signature">${signature}</span>` : '';
-        
-        // 如果显示名称与GitHub用户名不同，添加一个小标签显示GitHub用户名
-        const usernameBadgeHTML = (displayName !== issue.user.login) ? 
-            `<span class="user-badge">${issue.user.login}</span>` : '';
         
         issueElement.innerHTML = `
             <h3>${issue.title}</h3>
             <div class="issue-meta">
-                <span>作者: ${displayName}${usernameBadgeHTML}</span>
+                <span>作者: ${displayName}</span>
                 <span>发布于: ${formattedDate}</span>
                 ${labelHTML}
                 <span>评论: ${issue.comments}</span>
@@ -1389,49 +1412,145 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // 加载用户个人资料
-    function loadUserProfile() {
-        if (!isAuthenticated()) return;
+    // 检查用户Gist同步状态
+    async function checkGistSyncStatus() {
+        if (!isAuthenticated()) return false;
         
-        const storedProfile = localStorage.getItem(`userProfile_${authData.username}`);
-        if (storedProfile) {
-            try {
-                userProfile = JSON.parse(storedProfile);
-                
-                // 填充个人资料表单
-                const nicknameInput = document.getElementById('user-nickname');
-                const signatureInput = document.getElementById('user-signature');
-                const avatarUrlInput = document.getElementById('user-avatar-url');
-                const avatarPreview = document.getElementById('avatar-preview');
-                
-                if (nicknameInput) {
-                    nicknameInput.value = userProfile.nickname || '';
-                }
-                
-                if (signatureInput) {
-                    signatureInput.value = userProfile.signature || '';
-                }
-                
-                if (avatarUrlInput) {
-                    avatarUrlInput.value = userProfile.avatarUrl || '';
-                }
-                
-                if (avatarPreview) {
-                    const avatarUrl = userProfile.avatarUrl || authData.avatar_url;
-                    avatarPreview.style.backgroundImage = avatarUrl ? `url(${avatarUrl})` : 'none';
-                }
-            } catch (e) {
-                console.error('解析用户资料失败:', e);
-                localStorage.removeItem(`userProfile_${authData.username}`);
+        const statusElement = document.getElementById('gist-sync-status');
+        if (!statusElement) return false;
+        
+        // 初始化检查状态
+        statusElement.className = 'gist-sync-status checking';
+        statusElement.querySelector('.status-text').textContent = '检查同步状态...';
+        
+        try {
+            // 检查是否有Gist ID
+            const gistId = localStorage.getItem(`gistProfile_${authData.username}`);
+            
+            if (!gistId) {
+                statusElement.className = 'gist-sync-status not-synced';
+                statusElement.querySelector('.status-text').textContent = '尚未同步到Gist (首次保存后将自动同步)';
+                return false;
             }
+            
+            // 检查Gist是否存在
+            const response = await fetch(`${GITHUB_API_URL}/gists/${gistId}`, {
+                headers: getRequestHeaders()
+            });
+            
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // Gist已被删除
+                    localStorage.removeItem(`gistProfile_${authData.username}`);
+                    statusElement.className = 'gist-sync-status not-synced';
+                    statusElement.querySelector('.status-text').textContent = 'Gist已被删除，需要重新创建';
+                    return false;
+                } else {
+                    throw new Error(`获取Gist失败: ${response.status}`);
+                }
+            }
+            
+            const gistData = await response.json();
+            
+            if (!gistData.files || !gistData.files['profile.json']) {
+                statusElement.className = 'gist-sync-status error';
+                statusElement.querySelector('.status-text').textContent = 'Gist格式错误，请重新保存';
+                return false;
+            }
+            
+            // 成功找到有效的Gist
+            const lastUpdated = gistData.updated_at ? new Date(gistData.updated_at) : null;
+            const timeAgo = lastUpdated ? formatTimeAgo(lastUpdated) : '未知时间';
+            
+            statusElement.className = 'gist-sync-status synced';
+            statusElement.querySelector('.status-text').textContent = `已同步到Gist (最后更新: ${timeAgo})`;
+            return true;
+        } catch (error) {
+            console.error('检查Gist同步状态失败:', error);
+            statusElement.className = 'gist-sync-status error';
+            statusElement.querySelector('.status-text').textContent = `同步状态检查失败: ${error.message}`;
+            return false;
         }
     }
-    
-    // 保存用户个人资料
-    function saveUserProfile() {
+
+    // 格式化时间为"多久之前"
+    function formatTimeAgo(date) {
+        const now = new Date();
+        const diffSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffSeconds < 60) {
+            return '刚刚';
+        } else if (diffSeconds < 3600) {
+            const minutes = Math.floor(diffSeconds / 60);
+            return `${minutes}分钟前`;
+        } else if (diffSeconds < 86400) {
+            const hours = Math.floor(diffSeconds / 3600);
+            return `${hours}小时前`;
+        } else {
+            const days = Math.floor(diffSeconds / 86400);
+            return `${days}天前`;
+        }
+    }
+
+    // 加载用户个人资料
+    async function loadUserProfile() {
         if (!isAuthenticated()) return;
         
-        localStorage.setItem(`userProfile_${authData.username}`, JSON.stringify(userProfile));
+        try {
+            // 优先尝试从Gist加载
+            const gistProfile = await getUserProfileFromGist(authData.username);
+            
+            if (gistProfile) {
+                userProfile = gistProfile;
+            } else {
+                // 如果Gist加载失败，尝试从localStorage加载
+                const storedProfile = localStorage.getItem(`userProfile_${authData.username}`);
+                if (storedProfile) {
+                    userProfile = JSON.parse(storedProfile);
+                } else {
+                    // 初始化新的用户资料
+                    userProfile = {
+                        nickname: '',
+                        signature: '',
+                        avatarUrl: ''
+                    };
+                }
+            }
+            
+            // 填充个人资料表单
+            const nicknameInput = document.getElementById('user-nickname');
+            const signatureInput = document.getElementById('user-signature');
+            const avatarUrlInput = document.getElementById('user-avatar-url');
+            const avatarPreview = document.getElementById('avatar-preview');
+            
+            if (nicknameInput) {
+                nicknameInput.value = userProfile.nickname || '';
+            }
+            
+            if (signatureInput) {
+                signatureInput.value = userProfile.signature || '';
+            }
+            
+            if (avatarUrlInput) {
+                avatarUrlInput.value = userProfile.avatarUrl || '';
+            }
+            
+            if (avatarPreview) {
+                const avatarUrl = userProfile.avatarUrl || authData.avatar_url;
+                avatarPreview.style.backgroundImage = avatarUrl ? `url(${avatarUrl})` : 'none';
+            }
+            
+            // 检查Gist同步状态
+            checkGistSyncStatus();
+        } catch (e) {
+            console.error('加载用户资料失败:', e);
+            // 如果出现任何错误，初始化为空资料
+            userProfile = {
+                nickname: '',
+                signature: '',
+                avatarUrl: ''
+            };
+        }
     }
     
     // 处理个人资料表单提交
@@ -1448,8 +1567,21 @@ document.addEventListener('DOMContentLoaded', () => {
             avatarUrl: avatarUrlInput.value.trim()
         };
         
-        // 保存个人资料
-        saveUserProfile();
+        // 显示加载指示器
+        const submitButton = document.querySelector('#profile-form button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.innerText = '保存中...';
+        }
+        
+        // 保存个人资料（现在是异步的）
+        const saveResult = await saveUserProfile();
+        
+        // 恢复按钮状态
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerText = '保存';
+        }
         
         // 处理管理员设置（如果存在）
         const adminUsernameInput = document.getElementById('admin-username');
@@ -1483,27 +1615,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 显示成功消息
-        showRateLimitWarning(document.getElementById('profile-form'), '个人资料已更新', 'success');
+        const statusMessage = saveResult ? 
+            '个人资料已更新并同步到Gist' : 
+            '个人资料已更新（仅保存到本地）';
+        showRateLimitWarning(document.getElementById('profile-form'), statusMessage, saveResult ? 'success' : 'warning');
     }
     
     // 获取用户显示名称
-    function getDisplayName(username) {
+    async function getDisplayName(username) {
         // 如果是当前用户，且设置了昵称，则使用昵称
-        if (isAuthenticated() && authData.username === username && userProfile.nickname) {
+        if (isAuthenticated() && authData.username === username && userProfile && userProfile.nickname) {
             return userProfile.nickname;
         }
         
-        // 获取存储的其他用户资料
-        const storedProfile = localStorage.getItem(`userProfile_${username}`);
-        if (storedProfile) {
-            try {
-                const profile = JSON.parse(storedProfile);
-                if (profile.nickname) {
-                    return profile.nickname;
-                }
-            } catch (e) {
-                console.error('解析其他用户资料失败:', e);
+        try {
+            // 尝试从Gist获取
+            const profile = await getUserProfileFromGist(username);
+            if (profile && profile.nickname) {
+                return profile.nickname;
             }
+        } catch (e) {
+            console.error(`获取用户${username}的显示名称失败:`, e);
         }
         
         // 默认返回GitHub用户名
@@ -1511,23 +1643,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 获取用户头像URL
-    function getAvatarUrl(username, defaultUrl) {
+    async function getAvatarUrl(username, defaultUrl) {
         // 如果是当前用户，且设置了头像，则使用自定义头像
-        if (isAuthenticated() && authData.username === username && userProfile.avatarUrl) {
+        if (isAuthenticated() && authData.username === username && userProfile && userProfile.avatarUrl) {
             return userProfile.avatarUrl;
         }
         
-        // 获取存储的其他用户资料
-        const storedProfile = localStorage.getItem(`userProfile_${username}`);
-        if (storedProfile) {
-            try {
-                const profile = JSON.parse(storedProfile);
-                if (profile.avatarUrl) {
-                    return profile.avatarUrl;
-                }
-            } catch (e) {
-                console.error('解析其他用户头像失败:', e);
+        try {
+            // 尝试从Gist获取
+            const profile = await getUserProfileFromGist(username);
+            if (profile && profile.avatarUrl) {
+                return profile.avatarUrl;
             }
+        } catch (e) {
+            console.error(`获取用户${username}的头像URL失败:`, e);
         }
         
         // 默认返回GitHub头像
@@ -1535,23 +1664,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // 获取用户签名
-    function getUserSignature(username) {
+    async function getUserSignature(username) {
         // 如果是当前用户，且设置了签名，则使用签名
-        if (isAuthenticated() && authData.username === username && userProfile.signature) {
+        if (isAuthenticated() && authData.username === username && userProfile && userProfile.signature) {
             return userProfile.signature;
         }
         
-        // 获取存储的其他用户资料
-        const storedProfile = localStorage.getItem(`userProfile_${username}`);
-        if (storedProfile) {
-            try {
-                const profile = JSON.parse(storedProfile);
-                if (profile.signature) {
-                    return profile.signature;
-                }
-            } catch (e) {
-                console.error('解析其他用户签名失败:', e);
+        try {
+            // 尝试从Gist获取
+            const profile = await getUserProfileFromGist(username);
+            if (profile && profile.signature) {
+                return profile.signature;
             }
+        } catch (e) {
+            console.error(`获取用户${username}的签名失败:`, e);
         }
         
         return '';
@@ -1571,9 +1697,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const tabId = button.getAttribute('data-tab');
                 showTabContent(tabId);
                 
-                // 如果切换到个人资料页并且是管理员，显示管理员设置
-                if (tabId === 'profile' && isAdmin()) {
-                    showAdminSettings();
+                // 如果切换到个人资料页面
+                if (tabId === 'profile') {
+                    // 检查Gist同步状态
+                    checkGistSyncStatus();
+                    
+                    // 如果是管理员，显示管理员设置
+                    if (isAdmin()) {
+                        showAdminSettings();
+                    }
                 }
             });
         });
@@ -2353,6 +2485,195 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('更新Issue失败:', error);
             return null;
+        }
+    }
+    
+    // 用户个人资料管理 - Gist版本
+    // 创建或更新用户个人资料的Gist
+    async function createOrUpdateProfileGist(profileData) {
+        if (!isAuthenticated()) return null;
+
+        try {
+            // 尝试从localStorage获取已存储的Gist ID
+            const gistId = localStorage.getItem(`gistProfile_${authData.username}`);
+            const description = `${authData.username} 的个人资料数据`;
+            
+            // 准备Gist内容
+            const fileContent = {
+                content: JSON.stringify({
+                    ...profileData,
+                    lastUpdated: new Date().toISOString()
+                }, null, 2)
+            };
+            
+            let response;
+            
+            if (gistId) {
+                // 更新现有Gist
+                response = await fetch(`${GITHUB_API_URL}/gists/${gistId}`, {
+                    method: 'PATCH',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        description: description,
+                        files: {
+                            'profile.json': fileContent
+                        }
+                    })
+                });
+            } else {
+                // 创建新Gist
+                response = await fetch(`${GITHUB_API_URL}/gists`, {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: JSON.stringify({
+                        description: description,
+                        public: false, // 设置为私有Gist以提高隐私保护
+                        files: {
+                            'profile.json': fileContent
+                        }
+                    })
+                });
+            }
+            
+            if (!response.ok) {
+                throw new Error(`Gist操作失败: ${response.status}`);
+            }
+            
+            const gistData = await response.json();
+            
+            // 保存Gist ID到localStorage
+            localStorage.setItem(`gistProfile_${authData.username}`, gistData.id);
+            
+            // 更新内存中的用户个人资料
+            userProfile = profileData;
+            
+            return gistData;
+        } catch (error) {
+            console.error('创建/更新个人资料Gist失败:', error);
+            
+            // 失败时依然更新本地缓存，确保用户不会丢失设置
+            localStorage.setItem(`userProfile_${authData.username}`, JSON.stringify(profileData));
+            
+            // 显示错误通知
+            showRateLimitWarning(document.body, `保存个人资料到Gist失败: ${error.message}`, 'error');
+            return null;
+        }
+    }
+
+    // 获取用户个人资料 - 支持Gist
+    async function getUserProfileFromGist(username) {
+        try {
+            // 首先尝试从内存缓存获取用户资料列表
+            if (!window.userProfileCache) {
+                window.userProfileCache = {};
+            }
+            
+            // 如果缓存中已存在且未超时，直接返回
+            if (window.userProfileCache[username] && 
+                (new Date().getTime() - window.userProfileCache[username].timestamp < 300000)) { // 5分钟缓存
+                return window.userProfileCache[username].data;
+            }
+            
+            // 查询此用户的所有Gist
+            const response = await fetch(`${GITHUB_API_URL}/users/${username}/gists`, {
+                headers: {
+                    'Accept': 'application/vnd.github.v3+json',
+                    // 只添加token如果是当前用户
+                    ...(isAuthenticated() && authData.username === username ? {'Authorization': `token ${authData.token}`} : {})
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`获取Gist列表失败: ${response.status}`);
+            }
+            
+            const gists = await response.json();
+            
+            // 查找描述中包含"个人资料数据"的Gist
+            const profileGist = gists.find(gist => 
+                gist.description && gist.description.includes('个人资料数据') && 
+                gist.files && gist.files['profile.json']
+            );
+            
+            if (!profileGist) {
+                // 如果找不到Gist，尝试从localStorage获取
+                return getLocalUserProfile(username);
+            }
+            
+            // 获取Gist详情
+            const gistResponse = await fetch(profileGist.files['profile.json'].raw_url);
+            if (!gistResponse.ok) {
+                throw new Error(`获取Gist内容失败: ${gistResponse.status}`);
+            }
+            
+            const profileData = await gistResponse.json();
+            
+            // 更新缓存
+            window.userProfileCache[username] = {
+                data: profileData,
+                timestamp: new Date().getTime()
+            };
+            
+            return profileData;
+        } catch (error) {
+            console.error(`获取${username}的个人资料Gist失败:`, error);
+            // 降级到localStorage
+            return getLocalUserProfile(username);
+        }
+    }
+
+    // 从localStorage获取用户资料（作为后备）
+    function getLocalUserProfile(username) {
+        // 当前用户
+        if (isAuthenticated() && authData.username === username && userProfile) {
+            return userProfile;
+        }
+        
+        // 其他用户
+        const storedProfile = localStorage.getItem(`userProfile_${username}`);
+        if (storedProfile) {
+            try {
+                return JSON.parse(storedProfile);
+            } catch (e) {
+                console.error('解析本地用户资料失败:', e);
+            }
+        }
+        
+        return null;
+    }
+
+    // 修改保存用户个人资料函数，使用Gist
+    async function saveUserProfile() {
+        if (!isAuthenticated()) return false;
+        
+        // 先保存到localStorage作为备份
+        localStorage.setItem(`userProfile_${authData.username}`, JSON.stringify(userProfile));
+        
+        // 尝试保存到Gist
+        try {
+            const gistData = await createOrUpdateProfileGist(userProfile);
+            
+            // 更新Gist同步状态
+            if (gistData) {
+                const statusElement = document.getElementById('gist-sync-status');
+                if (statusElement) {
+                    statusElement.className = 'gist-sync-status synced';
+                    statusElement.querySelector('.status-text').textContent = '已同步到Gist (刚刚)';
+                }
+            }
+            
+            return !!gistData;
+        } catch (error) {
+            console.error('保存用户个人资料失败:', error);
+            
+            // 更新Gist同步状态为错误
+            const statusElement = document.getElementById('gist-sync-status');
+            if (statusElement) {
+                statusElement.className = 'gist-sync-status error';
+                statusElement.querySelector('.status-text').textContent = `同步失败: ${error.message}`;
+            }
+            
+            return false;
         }
     }
     
