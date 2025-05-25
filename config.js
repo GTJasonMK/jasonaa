@@ -3,13 +3,77 @@
  * 定义各种可配置的设置及其默认值
  */
 document.addEventListener('DOMContentLoaded', () => {
+    // 尝试从settings-loader中获取配置
+    if (window.settingsManager) {
+        const loadedSettings = window.settingsManager.loadUserSettings();
+        if (loadedSettings) {
+            try {
+                // 使用已加载的设置
+                window.appConfig = {
+                    audio: {
+                        volume: loadedSettings.audio?.volume || 0.8,
+                        noteDelay: loadedSettings.audio?.noteDelay || 400,
+                        answerDelay: loadedSettings.audio?.answerDelay || 1000,
+                        autoPlayNext: loadedSettings.audio?.autoPlayNext ?? true,
+                        soundEffects: loadedSettings.audio?.soundEffects ?? true
+                    },
+                    game: {
+                        startingDifficulty: loadedSettings.music?.startingDifficulty || 0,
+                        defaultMelodyLength: loadedSettings.music?.melodyLength || 3,
+                        pointsPerCorrect: loadedSettings.music?.pointsPerCorrect || 10,
+                        showHints: loadedSettings.music?.showHints ?? true,
+                        gameSpeed: loadedSettings.games?.gameSpeed || 5,
+                        vibrationFeedback: loadedSettings.games?.vibrationFeedback ?? true,
+                        snakeColor: loadedSettings.games?.snakeColor || 'green',
+                        tetrisRotationSystem: loadedSettings.games?.tetrisRotationSystem || 'classic'
+                    },
+                    ui: {
+                        theme: loadedSettings.ui?.theme || 'dark',
+                        fontSize: loadedSettings.ui?.fontSize || 16,
+                        animations: loadedSettings.ui?.animations ?? true
+                    },
+                    accessibility: {
+                        colorBlindMode: loadedSettings.ui?.highContrast ?? false,
+                        highContrast: loadedSettings.ui?.highContrast ?? false,
+                        keyboardShortcuts: true
+                    },
+                    forum: {
+                        showAvatars: loadedSettings.forum?.showAvatars ?? true,
+                        commentsPerPage: loadedSettings.forum?.commentsPerPage || 10,
+                        defaultSort: loadedSettings.forum?.defaultSort || 'newest'
+                    }
+                };
+                
+                // 导出配置管理函数
+                window.configManager = {
+                    saveConfig: function() {
+                        return window.settingsManager.saveUserSettings();
+                    },
+                    resetConfig: function() {
+                        return window.settingsManager.resetAllSettings();
+                    },
+                    updateConfig: function(category, setting, value) {
+                        return window.settingsManager.updateSetting(category, setting, value);
+                    }
+                };
+                
+                console.log('配置已从settingsManager加载');
+                return;
+            } catch (error) {
+                console.error('从settingsManager加载配置时出错:', error);
+                // 继续使用默认配置
+            }
+        }
+    }
+    
+    // 如果无法从settingsManager获取，则使用默认配置
     // 默认配置
     const defaultConfig = {
         audio: {
             volume: 0.8,                // 音量 (0-1)
             noteDelay: 400,             // 音符间隔时间 (毫秒)
             correctAnswerDelay: 1000,   // 答案反馈延迟 (毫秒)
-            autoPlayNextNote: true,     // 回答正确后自动播放下一个音符
+            autoPlayNext: true,         // 回答正确后自动播放下一个音符
             highlightDuration: 500      // 高亮持续时间 (毫秒)
         },
         game: {
@@ -96,4 +160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resetConfig,
         updateConfig
     };
+    
+    console.log('使用默认配置 (settingsManager未找到)');
 }); 

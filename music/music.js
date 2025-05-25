@@ -30,8 +30,8 @@ window.musicFunctions = (function() {
         "A大调": ["A4", "B4", "C#4", "D4", "E4", "F#4", "G#4"],
         "E大调": ["E4", "F#4", "G#4", "A4", "B4", "C#4", "D#4"],
         "B大调": ["B4", "C#4", "D#4", "E4", "F#4", "G#4", "A#4"],
-        "F#大调": ["F#4", "G#4", "A#4", "B4", "C#4", "D#4", "F4"],
-        "C#大调": ["C#4", "D#4", "F4", "F#4", "G#4", "A#4", "C5"]
+        "F#大调": ["F#4", "G#4", "A#4", "B4", "C#4", "D#4", "E#4"],
+        "C#大调": ["C#4", "D#4", "E#4", "F#4", "G#4", "A#4", "B#4"]
     };
 
     // 音域范围选项
@@ -154,7 +154,8 @@ window.musicFunctions = (function() {
         
         // 获取用户设置
         const settings = loadUserSettings();
-        const delay = settings.audio.noteDelay || 400;
+        const audioSettings = settings.audio || { noteDelay: 400 };
+        const delay = audioSettings.noteDelay || 400;
         
         // 依次播放音阶中的每个音符
         const notes = SCALES[scaleName];
@@ -174,7 +175,8 @@ window.musicFunctions = (function() {
         
         // 获取用户设置
         const settings = loadUserSettings();
-        const delay = settings.audio.noteDelay || 400;
+        const audioSettings = settings.audio || { noteDelay: 400 };
+        const delay = audioSettings.noteDelay || 400;
         
         // 依次播放旋律中的每个音符
         melody.forEach((note, index) => {
@@ -207,13 +209,46 @@ window.musicFunctions = (function() {
 
     // 加载用户设置
     function loadUserSettings() {
+        // 首先检查是否有全局设置管理器
+        if (window.settingsManager) {
+            try {
+                const settings = window.settingsManager.loadUserSettings();
+                if (settings) {
+                    // 需要将music.* 映射到 game.* 以兼容当前代码
+                    return {
+                        audio: settings.audio || { 
+                            volume: 0.8, 
+                            noteDelay: 400, 
+                            answerDelay: 1000, 
+                            autoPlayNext: true 
+                        },
+                        game: { 
+                            startingDifficulty: settings.music.startingDifficulty || 0, 
+                            melodyLength: settings.music.melodyLength || 3, 
+                            pointsPerCorrect: settings.music.pointsPerCorrect || 10, 
+                            showHints: settings.music.showHints || true 
+                        },
+                        ui: settings.ui || { 
+                            theme: 'dark',
+                            fontSize: 16,
+                            animations: true,
+                            highContrast: false 
+                        }
+                    };
+                }
+            } catch (e) {
+                console.error('Error loading settings from settingsManager:', e);
+            }
+        }
+        
+        // 如果没有settingsManager或加载失败，尝试从localStorage直接加载
         let settings = localStorage.getItem('userSettings');
         
         if (settings) {
             try {
                 return JSON.parse(settings);
             } catch (e) {
-                console.error('Error loading settings:', e);
+                console.error('Error loading settings from localStorage:', e);
             }
         }
         
@@ -398,7 +433,9 @@ window.musicFunctions = (function() {
     // 创建单音辨听训练UI
     function createSingleNoteTrainingUI() {
         const settings = loadUserSettings();
-        const defaultDifficulty = settings.game.startingDifficulty || 0;
+        // 确保settings.game存在，如果不存在则使用默认值
+        const gameSettings = settings.game || { startingDifficulty: 0 };
+        const defaultDifficulty = gameSettings.startingDifficulty || 0;
         
         return `
             <h3>单音辨听训练</h3>
@@ -490,14 +527,15 @@ window.musicFunctions = (function() {
                             
                             // 获取用户设置
                             const settings = loadUserSettings();
+                            const audioSettings = settings.audio || { autoPlayNext: true, answerDelay: 1000 };
                             
                             setTimeout(() => {
                                 // 成功后自动播放下一个音符
                                 noteButton.classList.remove('correct');
-                                if (settings.audio.autoPlayNext) {
+                                if (audioSettings.autoPlayNext) {
                                     playRandomNote();
                                 }
-                            }, settings.audio.answerDelay || 1000);
+                            }, audioSettings.answerDelay || 1000);
                         } else {
                             errorCount++;
                             noteButton.classList.add('incorrect');
@@ -552,8 +590,10 @@ window.musicFunctions = (function() {
     // 创建多音辨听训练UI
     function createMultiNoteTrainingUI() {
         const settings = loadUserSettings();
-        const defaultMelodyLength = settings.game.melodyLength || 3;
-        const defaultDifficulty = settings.game.startingDifficulty || 0;
+        // 确保settings.game存在，如果不存在则使用默认值
+        const gameSettings = settings.game || { melodyLength: 3, startingDifficulty: 0 };
+        const defaultMelodyLength = gameSettings.melodyLength || 3;
+        const defaultDifficulty = gameSettings.startingDifficulty || 0;
         
         return `
             <h3>多音辨听训练</h3>
@@ -747,9 +787,11 @@ window.musicFunctions = (function() {
             
             // 获取设置
             const settings = loadUserSettings();
-            const pointsPerCorrect = settings.game.pointsPerCorrect || 10;
+            const audioSettings = settings.audio || { answerDelay: 1000 };
+            const gameSettings = settings.game || { pointsPerCorrect: 10 };
             
             // 计算分数
+            const pointsPerCorrect = gameSettings.pointsPerCorrect || 10;
             const newScore = correctCount * pointsPerCorrect;
             melodyScore += newScore;
             
@@ -776,7 +818,7 @@ window.musicFunctions = (function() {
                     setTimeout(() => {
                         playCurrentMelody();
                     }, 500); // 等待半秒后播放，让用户有时间准备
-                }, settings.audio.answerDelay || 1000);
+                }, audioSettings.answerDelay || 1000);
             } else {
                 alert(`回答正确: ${correctCount}/${currentMelody.length}. 得分: ${newScore}`);
                 // 答错，分数归零

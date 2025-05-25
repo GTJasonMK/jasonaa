@@ -11,9 +11,58 @@ document.addEventListener('DOMContentLoaded', () => {
     const leftBtn = document.getElementById('left-btn');
     const rightBtn = document.getElementById('right-btn');
 
+    // 从设置管理器加载设置
+    let gameSpeed = 150; // 默认游戏速度（毫秒）
+    let snakeColor = '#4CAF50'; // 默认蛇身颜色
+    let snakeHeadColor = '#2E7D32'; // 默认蛇头颜色
+    
+    // 尝试从settingsManager加载设置
+    if (window.settingsManager) {
+        try {
+            const settings = window.settingsManager.loadUserSettings();
+            if (settings && settings.games) {
+                // 游戏速度: 1-10，值越大速度越快，转换为实际速度: 200-50ms
+                const speedValue = settings.games.gameSpeed || 5;
+                gameSpeed = Math.round(200 - (speedValue * 15));
+                
+                // 设置蛇的颜色
+                if (settings.games.snakeColor) {
+                    switch (settings.games.snakeColor) {
+                        case 'green':
+                            snakeColor = '#4CAF50';
+                            snakeHeadColor = '#2E7D32';
+                            break;
+                        case 'blue':
+                            snakeColor = '#2196F3';
+                            snakeHeadColor = '#0D47A1';
+                            break;
+                        case 'red':
+                            snakeColor = '#F44336';
+                            snakeHeadColor = '#B71C1C';
+                            break;
+                        case 'purple':
+                            snakeColor = '#9C27B0';
+                            snakeHeadColor = '#4A148C';
+                            break;
+                        case 'orange':
+                            snakeColor = '#FF9800';
+                            snakeHeadColor = '#E65100';
+                            break;
+                        default:
+                            // 使用默认颜色
+                            break;
+                    }
+                }
+                
+                console.log('已从settingsManager加载Snake游戏设置');
+            }
+        } catch (e) {
+            console.error('加载Snake游戏设置时出错:', e);
+        }
+    }
+
     // 游戏配置
     const gridSize = 20; // 网格大小
-    const gameSpeed = 150; // 初始游戏速度（毫秒）
     
     // 游戏状态
     let snake = [];
@@ -31,8 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 颜色
     const colors = {
         background: '#eee',
-        snake: '#4CAF50',
-        snakeHead: '#2E7D32',
+        snake: snakeColor,
+        snakeHead: snakeHeadColor,
         food: '#FF5722',
         border: '#ddd'
     };
@@ -180,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '30px Microsoft YaHei';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('游戏结束，菜鸡小牛!', canvas.width / 2, canvas.height / 2 - 30);
+        ctx.fillText('游戏结束!', canvas.width / 2, canvas.height / 2 - 30);
         
         ctx.font = '20px Microsoft YaHei';
         ctx.fillText(`最终得分: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
@@ -252,24 +301,35 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('touchmove', (e) => {
         if (!touchStartX || !touchStartY) return;
         
-        const touchEndX = e.touches[0].clientX;
-        const touchEndY = e.touches[0].clientY;
-        
-        const dx = touchEndX - touchStartX;
-        const dy = touchEndY - touchStartY;
-        
-        // 判断滑动方向（水平或垂直滑动距离更大的方向）
-        if (Math.abs(dx) > Math.abs(dy)) {
-            // 水平滑动
-            changeDirection(dx > 0 ? 'right' : 'left');
-        } else {
-            // 垂直滑动
-            changeDirection(dy > 0 ? 'down' : 'up');
+        try {
+            const touchEndX = e.touches[0].clientX;
+            const touchEndY = e.touches[0].clientY;
+            
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+            
+            // 判断滑动方向（水平或垂直滑动距离更大的方向）
+            // 增加最小滑动距离阈值，避免意外触发
+            const minSwipeDistance = 10;
+            
+            if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) {
+                return; // 滑动距离太小，可能是意外触摸
+            }
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // 水平滑动
+                changeDirection(dx > 0 ? 'right' : 'left');
+            } else {
+                // 垂直滑动
+                changeDirection(dy > 0 ? 'down' : 'up');
+            }
+            
+            // 重置起始点，允许在同一次触摸中多次改变方向
+            touchStartX = touchEndX;
+            touchStartY = touchEndY;
+        } catch (error) {
+            console.error('处理触摸事件时出错:', error);
         }
-        
-        // 重置起始点，允许在同一次触摸中多次改变方向
-        touchStartX = touchEndX;
-        touchStartY = touchEndY;
         
         e.preventDefault(); // 防止页面滚动
     }, { passive: false });

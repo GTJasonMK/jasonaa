@@ -2,9 +2,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // GitHub API配置
     const GITHUB_API_URL = 'https://api.github.com';
     
-    // 您的GitHub仓库信息 - 用户需要更新这部分
-    const REPO_OWNER = '13108387302'; // 需要更新为您的GitHub用户名
-    const REPO_NAME = 'jasonaa'; // 需要更新为您的仓库名
+    // 从URL或配置中获取GitHub仓库信息 - 更加灵活的方式
+    let REPO_OWNER, REPO_NAME;
+    
+    // 尝试从URL中获取参数
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // 尝试从localStorage或参数中获取仓库信息
+    REPO_OWNER = localStorage.getItem('forum_repo_owner') || 
+                 urlParams.get('owner') || 
+                 '13108387302'; // 默认值
+    
+    REPO_NAME = localStorage.getItem('forum_repo_name') || 
+                urlParams.get('repo') || 
+                'jasonaa'; // 默认值
+    
+    // 如果URL中有参数，保存到localStorage
+    if (urlParams.get('owner')) {
+        localStorage.setItem('forum_repo_owner', urlParams.get('owner'));
+    }
+    if (urlParams.get('repo')) {
+        localStorage.setItem('forum_repo_name', urlParams.get('repo'));
+    }
+    
+    // 显示当前连接的仓库信息
+    const repoInfoElement = document.createElement('div');
+    repoInfoElement.className = 'repo-info';
+    repoInfoElement.innerHTML = `当前连接: ${REPO_OWNER}/${REPO_NAME} 
+        <button id="change-repo-btn" title="更改仓库">⚙️</button>`;
+    document.querySelector('.container').insertBefore(
+        repoInfoElement, 
+        document.querySelector('.container').firstChild
+    );
+    
+    // 添加更改仓库按钮事件
+    document.getElementById('change-repo-btn').addEventListener('click', () => {
+        const newOwner = prompt('请输入GitHub用户名:', REPO_OWNER);
+        if (newOwner) {
+            const newRepo = prompt('请输入仓库名:', REPO_NAME);
+            if (newRepo) {
+                localStorage.setItem('forum_repo_owner', newOwner);
+                localStorage.setItem('forum_repo_name', newRepo);
+                window.location.reload();
+            }
+        }
+    });
     
     // 管理员用户名列表 - 默认仓库所有者为管理员
     let ADMIN_USERS = [REPO_OWNER];
@@ -839,6 +881,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 加载点赞状态和数量
                 loadCommentLikes(comment.id, likeButton);
                 
+                // 添加到评论列表中
+                commentsList.appendChild(commentElement);
+                
                 // 添加删除评论的事件监听器
                 const deleteButton = commentElement.querySelector('.delete-comment-btn');
                 if (deleteButton) {
@@ -849,8 +894,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                 }
-                
-                commentsList.appendChild(commentElement);
             });
         })
         .catch(error => {
@@ -1667,13 +1710,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 删除评论
     function deleteComment(commentId) {
-        if (!isAdmin()) {
-            showRateLimitWarning(commentsList, '你没有权限执行此操作', 'error');
+        if (!isAdmin() || !commentId) {
+            showRateLimitWarning(commentsList, '你没有权限执行此操作或评论ID无效', 'error');
             return;
         }
         
         // 找到要删除的评论元素
-        const commentElement = document.querySelector(`.delete-comment-btn[data-comment-id="${commentId}"]`).closest('.comment-item');
+        const commentElement = document.querySelector(`.comment-item[data-comment-id="${commentId}"]`);
         if (commentElement) {
             // 显示删除中状态
             commentElement.style.opacity = '0.5';
@@ -1936,6 +1979,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // 确保commentId有效
+        if (!commentId) {
+            console.error('评论ID不能为空');
+            return;
+        }
+        
         // 禁用按钮，防止重复点击
         buttonElement.disabled = true;
         
@@ -1975,6 +2024,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 .catch(error => {
                     console.error('取消评论点赞失败:', error);
                     buttonElement.disabled = false;
+                    showRateLimitWarning(commentsList, `取消点赞失败: ${error.message}`, 'error');
                 });
             });
         } else {
@@ -2003,12 +2053,18 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => {
                 console.error('评论点赞失败:', error);
                 buttonElement.disabled = false;
+                showRateLimitWarning(commentsList, `点赞失败: ${error.message}`, 'error');
             });
         }
     }
     
     // 获取用户对指定评论的reaction ID
     function getCommentReactionId(commentId) {
+        if (!commentId) {
+            console.error('评论ID不能为空');
+            return Promise.resolve(null);
+        }
+        
         return fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues/comments/${commentId}/reactions`, {
             method: 'GET',
             headers: {
@@ -2044,8 +2100,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (configIssue && configIssue.body) {
             try {
+                // 提取正文中的JSON部分，移除HTML注释
+                const jsonContent = configIssue.body.replace(/<!--[\s\S]*?-->/g, '').trim();
                 // 尝试解析配置Issue的内容
-                const config = JSON.parse(configIssue.body);
+                const config = JSON.parse(jsonContent);
                 
                 // 确保仓库所有者始终是管理员
                 if (config.admins && Array.isArray(config.admins)) {
@@ -2252,16 +2310,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 创建配置Issue
     async function createConfigIssue(configData) {
         try {
+            // 确保configData是有效的JSON字符串
             const response = await fetch(`${GITHUB_API_URL}/repos/${REPO_OWNER}/${REPO_NAME}/issues`, {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
                     title: CONFIG_ISSUE_TITLE,
-                    body: configData,
-                    labels: [CONFIG_ISSUE_LABEL],
-                    // 添加一个随机字符，使配置Issue看起来像一个加密内容
-                    // 这只是一种视觉提示，表明这是系统配置
-                    body: `<!-- SYSTEM_CONFIG DO NOT MODIFY MANUALLY -->\n${configData}\n<!-- END_OF_CONFIG -->`
+                    body: configData, // 直接使用JSON字符串，不添加HTML注释
+                    labels: [CONFIG_ISSUE_LABEL]
                 })
             });
             
@@ -2284,7 +2340,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'PATCH',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({ 
-                    body: `<!-- SYSTEM_CONFIG DO NOT MODIFY MANUALLY -->\n${issueBody}\n<!-- END_OF_CONFIG -->`
+                    body: issueBody // 直接使用JSON字符串，不添加HTML注释
                 })
             });
             

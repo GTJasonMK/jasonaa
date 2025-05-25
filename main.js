@@ -1,8 +1,8 @@
 ﻿// 获取当前配置
-const config = window.appConfig || {
-    audio: { correctAnswerDelay: 1000, autoPlayNextNote: true },
-    game: { startingDifficulty: 0, defaultMelodyLength: 3 }
-};
+// const config = window.appConfig || {
+//    audio: { correctAnswerDelay: 1000, autoPlayNextNote: true },
+//    game: { startingDifficulty: 0, defaultMelodyLength: 3 }
+// };
 
 document.addEventListener('DOMContentLoaded', () => {
     // 获取当前配置
@@ -37,29 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // 游戏卡片点击事件
+    // 游戏卡片鼠标悬停效果，移除冗余的点击事件处理
     const gameCards = document.querySelectorAll('.game-card:not(.coming-soon)');
     
     gameCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const game = this.getAttribute('data-game');
-            if (game) {
-                // 根据游戏类型跳转到相应页面
-                switch(game) {
-                    case 'snake':
-                        window.location.href = 'games/snake/snake.html';
-                        break;
-                    case 'tetris':
-                        window.location.href = 'games/tetris/tetris.html';
-                        break;
-                    case '2048':
-                        window.location.href = 'games/2048/2048.html';
-                        break;
-                    default:
-                        console.log('游戏开发中...');
-                }
-            }
-        });
+        // 移除冗余的点击事件监听器，使用HTML中的onclick属性
         
         // 添加鼠标悬停效果
         card.addEventListener('mouseenter', function() {
