@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function gameOver() {
         clearInterval(gameInterval);
         isRunning = false;
-        startBtn.textContent = '重新开始';
+        startBtn.textContent = '开始新游戏';
         
         // 显示游戏结束消息
         ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isRunning) {
             clearInterval(gameInterval);
             isRunning = false;
-            startBtn.textContent = '暂停游戏';
+            startBtn.textContent = '继续游戏';
         } else {
             isRunning = true;
             startBtn.textContent = '暂停游戏';
@@ -259,24 +259,29 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'ArrowUp':
             case 'w':
             case 'W':
+                event.preventDefault(); // 阻止页面滚动
                 if (direction !== 'down') nextDirection = 'up';
                 break;
             case 'ArrowDown':
             case 's':
             case 'S':
+                event.preventDefault(); // 阻止页面滚动
                 if (direction !== 'up') nextDirection = 'down';
                 break;
             case 'ArrowLeft':
             case 'a':
             case 'A':
+                event.preventDefault(); // 阻止页面滚动
                 if (direction !== 'right') nextDirection = 'left';
                 break;
             case 'ArrowRight':
             case 'd':
             case 'D':
+                event.preventDefault(); // 阻止页面滚动
                 if (direction !== 'left') nextDirection = 'right';
                 break;
             case ' ':
+                event.preventDefault(); // 阻止页面滚动
                 // 空格键暂停/继续游戏
                 if (isRunning || startBtn.textContent === '继续游戏') {
                     startGame();
@@ -348,8 +353,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 按钮点击事件
     startBtn.addEventListener('click', function() {
-        console.log('点击开始按钮');
-        if (startBtn.textContent === '重新开始') {
+        console.log('点击开始/暂停按钮');
+        if (startBtn.textContent === '开始新游戏') {
             initGame();
         }
         startGame();
@@ -357,11 +362,23 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 为开始按钮也添加touchend事件，因为在移动设备上可能触发不了click事件
     startBtn.addEventListener('touchend', function() {
-        console.log('触摸开始按钮');
-        if (startBtn.textContent === '重新开始') {
+        console.log('触摸开始/暂停按钮');
+        if (startBtn.textContent === '开始新游戏') {
             initGame();
         }
         startGame();
+    }, { passive: true });
+    
+    // 重置按钮事件 - 随时可以重新开始游戏
+    const resetBtn = document.getElementById('reset-btn');
+    resetBtn.addEventListener('click', function() {
+        console.log('点击重置按钮');
+        initGame();
+    });
+    
+    resetBtn.addEventListener('touchend', function() {
+        console.log('触摸重置按钮');
+        initGame();
     }, { passive: true });
 
     // 初始化游戏
