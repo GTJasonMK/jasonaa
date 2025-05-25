@@ -26,13 +26,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const continueBtn = document.getElementById('continue-btn');
     const newGameBtn = document.getElementById('new-game-btn');
     
-    // 移动端控制
-    const mobileControls = document.getElementById('mobile-controls');
-    const mobileUp = document.getElementById('mobile-up');
-    const mobileDown = document.getElementById('mobile-down');
-    const mobileLeft = document.getElementById('mobile-left');
-    const mobileRight = document.getElementById('mobile-right');
-    
     // 初始化游戏
     function initGame() {
         // 创建空网格
@@ -525,47 +518,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 移动端控制
-    mobileUp.addEventListener('click', () => move('up'));
-    mobileDown.addEventListener('click', () => move('down'));
-    mobileLeft.addEventListener('click', () => move('left'));
-    mobileRight.addEventListener('click', () => move('right'));
-    
-    // 移动控制检测，显示移动端控制
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-        mobileControls.style.display = 'grid';
-    }
-    
     // 触摸屏滑动操作
     let touchStartX = 0;
     let touchStartY = 0;
     let touchEndX = 0;
     let touchEndY = 0;
     
-    document.addEventListener('touchstart', function(e) {
-        touchStartX = e.changedTouches[0].screenX;
-        touchStartY = e.changedTouches[0].screenY;
-    }, false);
+    gameBoard.addEventListener('touchstart', function(e) {
+        touchStartX = e.changedTouches[0].clientX;
+        touchStartY = e.changedTouches[0].clientY;
+        e.preventDefault(); // 防止页面滚动
+    }, { passive: false });
     
-    document.addEventListener('touchend', function(e) {
-        touchEndX = e.changedTouches[0].screenX;
-        touchEndY = e.changedTouches[0].screenY;
+    gameBoard.addEventListener('touchmove', function(e) {
+        e.preventDefault(); // 防止页面滚动
+    }, { passive: false });
+    
+    gameBoard.addEventListener('touchend', function(e) {
+        e.preventDefault(); // 防止页面滚动
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
         
         handleSwipe();
-    }, false);
+    }, { passive: false });
     
     function handleSwipe() {
         const xDiff = touchEndX - touchStartX;
         const yDiff = touchEndY - touchStartY;
         
+        // 设置最小滑动距离，防止意外触发
+        const minSwipeDistance = 30;
+        
         // 确定主要方向（水平或垂直）
-        if (Math.abs(xDiff) > Math.abs(yDiff)) {
+        if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > minSwipeDistance) {
             if (xDiff > 0) {
                 move('right');
             } else {
                 move('left');
             }
-        } else {
+        } else if (Math.abs(yDiff) > minSwipeDistance) {
             if (yDiff > 0) {
                 move('down');
             } else {

@@ -75,12 +75,7 @@ function initGame() {
     // 检测是否为移动设备
     isMobile = detectMobile();
     if (isMobile) {
-        document.querySelector('.tetris-mobile-controls').style.display = 'grid';
-        document.querySelector('.touch-instructions').style.display = 'block';
         setupMobileControls();
-    } else {
-        document.querySelector('.tetris-mobile-controls').style.display = 'none';
-        document.querySelector('.touch-instructions').style.display = 'none';
     }
     
     // 初始化游戏板
@@ -533,57 +528,50 @@ function setupKeyboardControls() {
 
 // 设置移动端控制
 function setupMobileControls() {
-    // 左移按钮
-    document.querySelector('.mobile-btn.left').addEventListener('click', function() {
-        movePiece(-1, 0);
-    });
-    
-    // 右移按钮
-    document.querySelector('.mobile-btn.right').addEventListener('click', function() {
-        movePiece(1, 0);
-    });
-    
-    // 旋转按钮
-    document.querySelector('.mobile-btn.rotate').addEventListener('click', function() {
-        rotatePiece();
-    });
-    
-    // 下移按钮
-    document.querySelector('.mobile-btn.down').addEventListener('click', function() {
-        movePiece(0, 1);
-    });
-    
-    // 硬降按钮
-    document.querySelector('.mobile-btn.drop').addEventListener('click', function() {
-        hardDrop();
-    });
-    
-    // 暂停按钮
-    document.querySelector('.mobile-btn.pause').addEventListener('click', function() {
-        pauseGame();
-    });
-    
     // 触摸滑动控制
     let touchStartX, touchStartY;
+    let touchStartTime;
+    let lastTapTime = 0;
     
-    document.querySelector('.tetris-board').addEventListener('touchstart', function(e) {
+    boardElement.addEventListener('touchstart', function(e) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        touchStartTime = new Date().getTime();
         e.preventDefault(); // 防止页面滚动
     });
     
-    document.querySelector('.tetris-board').addEventListener('touchmove', function(e) {
+    boardElement.addEventListener('touchmove', function(e) {
         e.preventDefault(); // 防止页面滚动
     });
     
-    document.querySelector('.tetris-board').addEventListener('touchend', function(e) {
+    boardElement.addEventListener('touchend', function(e) {
         if (!touchStartX || !touchStartY) return;
+        e.preventDefault(); // 防止页面滚动
         
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = new Date().getTime();
         
         const diffX = touchEndX - touchStartX;
         const diffY = touchEndY - touchStartY;
+        
+        // 判断是否是快速点击（双击用于硬降）
+        const tapLength = touchEndTime - touchStartTime;
+        if (tapLength < 200 && Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+            // 检查是否是双击
+            const currentTime = new Date().getTime();
+            const tapInterval = currentTime - lastTapTime;
+            if (tapInterval < 300) {
+                // 双击实现硬降
+                hardDrop();
+                lastTapTime = 0;
+            } else {
+                lastTapTime = currentTime;
+            }
+            touchStartX = null;
+            touchStartY = null;
+            return;
+        }
         
         // 需要的最小滑动距离
         const minSwipeDistance = 30;
@@ -614,22 +602,6 @@ function setupMobileControls() {
         
         touchStartX = null;
         touchStartY = null;
-    });
-    
-    // 窗口大小变化时重新检测设备类型
-    window.addEventListener('resize', function() {
-        const wasMobile = isMobile;
-        isMobile = detectMobile();
-        
-        if (wasMobile !== isMobile) {
-            if (isMobile) {
-                document.querySelector('.tetris-mobile-controls').style.display = 'grid';
-                document.querySelector('.touch-instructions').style.display = 'block';
-            } else {
-                document.querySelector('.tetris-mobile-controls').style.display = 'none';
-                document.querySelector('.touch-instructions').style.display = 'none';
-            }
-        }
     });
 }
 

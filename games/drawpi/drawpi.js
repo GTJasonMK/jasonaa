@@ -596,9 +596,9 @@ document.addEventListener('DOMContentLoaded', function() {
             canvas.addEventListener('mouseout', stopDrawing);
         } else {
             // 触摸事件
-            canvas.addEventListener('touchstart', startDrawing);
-            canvas.addEventListener('touchmove', draw);
-            canvas.addEventListener('touchend', stopDrawing);
+            canvas.addEventListener('touchstart', startDrawing, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing, { passive: false });
         }
         
         // 移除按钮事件，因为我们已经隐藏了按钮

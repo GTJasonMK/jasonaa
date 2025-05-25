@@ -5,12 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('start-btn');
     const scoreElement = document.getElementById('score');
     
-    // 获取方向按钮
-    const upBtn = document.getElementById('up-btn');
-    const downBtn = document.getElementById('down-btn');
-    const leftBtn = document.getElementById('left-btn');
-    const rightBtn = document.getElementById('right-btn');
-
     // 从设置管理器加载设置
     let gameSpeed = 150; // 默认游戏速度（毫秒）
     let snakeColor = '#4CAF50'; // 默认蛇身颜色
@@ -310,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // 判断滑动方向（水平或垂直滑动距离更大的方向）
             // 增加最小滑动距离阈值，避免意外触发
-            const minSwipeDistance = 10;
+            const minSwipeDistance = 20;
             
             if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) {
                 return; // 滑动距离太小，可能是意外触摸
@@ -334,38 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault(); // 防止页面滚动
     }, { passive: false });
     
-    canvas.addEventListener('touchend', () => {
+    canvas.addEventListener('touchend', (e) => {
         touchStartX = 0;
         touchStartY = 0;
-    });
-    
-    // 方向按钮事件监听 - 使用touchstart替代click以解决iOS上的延迟问题
-    upBtn.addEventListener('touchstart', (e) => {
-        changeDirection('up');
         e.preventDefault();
     }, { passive: false });
     
-    downBtn.addEventListener('touchstart', (e) => {
-        changeDirection('down');
-        e.preventDefault();
-    }, { passive: false });
-    
-    leftBtn.addEventListener('touchstart', (e) => {
-        changeDirection('left');
-        e.preventDefault();
-    }, { passive: false });
-    
-    rightBtn.addEventListener('touchstart', (e) => {
-        changeDirection('right');
-        e.preventDefault();
-    }, { passive: false });
-    
-    // 保留click事件用于非触摸设备
-    upBtn.addEventListener('click', () => changeDirection('up'));
-    downBtn.addEventListener('click', () => changeDirection('down'));
-    leftBtn.addEventListener('click', () => changeDirection('left'));
-    rightBtn.addEventListener('click', () => changeDirection('right'));
-
     // 按钮点击事件
     startBtn.addEventListener('click', () => {
         if (startBtn.textContent === '重新开始') {
