@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
     const scoreElement = document.getElementById('score');
     
     // 从设置管理器加载设置
@@ -351,35 +352,30 @@ document.addEventListener('DOMContentLoaded', () => {
         touchStartY = 0;
     }, { passive: true });
     
-    // 按钮点击事件
+    // 简化按钮事件处理
     startBtn.addEventListener('click', function() {
-        console.log('点击开始/暂停按钮');
+        console.log('点击开始按钮');
         if (startBtn.textContent === '开始新游戏') {
             initGame();
         }
         startGame();
     });
     
-    // 为开始按钮也添加touchend事件，因为在移动设备上可能触发不了click事件
-    startBtn.addEventListener('touchend', function() {
-        console.log('触摸开始/暂停按钮');
-        if (startBtn.textContent === '开始新游戏') {
-            initGame();
-        }
-        startGame();
-    }, { passive: true });
-    
-    // 重置按钮事件 - 随时可以重新开始游戏
-    const resetBtn = document.getElementById('reset-btn');
     resetBtn.addEventListener('click', function() {
         console.log('点击重置按钮');
         initGame();
     });
     
-    resetBtn.addEventListener('touchend', function() {
-        console.log('触摸重置按钮');
-        initGame();
-    }, { passive: true });
+    // 确保在移动设备上也能快速响应
+    if ('ontouchstart' in window) {
+        startBtn.addEventListener('touchstart', function(e) {
+            console.log('触摸开始按钮');
+        }, { passive: true });
+        
+        resetBtn.addEventListener('touchstart', function(e) {
+            console.log('触摸重置按钮');
+        }, { passive: true });
+    }
 
     // 初始化游戏
     initGame();
