@@ -22,11 +22,6 @@ document.addEventListener('DOMContentLoaded', () => {
                            navigator.maxTouchPoints > 0 || 
                            navigator.msMaxTouchPoints > 0;
     
-    // 从设置管理器加载设置
-    let gameSpeed = 150; // 默认游戏速度（毫秒）
-    let snakeColor = '#4CAF50'; // 默认蛇身颜色
-    let snakeHeadColor = '#2E7D32'; // 默认蛇头颜色
-    
     // 等级系统配置
     const levelConfig = {
         1: { scoreThreshold: 0, speed: 150 },
@@ -41,58 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
         10: { scoreThreshold: 2000, speed: 40 }
     };
     
-    // 尝试从settingsManager加载设置
-    if (window.settingsManager) {
-        try {
-            const settings = window.settingsManager.loadUserSettings();
-            if (settings && settings.games) {
-                // 游戏速度: 1-10，值越大速度越快，转换为实际速度: 200-50ms
-                const speedValue = settings.games.gameSpeed || 5;
-                gameSpeed = Math.round(200 - (speedValue * 15));
-                
-                // 根据用户设置调整等级配置
-                for (let level in levelConfig) {
-                    // 保持相对比例的同时应用用户的速度设置
-                    let ratio = levelConfig[level].speed / 150;
-                    levelConfig[level].speed = Math.round(gameSpeed * ratio);
-                }
-                
-                // 设置蛇的颜色
-                if (settings.games.snakeColor) {
-                    switch (settings.games.snakeColor) {
-                        case 'green':
-                            snakeColor = '#4CAF50';
-                            snakeHeadColor = '#2E7D32';
-                            break;
-                        case 'blue':
-                            snakeColor = '#2196F3';
-                            snakeHeadColor = '#0D47A1';
-                            break;
-                        case 'red':
-                            snakeColor = '#F44336';
-                            snakeHeadColor = '#B71C1C';
-                            break;
-                        case 'purple':
-                            snakeColor = '#9C27B0';
-                            snakeHeadColor = '#4A148C';
-                            break;
-                        case 'orange':
-                            snakeColor = '#FF9800';
-                            snakeHeadColor = '#E65100';
-                            break;
-                        default:
-                            // 使用默认颜色
-                            break;
-                    }
-                }
-                
-                console.log('已从settingsManager加载Snake游戏设置');
-            }
-        } catch (e) {
-            console.error('加载Snake游戏设置时出错:', e);
-        }
-    }
-
     // 游戏配置
     const gridSize = 20; // 网格大小
     
@@ -113,8 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 颜色
     const colors = {
         background: '#eee',
-        snake: snakeColor,
-        snakeHead: snakeHeadColor,
+        snake: '#4CAF50',
+        snakeHead: '#2E7D32',
         food: '#FF5722',
         border: '#ddd'
     };
@@ -188,8 +131,115 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
 
+    // 加载游戏设置
+    function loadGameSettings() {
+        // 默认设置
+        gameSpeed = 150; // 默认游戏速度（毫秒）
+        snakeColor = '#4CAF50'; // 默认蛇身颜色
+        snakeHeadColor = '#2E7D32'; // 默认蛇头颜色
+        wallCollision = true; // 默认启用墙壁碰撞
+        specialFoodChance = 0.1; // 特殊食物出现概率
+        specialFoodMultiplier = 3; // 特殊食物倍率
+        speedDecreasePerPoint = 2; // 每得分减少的速度值
+        minSpeed = 50; // 最小速度限制
+        
+        // 尝试从settingsManager加载设置
+        if (window.settingsManager) {
+            try {
+                console.log('尝试从settingsManager加载贪吃蛇游戏设置');
+                // 检查设置是否有更新
+                window.settingsManager.checkSettingsUpdated();
+                const settings = window.settingsManager.settings;
+                console.log('settingsManager返回的设置对象:', settings);
+                
+                // 加载通用游戏设置
+                if (settings && settings.games) {
+                    console.log('加载通用游戏设置, snakeColor = ', settings.games.snakeColor);
+                    // 设置蛇的颜色
+                    if (settings.games.snakeColor) {
+                        switch (settings.games.snakeColor) {
+                            case 'green':
+                                snakeColor = '#4CAF50';
+                                snakeHeadColor = '#2E7D32';
+                                break;
+                            case 'blue':
+                                snakeColor = '#2196F3';
+                                snakeHeadColor = '#0D47A1';
+                                break;
+                            case 'red':
+                                snakeColor = '#F44336';
+                                snakeHeadColor = '#B71C1C';
+                                break;
+                            case 'yellow':
+                                snakeColor = '#FFC107';
+                                snakeHeadColor = '#FF8F00';
+                                break;
+                            case 'rainbow':
+                                snakeColor = 'rainbow'; // 特殊值，在绘制时处理
+                                snakeHeadColor = '#FF5722';
+                                break;
+                            default:
+                                // 使用默认颜色
+                                break;
+                        }
+                    }
+                }
+                
+                // 加载贪吃蛇专用设置
+                if (settings && settings.snake) {
+                    console.log('加载贪吃蛇专用设置:', settings.snake);
+                    // 初始速度
+                    gameSpeed = settings.snake.initialSpeed || gameSpeed;
+                    console.log('设置游戏速度:', gameSpeed);
+                    
+                    // 速度衰减率
+                    speedDecreasePerPoint = settings.snake.speedDecreasePerPoint || speedDecreasePerPoint;
+                    console.log('设置速度衰减率:', speedDecreasePerPoint);
+                    
+                    // 最小速度限制
+                    minSpeed = settings.snake.minSpeed || minSpeed;
+                    console.log('设置最小速度:', minSpeed);
+                    
+                    // 墙壁碰撞
+                    wallCollision = settings.snake.wallCollision !== undefined ? 
+                        settings.snake.wallCollision : wallCollision;
+                    console.log('设置墙壁碰撞:', wallCollision);
+                        
+                    // 特殊食物概率和倍率
+                    specialFoodChance = settings.snake.specialFoodChance || specialFoodChance;
+                    specialFoodMultiplier = settings.snake.specialFoodScoreMultiplier || specialFoodMultiplier;
+                    console.log('设置特殊食物概率:', specialFoodChance, '特殊食物倍率:', specialFoodMultiplier);
+                    
+                    // 根据用户设置调整等级配置
+                    for (let level in levelConfig) {
+                        // 设置每个等级的分数阈值，保持相对比例
+                        levelConfig[level].scoreThreshold = Math.round(levelConfig[level].scoreThreshold / 150 * gameSpeed);
+                        
+                        // 调整每级速度，保持相对差距
+                        const levelRatio = (11 - parseInt(level)) / 10; // 级别越高，速度越快
+                        levelConfig[level].speed = Math.max(
+                            Math.round(gameSpeed * levelRatio),
+                            minSpeed
+                        );
+                    }
+                    
+                    console.log('已从settingsManager加载贪吃蛇游戏设置');
+                }
+            } catch (e) {
+                console.error('加载贪吃蛇游戏设置时出错:', e);
+            }
+        }
+        
+        // 更新颜色
+        colors.snake = snakeColor;
+        colors.snakeHead = snakeHeadColor;
+    }
+    
     // 初始化游戏
     function initGame() {
+        // 加载最新设置
+        loadGameSettings();
+        
         clearInterval(gameInterval);
         isRunning = false;
         score = 0;
@@ -238,10 +288,26 @@ document.addEventListener('DOMContentLoaded', () => {
         
         food = newFood;
         
-        // 给食物一个随机颜色，根据当前等级提高食物价值
-        const foodColors = ['#FF5722', '#FF9800', '#FFEB3B', '#8BC34A', '#4CAF50'];
-        food.color = foodColors[Math.min(level - 1, 4)];
-        food.value = Math.min(level, 5) * 10; // 食物价值随等级提高
+        // 设置食物基础属性
+        let baseValue = Math.min(level, 5) * 10; // 食物价值随等级提高
+        
+        // 判断是否生成特殊食物
+        let isSpecial = Math.random() < specialFoodChance;
+        
+        // 设置食物类型和属性
+        if (isSpecial) {
+            // 特殊食物有更高的值和不同颜色
+            food.color = '#FFEB3B'; // 特殊食物用黄色
+            food.value = Math.floor(baseValue * specialFoodMultiplier);
+            food.isSpecial = true;
+            food.specialType = Math.floor(Math.random() * 3); // 0-2的特殊类型
+        } else {
+            // 普通食物
+            const foodColors = ['#FF5722', '#FF9800', '#4CAF50', '#2196F3', '#9C27B0'];
+            food.color = foodColors[Math.min(level - 1, 4)];
+            food.value = baseValue;
+            food.isSpecial = false;
+        }
     }
 
     // 绘制游戏
@@ -252,7 +318,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 绘制蛇
         snake.forEach((segment, index) => {
-            ctx.fillStyle = index === 0 ? colors.snakeHead : colors.snake;
+            // 根据配置选择蛇的颜色
+            if (colors.snake === 'rainbow' && index !== 0) {
+                // 彩虹模式：每个部分不同颜色
+                const hue = (index * 30) % 360;
+                ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            } else {
+                ctx.fillStyle = index === 0 ? colors.snakeHead : colors.snake;
+            }
+            
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
             ctx.strokeStyle = colors.background;
             ctx.strokeRect(segment.x * gridSize, segment.y * gridSize, gridSize, gridSize);
@@ -263,6 +337,25 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
         ctx.strokeStyle = colors.background;
         ctx.strokeRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+        
+        // 如果是特殊食物，添加闪光效果
+        if (food.isSpecial) {
+            // 添加闪光效果
+            const time = Date.now() % 1000 / 1000;
+            const glowSize = 2 + Math.sin(time * Math.PI * 2) * 2;
+            
+            ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(
+                food.x * gridSize - glowSize, 
+                food.y * gridSize - glowSize, 
+                gridSize + glowSize * 2, 
+                gridSize + glowSize * 2
+            );
+            
+            // 恢复线宽
+            ctx.lineWidth = 1;
+        }
         
         // 在食物上显示其价值（如果不是基础值的话）
         if (food.value > 10) {
@@ -298,11 +391,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // 检查是否撞墙
-        if (head.x < 0 || head.y < 0 || 
-            head.x >= canvas.width / gridSize || 
-            head.y >= canvas.height / gridSize) {
-            gameOver();
-            return;
+        if (wallCollision) {
+            // 启用墙壁碰撞时检查边界
+            if (head.x < 0 || head.y < 0 || 
+                head.x >= canvas.width / gridSize || 
+                head.y >= canvas.height / gridSize) {
+                gameOver();
+                return;
+            }
+        } else {
+            // 穿墙模式：从另一侧出现
+            if (head.x < 0) head.x = Math.floor(canvas.width / gridSize) - 1;
+            if (head.y < 0) head.y = Math.floor(canvas.height / gridSize) - 1;
+            if (head.x >= canvas.width / gridSize) head.x = 0;
+            if (head.y >= canvas.height / gridSize) head.y = 0;
         }
         
         // 检查是否撞到自己
@@ -349,7 +451,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '30px Microsoft YaHei';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('游戏结束!菜鸡小牛', canvas.width / 2, canvas.height / 2 - 50);
+        ctx.fillText('游戏结束!', canvas.width / 2, canvas.height / 2 - 50);
         
         ctx.font = '20px Microsoft YaHei';
         ctx.fillText(`最终得分: ${score}`, canvas.width / 2, canvas.height / 2);
@@ -480,7 +582,8 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.addEventListener('touchend', (e) => {
         touchStartX = 0;
         touchStartY = 0;
-        }, { passive: true });
+        e.preventDefault(); // 防止页面滚动
+        }, { passive: false });
     }
     
     // 按钮通用事件处理函数

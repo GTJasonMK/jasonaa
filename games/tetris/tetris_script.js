@@ -39,8 +39,8 @@ const SHAPES = {
     ]
 };
 
-// 等级系统配置
-const LEVEL_CONFIG = {
+// 默认等级系统配置
+let DEFAULT_LEVEL_CONFIG = {
     1: { 
         speed: 1000, 
         scoreMultiplier: 1, 
@@ -94,7 +94,7 @@ const LEVEL_CONFIG = {
 };
 
 // 连击能力配置
-const COMBO_ABILITIES = {
+let COMBO_ABILITIES = {
     8: {
         name: "行消除",
         description: "消除游戏板底部一行",
@@ -115,6 +115,68 @@ const COMBO_ABILITIES = {
     }
 };
 
+// 读取用户设置
+function loadUserSettings() {
+    // 检查是否有settingsManager可用
+    if (window.settingsManager && window.settingsManager.settings) {
+        const settings = window.settingsManager.settings;
+        
+        // 检查是否有俄罗斯方块的特定设置
+        if (settings.tetris) {
+            // 应用基础速度设置
+            const baseSpeed = settings.tetris.baseLevelSpeed || 1000;
+            const speedDecrease = settings.tetris.speedDecreasePerLevel || 100;
+            const minSpeed = settings.tetris.minSpeed || 100;
+            const scoreMultiplierBase = settings.tetris.scoreMultiplierBase || 1;
+            const scoreMultiplierIncrement = settings.tetris.scoreMultiplierIncrement || 0.1;
+            
+            // 重新生成等级配置
+            DEFAULT_LEVEL_CONFIG = {};
+            for (let i = 1; i <= 10; i++) {
+                const levelSpeed = Math.max(baseSpeed - (i-1) * speedDecrease, minSpeed);
+                const multiplier = scoreMultiplierBase + (i-1) * scoreMultiplierIncrement;
+                const specialChance = Math.min((i-1) * (settings.tetris.specialPieceChanceIncrement || 0.05), 
+                                              settings.tetris.maxSpecialPieceChance || 0.2);
+                
+                DEFAULT_LEVEL_CONFIG[i] = {
+                    speed: levelSpeed,
+                    scoreMultiplier: parseFloat(multiplier.toFixed(1)),
+                    specialPieceChance: parseFloat(specialChance.toFixed(2))
+                };
+            }
+            
+            // 应用连击系统设置
+            window.comboMaxMultiplier = settings.tetris.comboMaxMultiplier || 2;
+            window.comboMultiplierStep = settings.tetris.comboMultiplierStep || 0.1;
+            
+            // 应用特殊能力阈值设置
+            const abilityAdjustment = settings.tetris.abilityThresholdAdjustment || 0;
+            if (settings.tetris.abilityUnlockThresholds) {
+                let newComboAbilities = {};
+                
+                // 行消除能力
+                const lineClearThreshold = Math.max(1, (settings.tetris.abilityUnlockThresholds.lineClear || 8) + abilityAdjustment);
+                newComboAbilities[lineClearThreshold] = COMBO_ABILITIES[8];
+                
+                // 时间减缓能力
+                const slowTimeThreshold = Math.max(1, (settings.tetris.abilityUnlockThresholds.slowTime || 12) + abilityAdjustment);
+                newComboAbilities[slowTimeThreshold] = COMBO_ABILITIES[12];
+                
+                // 方块变形能力
+                const transformThreshold = Math.max(1, (settings.tetris.abilityUnlockThresholds.shapeTransform || 16) + abilityAdjustment);
+                newComboAbilities[transformThreshold] = COMBO_ABILITIES[16];
+                
+                COMBO_ABILITIES = newComboAbilities;
+            }
+            
+            // 设置减缓时间效果持续时间
+            window.slowTimeEffectDuration = settings.tetris.slowTimeEffectDuration || 10000;
+            
+            console.log("已应用俄罗斯方块游戏设置");
+        }
+    }
+}
+
 // 游戏状态
 let tetrisBoard = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
 let currentPiece = null;
@@ -125,7 +187,7 @@ let isPaused = false;
 let score = 0;
 let level = 1;
 let lines = 0;
-let gameSpeed = LEVEL_CONFIG[1].speed;
+let gameSpeed = DEFAULT_LEVEL_CONFIG[1].speed;
 let isGameOver = false;
 let isMobile = false;
 let combo = 0; // 连击次数
@@ -145,6 +207,9 @@ function detectMobile() {
 
 // 初始化游戏
 function initGame() {
+    // 先加载用户设置
+    loadUserSettings();
+    
     boardElement = document.querySelector('.tetris-board');
     nextPieceElement = document.querySelector('.next-piece');
     scoreElement = document.getElementById('score');
@@ -208,6 +273,9 @@ function initGame() {
     
     // 更新分数显示
     updateStats();
+    
+    // 应用初始游戏速度
+    gameSpeed = DEFAULT_LEVEL_CONFIG[1].speed;
 }
 
 // 创建游戏板
@@ -242,7 +310,7 @@ function generateRandomPiece() {
     const randomPiece = pieces[Math.floor(Math.random() * pieces.length)];
     
     // 根据等级随机生成特殊方块
-    isSpecialPiece = Math.random() < LEVEL_CONFIG[level].specialPieceChance;
+    isSpecialPiece = Math.random() < DEFAULT_LEVEL_CONFIG[level].specialPieceChance;
     
     return {
         shape: randomPiece,
@@ -529,7 +597,7 @@ function checkLines() {
         let earnedScore = linePoints[linesCleared] * level;
         
         // 应用等级乘数
-        earnedScore = Math.floor(earnedScore * LEVEL_CONFIG[level].scoreMultiplier);
+        earnedScore = Math.floor(earnedScore * DEFAULT_LEVEL_CONFIG[level].scoreMultiplier);
         
         // 应用连击加成
         const comboMultiplier = Math.min(1 + (combo * 0.1), 2); // 最高2倍连击加成
@@ -558,7 +626,7 @@ function checkLines() {
         }
         
         // 更新游戏速度
-        gameSpeed = LEVEL_CONFIG[level].speed;
+        gameSpeed = DEFAULT_LEVEL_CONFIG[level].speed;
         if (gameInterval) {
             clearInterval(gameInterval);
             gameInterval = setInterval(gameLoop, gameSpeed);
@@ -885,7 +953,7 @@ function resetGame() {
     score = 0;
     level = 1;
     lines = 0;
-    gameSpeed = LEVEL_CONFIG[1].speed;
+    gameSpeed = DEFAULT_LEVEL_CONFIG[1].speed;
     isPaused = false;
     isGameOver = false;
     combo = 0;
@@ -1340,9 +1408,10 @@ function slowDownTime() {
 
 // 特殊能力：将当前方块变为I形方块
 function transformToIShape() {
-    // 保存当前位置
+    // 保存当前位置和方块
     const currentX = currentPiecePosition.x;
     const currentY = currentPiecePosition.y;
+    const originalPiece = {...currentPiece};
     
     // 创建I形方块
     currentPiece = {
@@ -1359,9 +1428,10 @@ function transformToIShape() {
     // 检查是否会碰撞，如果会则尝试调整位置
     if (checkCollision(newX, newY, currentPiece.matrix)) {
         // 尝试不同的X位置
-        const offsets = [-1, 1, -2, 2, 0];
+        const offsets = [-1, 1, -2, 2, 0, -3, 3];
         let validPosition = false;
         
+        // 先尝试不同的水平位置
         for (const offsetX of offsets) {
             if (!checkCollision(currentX + offsetX, currentY, currentPiece.matrix)) {
                 newX = currentX + offsetX;
@@ -1370,15 +1440,68 @@ function transformToIShape() {
             }
         }
         
-        // 如果水平调整不行，尝试上移
-        if (!validPosition && !checkCollision(currentX, currentY - 1, currentPiece.matrix)) {
-            newY = currentY - 1;
-            validPosition = true;
+        // 如果水平调整不行，尝试上移或下移
+        if (!validPosition) {
+            for (const offsetY of [-1, -2, 1]) {
+                if (!checkCollision(currentX, currentY + offsetY, currentPiece.matrix)) {
+                    newY = currentY + offsetY;
+                    validPosition = true;
+                    break;
+                }
+                // 尝试水平和垂直组合位移
+                for (const offsetX of [-1, 1, -2, 2]) {
+                    if (!checkCollision(currentX + offsetX, currentY + offsetY, currentPiece.matrix)) {
+                        newX = currentX + offsetX;
+                        newY = currentY + offsetY;
+                        validPosition = true;
+                        break;
+                    }
+                }
+                if (validPosition) break;
+            }
         }
         
         // 如果仍然不行，放弃变形
         if (!validPosition) {
-            return;
+            // 恢复原来的方块
+            currentPiece = originalPiece;
+            
+            // 显示失败消息
+            const message = document.createElement('div');
+            message.className = 'transform-failed';
+            message.textContent = "变形失败!";
+            message.style.position = 'absolute';
+            message.style.top = '20%';
+            message.style.left = '50%';
+            message.style.transform = 'translate(-50%, -50%)';
+            message.style.color = 'red';
+            message.style.fontSize = '24px';
+            message.style.fontWeight = 'bold';
+            message.style.zIndex = '1000';
+            message.style.animation = 'fadeOut 1s forwards';
+            
+            // 添加CSS动画
+            if (!document.getElementById('transform-failed-style')) {
+                const style = document.createElement('style');
+                style.id = 'transform-failed-style';
+                style.textContent = `
+                    @keyframes fadeOut {
+                        0% { opacity: 1; }
+                        90% { opacity: 1; }
+                        100% { opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            boardElement.parentElement.appendChild(message);
+            
+            // 1秒后移除消息
+            setTimeout(() => {
+                message.remove();
+            }, 1000);
+            
+            return false;
         }
     }
     
@@ -1388,6 +1511,7 @@ function transformToIShape() {
     
     // 更新游戏板
     drawBoard();
+    return true;
 }
 
 // 窗口加载完毕后初始化游戏

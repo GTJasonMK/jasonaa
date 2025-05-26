@@ -25,9 +25,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let canFlip = false;
     let level = 1; // 当前等级
     let comboMatches = 0; // 连续匹配次数
+    let score = 0;
     
-    // 等级系统配置
-    const levelConfig = {
+    // 游戏设置默认值
+    let defaultDifficulty = 'medium';
+    let memoryTime = 1000; // 默认卡片展示时间（毫秒）
+    let comboMatchBonus = 10; // 连续匹配得分奖励
+    let incorrectPenalty = 0; // 错误匹配的惩罚
+    let timePenalty = 0; // 时间惩罚（每秒扣分）
+    
+    // 等级系统配置（默认值）
+    const DEFAULT_LEVEL_CONFIG = {
         1: { requiredScore: 0, memoryTime: 1000, comboBonus: 1 },
         2: { requiredScore: 50, memoryTime: 900, comboBonus: 1.2 },
         3: { requiredScore: 150, memoryTime: 800, comboBonus: 1.4 },
@@ -40,7 +48,88 @@ document.addEventListener('DOMContentLoaded', function() {
         10: { requiredScore: 5000, memoryTime: 100, comboBonus: 4 }
     };
     
-    let score = 0; // 游戏得分
+    // 当前使用的配置
+    let levelConfig = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
+    
+    // 从设置管理器加载用户设置
+    function loadUserSettings() {
+        console.log('开始加载记忆游戏设置...');
+        // 重置为默认值
+        defaultDifficulty = 'medium';
+        memoryTime = 1000;
+        comboMatchBonus = 10;
+        incorrectPenalty = 0;
+        timePenalty = 0;
+        levelConfig = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
+        
+        // 尝试从settingsManager加载设置
+        if (window.settingsManager) {
+            try {
+                let settings;
+                // 检查设置是否有更新
+                const updatedSettings = window.settingsManager.checkSettingsUpdated();
+                if (updatedSettings) {
+                    console.log('检测到设置已更新，应用新设置');
+                    settings = updatedSettings;
+                } else {
+                    // 否则获取当前设置
+                    settings = window.settingsManager.settings;
+                }
+                
+                console.log('记忆游戏设置对象:', settings);
+                
+                if (settings && settings.memory) {
+                    console.log('读取记忆游戏设置:', settings.memory);
+                    
+                    // 默认难度
+                    if (settings.memory.defaultDifficulty) {
+                        defaultDifficulty = settings.memory.defaultDifficulty;
+                        difficultySelect.value = defaultDifficulty;
+                        console.log('设置默认难度:', defaultDifficulty);
+                    }
+                    
+                    // 卡片展示时间
+                    if (settings.memory.cardShowDuration !== undefined) {
+                        memoryTime = settings.memory.cardShowDuration;
+                        console.log('设置卡片展示时间:', memoryTime);
+                    }
+                    
+                    // 连续匹配奖励
+                    if (settings.memory.consecutiveMatchBonus !== undefined) {
+                        comboMatchBonus = settings.memory.consecutiveMatchBonus;
+                        console.log('设置连续匹配奖励:', comboMatchBonus);
+                    }
+                    
+                    // 错误匹配惩罚
+                    if (settings.memory.wrongMatchPenalty !== undefined) {
+                        incorrectPenalty = settings.memory.wrongMatchPenalty;
+                        console.log('设置错误匹配惩罚:', incorrectPenalty);
+                    }
+                    
+                    // 时间惩罚
+                    if (settings.memory.timerPenaltyPerSecond !== undefined) {
+                        timePenalty = settings.memory.timerPenaltyPerSecond;
+                        console.log('设置时间惩罚:', timePenalty);
+                    }
+                    
+                    // 更新等级配置
+                    for (let i = 1; i <= 10; i++) {
+                        if (levelConfig[i]) {
+                            levelConfig[i].memoryTime = Math.max(100, memoryTime - (i - 1) * 100);
+                        }
+                    }
+                    
+                    console.log('已应用记忆游戏设置, 等级配置:', levelConfig);
+                } else {
+                    console.warn('未找到记忆游戏设置，使用默认值');
+                }
+            } catch (e) {
+                console.error('加载记忆游戏设置时出错:', e);
+            }
+        } else {
+            console.warn('settingsManager不可用，使用默认设置');
+        }
+    }
     
     // 创建等级和分数显示
     const statsContainer = document.createElement('div');
@@ -99,53 +188,69 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始化游戏
     function initGame() {
+        // 加载最新用户设置
+        loadUserSettings();
+        
+        // 清除之前的卡片和事件监听器
+        const oldCards = document.querySelectorAll('.memory-card');
+        oldCards.forEach(card => {
+            // 移除所有事件监听器，使用存储的引用
+            if (card.handleClick) {
+                card.removeEventListener('click', card.handleClick);
+            }
+            card.removeEventListener('touchstart', handleTouchStart);
+            card.removeEventListener('touchmove', handleTouchMove);
+            card.removeEventListener('touchend', handleTouchEnd);
+            // 从DOM中移除
+            card.remove();
+        });
+        
+        // 清空记忆板
+        memoryBoard.innerHTML = '';
+        
         // 重置游戏状态
         cards = [];
         flippedCards = [];
         matchedPairs = 0;
         moves = 0;
-        gameStarted = false;
-        clearInterval(timerInterval);
-        level = 1;
         score = 0;
+        level = 1;
         comboMatches = 0;
+        gameStarted = false;
+        canFlip = false;
         
-        // 更新显示
+        // 清除计时器
+        clearInterval(timerInterval);
+        
+        // 设置布局
+        const difficulty = difficulties[difficultySelect.value];
+        totalPairs = difficulty.symbols;
+        
+        // 设置网格大小
+        memoryBoard.style.gridTemplateColumns = `repeat(${difficulty.cols}, 1fr)`;
+        memoryBoard.style.gridTemplateRows = `repeat(${difficulty.rows}, 1fr)`;
+        
+        // 更新UI
         movesDisplay.textContent = '0';
         timeDisplay.textContent = '00:00';
         matchedPairsDisplay.textContent = '0';
+        totalPairsDisplay.textContent = totalPairs.toString();
         scoreDisplay.textContent = '0';
         levelDisplay.textContent = '1';
         comboDisplay.textContent = '0';
-        memoryBoard.innerHTML = '';
         
-        // 隐藏结果弹窗
+        // 隐藏结果
         gameResult.classList.remove('show');
         
-        // 根据选择的难度设置游戏
-        const difficulty = difficultySelect.value;
-        const config = difficulties[difficulty];
-        memoryBoard.className = `memory-board ${difficulty}`;
-        
-        if (difficulty === 'easy') {
-            memoryBoard.style.gridTemplateColumns = 'repeat(4, 1fr)';
-            memoryBoard.style.gridTemplateRows = 'repeat(4, 1fr)';
-        } else if (difficulty === 'medium') {
-            memoryBoard.style.gridTemplateColumns = 'repeat(6, 1fr)';
-            memoryBoard.style.gridTemplateRows = 'repeat(4, 1fr)';
-        } else if (difficulty === 'hard') {
-            memoryBoard.style.gridTemplateColumns = 'repeat(6, 1fr)';
-            memoryBoard.style.gridTemplateRows = 'repeat(6, 1fr)';
-        }
-        
         // 创建卡片
-        totalPairs = config.symbols;
-        totalPairsDisplay.textContent = totalPairs.toString();
-        createCards(config);
+        createCards(difficulty);
+        
+        console.log('游戏初始化完成，等待开始...');
     }
 
     // 创建游戏卡片
     function createCards(config) {
+        console.log('创建卡片，配置:', config);
         // 创建卡片对
         for (let i = 0; i < config.symbols; i++) {
             cards.push(
@@ -170,8 +275,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            // 添加点击事件
-            cardElement.addEventListener('click', () => flipCard(cardElement, index));
+            // 添加点击事件 - 使用箭头函数以便保留this上下文和index
+            const handleClick = () => flipCard(cardElement, index);
+            cardElement.addEventListener('click', handleClick);
+            // 存储事件处理函数的引用以便后续移除
+            cardElement.handleClick = handleClick;
             
             // 添加触摸事件
             cardElement.addEventListener('touchstart', handleTouchStart, false);
@@ -180,6 +288,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             memoryBoard.appendChild(cardElement);
         });
+        
+        console.log(`已创建 ${cards.length} 张卡片`);
     }
 
     // 处理触摸开始事件
@@ -230,27 +340,44 @@ document.addEventListener('DOMContentLoaded', function() {
     // 翻转卡片
     function flipCard(cardElement, index) {
         // 如果游戏未开始或卡片已匹配或不能翻转，则忽略点击
-        if (!gameStarted || cards[index].matched || !canFlip || flippedCards.length >= 2) return;
+        if (!gameStarted || cards[index].matched || !canFlip || flippedCards.length >= 2) {
+            console.log('卡片点击被忽略:', 
+                !gameStarted ? '游戏未开始' : 
+                cards[index].matched ? '卡片已匹配' : 
+                !canFlip ? '当前不能翻转' : 
+                '已翻开两张卡片');
+            return;
+        }
         
-        // 忽略点击已经翻转的卡片
-        if (flippedCards.some(card => card.index === index)) return;
+        // 防止重复点击同一张卡
+        if (flippedCards.length === 1 && flippedCards[0].index === index) {
+            console.log('忽略重复点击同一张卡');
+            return;
+        }
         
         // 翻转卡片
         cardElement.classList.add('flipped');
+        console.log(`翻转卡片 ${index}:`, cards[index].symbol);
         
-        // 添加到翻转的卡片数组
-        flippedCards.push({ element: cardElement, index: index });
+        // 添加到已翻转数组
+        flippedCards.push({
+            element: cardElement,
+            index: index
+        });
         
-        // 如果翻转了两张卡片，检查是否匹配
+        // 如果翻转了两张卡片
         if (flippedCards.length === 2) {
+            // 增加移动步数
             moves++;
             movesDisplay.textContent = moves.toString();
             canFlip = false;
             
-            const [card1, card2] = flippedCards;
+            const card1 = flippedCards[0];
+            const card2 = flippedCards[1];
             
             // 检查卡片是否匹配
             if (cards[card1.index].symbol === cards[card2.index].symbol) {
+                console.log('匹配成功!');
                 // 匹配成功
                 setTimeout(() => {
                     card1.element.classList.add('matched');
@@ -266,11 +393,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     comboMatches++;
                     comboDisplay.textContent = comboMatches.toString();
                     
-                    // 计算得分，基础分10分，乘以等级加成
+                    // 计算得分，基础分加上连击奖励，乘以等级加成
                     const baseScore = 10;
                     const timeBonus = calculateTimeBonus();
-                    const comboBonus = levelConfig[level].comboBonus * Math.min(comboMatches, 10);
-                    const earnedScore = Math.floor(baseScore * comboBonus * timeBonus);
+                    // 使用设置中的连击奖励值和等级加成
+                    const comboScore = Math.min(comboMatches * comboMatchBonus, 100);
+                    const levelMultiplier = levelConfig[level].comboBonus;
+                    const earnedScore = Math.floor((baseScore + comboScore) * levelMultiplier * timeBonus);
                     
                     score += earnedScore;
                     scoreDisplay.textContent = score.toString();
@@ -291,71 +420,96 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }, levelConfig[level].memoryTime / 2);
             } else {
-                // 不匹配，翻回去
+                console.log('匹配失败');
+                // 匹配失败
                 setTimeout(() => {
                     card1.element.classList.remove('flipped');
                     card2.element.classList.remove('flipped');
+                    
+                    // 重置翻转状态
                     flippedCards = [];
                     canFlip = true;
                     
                     // 重置连击
                     comboMatches = 0;
                     comboDisplay.textContent = '0';
+                    
+                    // 应用错误匹配惩罚，如果设置了的话
+                    if (incorrectPenalty > 0) {
+                        score = Math.max(0, score - incorrectPenalty);
+                        scoreDisplay.textContent = score.toString();
+                        showPenaltyAnimation(incorrectPenalty, card1.element);
+                    }
                 }, levelConfig[level].memoryTime);
             }
+            
+            // 添加一个锁，防止在计时器结束前翻卡
+            document.querySelectorAll('.memory-card').forEach(card => {
+                card.style.pointerEvents = 'none';
+            });
+            
+            // 待计时器结束后恢复可点击状态
+            setTimeout(() => {
+                if (gameStarted && canFlip) { // 确保游戏仍在运行且可以翻卡
+                    document.querySelectorAll('.memory-card:not(.matched)').forEach(card => {
+                        card.style.pointerEvents = 'auto';
+                    });
+                }
+            }, levelConfig[level].memoryTime);
         }
     }
     
-    // 计算时间奖励分数
+    // 计算时间奖励
     function calculateTimeBonus() {
+        if (!startTime) return 1;
+        
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-        // 游戏开始后前30秒有额外奖励，随着时间推移奖励降低
-        const timeMultiplier = Math.max(1, 3 - Math.floor(elapsedSeconds / 30));
-        return timeMultiplier;
+        // 前30秒没有时间惩罚
+        if (elapsedSeconds < 30) return 1;
+        
+        // 每超过30秒，奖励系数减少10%，最低0.5
+        return Math.max(0.5, 1 - (elapsedSeconds - 30) / 300);
     }
     
     // 显示得分动画
     function showScoreAnimation(points, element) {
-        const scorePopup = document.createElement('div');
-        scorePopup.className = 'score-popup';
-        scorePopup.textContent = `+${points}`;
+        const animation = document.createElement('div');
+        animation.className = 'score-animation';
+        animation.textContent = `+${points}`;
         
-        // 获取卡片在页面中的位置
+        // 设置动画位置
         const rect = element.getBoundingClientRect();
         const boardRect = memoryBoard.getBoundingClientRect();
         
-        // 设置弹出框位置
-        scorePopup.style.position = 'absolute';
-        scorePopup.style.left = `${rect.left - boardRect.left + rect.width/2}px`;
-        scorePopup.style.top = `${rect.top - boardRect.top}px`;
-        scorePopup.style.transform = 'translate(-50%, -100%)';
-        scorePopup.style.color = '#FFD700';
-        scorePopup.style.fontSize = '24px';
-        scorePopup.style.fontWeight = 'bold';
-        scorePopup.style.textShadow = '0 0 5px rgba(0,0,0,0.5)';
-        scorePopup.style.zIndex = '100';
-        scorePopup.style.animation = 'scorePopup 1s ease-out forwards';
+        animation.style.left = `${rect.left - boardRect.left + rect.width / 2}px`;
+        animation.style.top = `${rect.top - boardRect.top}px`;
         
-        // 添加CSS动画
-        if (!document.getElementById('score-popup-style')) {
-            const style = document.createElement('style');
-            style.id = 'score-popup-style';
-            style.textContent = `
-                @keyframes scorePopup {
-                    0% { opacity: 0; transform: translate(-50%, -100%) scale(0.5); }
-                    20% { opacity: 1; transform: translate(-50%, -150%) scale(1.2); }
-                    80% { opacity: 1; transform: translate(-50%, -200%) scale(1); }
-                    100% { opacity: 0; transform: translate(-50%, -250%) scale(0.8); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
+        memoryBoard.appendChild(animation);
         
-        memoryBoard.appendChild(scorePopup);
-        
-        // 移除动画元素
+        // 移除动画
         setTimeout(() => {
-            scorePopup.remove();
+            animation.remove();
+        }, 1000);
+    }
+    
+    // 显示惩罚动画
+    function showPenaltyAnimation(points, element) {
+        const animation = document.createElement('div');
+        animation.className = 'penalty-animation';
+        animation.textContent = `-${points}`;
+        
+        // 设置动画位置
+        const rect = element.getBoundingClientRect();
+        const boardRect = memoryBoard.getBoundingClientRect();
+        
+        animation.style.left = `${rect.left - boardRect.left + rect.width / 2}px`;
+        animation.style.top = `${rect.top - boardRect.top}px`;
+        
+        memoryBoard.appendChild(animation);
+        
+        // 移除动画
+        setTimeout(() => {
+            animation.remove();
         }, 1000);
     }
     
@@ -506,9 +660,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 开始游戏
     function startGame() {
+        // 确保每次重新开始游戏时都重新初始化
+        console.log('开始新游戏，重新初始化...');
         initGame();
+        
+        // 标记游戏已开始
         gameStarted = true;
         canFlip = true;
+        
+        // 更新UI状态
+        startBtn.textContent = '游戏进行中';
+        startBtn.disabled = true;
         
         // 启动计时器
         startTime = Date.now();
@@ -516,7 +678,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 禁用难度选择和开始按钮
         difficultySelect.disabled = true;
-        startBtn.disabled = true;
+        
+        console.log('游戏已开始，可以翻转卡片');
     }
 
     // 更新计时器
@@ -526,6 +689,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const seconds = elapsedSeconds % 60;
         
         timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        // 如果设置了时间惩罚，则每秒扣分
+        if (timePenalty > 0 && elapsedSeconds > 30) {
+            // 30秒后开始计时惩罚
+            score = Math.max(0, score - timePenalty);
+            scoreDisplay.textContent = score.toString();
+        }
     }
 
     // 结束游戏
@@ -605,9 +775,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 事件监听器
     startBtn.addEventListener('click', startGame);
-    resetBtn.addEventListener('click', initGame);
+    resetBtn.addEventListener('click', resetGame);
     playAgainBtn.addEventListener('click', startGame);
     difficultySelect.addEventListener('change', initGame);
+    
+    // 新增重置游戏函数，与初始化游戏分开
+    function resetGame() {
+        console.log('重置游戏...');
+        // 停止计时器
+        clearInterval(timerInterval);
+        
+        // 显示难度选择和开始按钮
+        difficultySelect.disabled = false;
+        startBtn.disabled = false;
+        startBtn.textContent = '开始游戏';
+        
+        // 隐藏结果页面
+        gameResult.classList.remove('show');
+        
+        // 初始化游戏
+        initGame();
+    }
 
     // 初始设置
     initGame();

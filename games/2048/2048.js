@@ -12,9 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     let canContinue = false;
     let moveHistory = [];
     let level = 1; // 玩家当前等级
+    let animationSpeed = 150; // 动画速度（毫秒）
+    let showAnimations = true; // 是否显示动画
     
-    // 等级系统配置
-    const levelConfig = {
+    // 等级系统配置（默认值）
+    const DEFAULT_LEVEL_CONFIG = {
         1: { scoreThreshold: 0, bonusMultiplier: 1.0 },
         2: { scoreThreshold: 500, bonusMultiplier: 1.2 },
         3: { scoreThreshold: 1500, bonusMultiplier: 1.4 },
@@ -26,6 +28,75 @@ document.addEventListener('DOMContentLoaded', () => {
         9: { scoreThreshold: 40000, bonusMultiplier: 3.5 },
         10: { scoreThreshold: 60000, bonusMultiplier: 4.0 }
     };
+    
+    // 当前游戏配置（可能被用户设置修改）
+    let levelConfig = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
+    let tile4Probability = 0.1; // 生成数字4的概率（默认值）
+    
+    // 从设置管理器加载用户设置
+    function loadUserSettings() {
+        // 默认设置
+        animationSpeed = 150; // 默认动画速度
+        showAnimations = true; // 默认显示动画
+        tile4Probability = 0.1; // 默认生成数字4的概率
+        
+        // 重置等级配置为默认值
+        levelConfig = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
+        
+        // 尝试从settingsManager加载设置
+        if (window.settingsManager) {
+            try {
+                const settings = window.settingsManager.loadUserSettings();
+                
+                if (settings && settings.game2048) {
+                    console.log('读取2048游戏设置:', settings.game2048);
+                    
+                    // 动画速度
+                    if (settings.game2048.animationSpeed !== undefined) {
+                        animationSpeed = settings.game2048.animationSpeed;
+                    }
+                    
+                    // 是否显示动画
+                    if (settings.game2048.showAnimations !== undefined) {
+                        showAnimations = settings.game2048.showAnimations;
+                    }
+                    
+                    // 数字4出现概率
+                    if (settings.game2048.initialTile4Probability !== undefined) {
+                        tile4Probability = settings.game2048.initialTile4Probability;
+                    }
+                    
+                    // 等级阈值
+                    if (settings.game2048.levelThresholds && Array.isArray(settings.game2048.levelThresholds)) {
+                        for (let i = 0; i < settings.game2048.levelThresholds.length && i < 10; i++) {
+                            levelConfig[i + 1].scoreThreshold = settings.game2048.levelThresholds[i];
+                        }
+                    }
+                    
+                    // 等级加成倍率
+                    if (settings.game2048.levelBonusMultipliers && Array.isArray(settings.game2048.levelBonusMultipliers)) {
+                        for (let i = 0; i < settings.game2048.levelBonusMultipliers.length && i < 10; i++) {
+                            levelConfig[i + 1].bonusMultiplier = settings.game2048.levelBonusMultipliers[i];
+                        }
+                    }
+                    
+                    console.log('已应用2048游戏设置');
+                }
+            } catch (e) {
+                console.error('加载2048游戏设置时出错:', e);
+            }
+        }
+        
+        // 应用CSS动画速度设置
+        document.documentElement.style.setProperty('--animation-speed', `${animationSpeed}ms`);
+        
+        // 如果不显示动画，添加no-animation类到游戏板
+        if (!showAnimations) {
+            gameBoard.classList.add('no-animation');
+        } else {
+            gameBoard.classList.remove('no-animation');
+        }
+    }
     
     // DOM 元素
     const gameBoard = document.getElementById('game2048-board');
@@ -54,6 +125,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 初始化游戏
     function initGame() {
+        // 加载用户设置
+        loadUserSettings();
+        
         // 创建空网格
         grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
         
@@ -163,48 +237,55 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 2000);
     }
     
-    // 在空格处随机添加数字（90%几率出现2，10%几率出现4）
+    // 添加随机数字到网格
     function addRandomNumber() {
         const emptyCells = [];
         
-        // 找出所有空格子
+        // 收集所有空格子的位置
         for (let i = 0; i < GRID_SIZE; i++) {
             for (let j = 0; j < GRID_SIZE; j++) {
                 if (grid[i][j] === 0) {
-                    emptyCells.push({ row: i, col: j });
+                    emptyCells.push({i, j});
                 }
             }
         }
         
-        // 如果没有空格子，直接返回
-        if (emptyCells.length === 0) return false;
+        if (emptyCells.length === 0) return;
         
         // 随机选择一个空格子
         const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
         
-        // 根据等级提高生成大数字的概率
-        let newValue;
-        const randomValue = Math.random();
-        if (level >= 5 && randomValue < 0.05) {
-            newValue = 8; // 5级及以上有5%概率生成8
-        } else if (level >= 3 && randomValue < 0.15) {
-            newValue = 4; // 3级及以上有15%概率生成4
-        } else {
-            newValue = 2; // 其余情况生成2
+        // 根据当前等级和概率配置，生成2或4
+        // 随着等级提高，生成4的概率略微增加
+        let levelAdjustedProbability = tile4Probability;
+        if (window.settingsManager) {
+            try {
+                const settings = window.settingsManager.loadUserSettings();
+                if (settings && settings.game2048) {
+                    // 根据等级增加4的出现概率，但不超过配置的最大值
+                    const increment = settings.game2048.tile4ProbabilityIncrement || 0.05;
+                    const maxProb = settings.game2048.maxTile4Probability || 0.4;
+                    
+                    levelAdjustedProbability = Math.min(
+                        tile4Probability + (level - 1) * increment,
+                        maxProb
+                    );
+                }
+            } catch (e) {
+                console.error('读取tile4Probability设置时出错:', e);
+            }
         }
         
-        grid[randomCell.row][randomCell.col] = newValue;
+        grid[randomCell.i][randomCell.j] = Math.random() < levelAdjustedProbability ? 4 : 2;
         
-        // 给新出现的数字添加动画
-        const cellElement = document.querySelector(`.game2048-cell[data-row="${randomCell.row}"][data-col="${randomCell.col}"]`);
-        if (cellElement) {
-            cellElement.classList.add('new');
+        // 添加新数字的动画效果
+        const cellElement = document.querySelector(`.game2048-cell[data-row="${randomCell.i}"][data-col="${randomCell.j}"]`);
+        if (cellElement && showAnimations) {
+            cellElement.classList.add('new-tile');
             setTimeout(() => {
-                cellElement.classList.remove('new');
-            }, 300);
+                cellElement.classList.remove('new-tile');
+            }, animationSpeed);
         }
-        
-        return true;
     }
     
     // 更新网格显示
@@ -661,6 +742,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 设置最小滑动距离，防止意外触发
         const minSwipeDistance = 30;
+        
+        // 确保初始触摸点不为0（有效的触摸开始）
+        if (touchStartX === 0 && touchStartY === 0) {
+            return;
+        }
         
         // 确定主要方向（水平或垂直）
         if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > minSwipeDistance) {

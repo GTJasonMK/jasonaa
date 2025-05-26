@@ -638,12 +638,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // 应用字体大小
         document.documentElement.style.fontSize = settings.ui.fontSize + 'px';
         
-        // 显示保存成功提示
-        showNotification('设置已保存');
+        // 确保设置管理器也更新
+        if (window.settingsManager && typeof window.settingsManager.saveUserSettings === 'function') {
+            console.log('通过settingsManager保存设置');
+            window.settingsManager.saveUserSettings(settings);
+        } else {
+            console.warn('settingsManager不可用，无法通知游戏设置已更新');
+            // 添加一个标记，表示设置已更新
+            sessionStorage.setItem('settingsUpdated', Date.now().toString());
+        }
+        
+        // 显示保存成功提示，告知用户需要重新开始游戏
+        showNotification('设置已保存！请返回游戏并【重新开始】才能应用新设置。', 5000);
     }
     
     // 显示通知
-    function showNotification(message) {
+    function showNotification(message, duration) {
+        // 默认显示时间为3秒
+        duration = duration || 3000;
+        
         // 检查是否已有通知元素
         let notification = document.querySelector('.settings-notification');
         
@@ -657,10 +670,10 @@ document.addEventListener('DOMContentLoaded', function() {
         notification.textContent = message;
         notification.classList.add('show');
         
-        // 3秒后隐藏
+        // 指定时间后隐藏
         setTimeout(() => {
             notification.classList.remove('show');
-        }, 3000);
+        }, duration);
     }
     
     // 设置滑块值更新

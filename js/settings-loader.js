@@ -145,8 +145,10 @@ let globalSettings = {};
  * @returns {Object} 合并后的用户设置
  */
 function loadUserSettings() {
+    console.log('开始加载用户设置...');
     try {
         const storedSettings = localStorage.getItem('userSettings');
+        console.log('从localStorage加载设置:', storedSettings);
         if (storedSettings) {
             const parsedSettings = JSON.parse(storedSettings);
             
@@ -165,6 +167,7 @@ function loadUserSettings() {
             
             // 应用设置
             applySettings(globalSettings);
+            console.log('用户设置加载成功:', globalSettings);
             return globalSettings;
         }
     } catch (error) {
@@ -172,8 +175,10 @@ function loadUserSettings() {
     }
     
     // 如果没有保存的设置或出错，使用默认设置
+    console.log('没有找到保存的设置，使用默认设置');
     globalSettings = { ...DEFAULT_SETTINGS };
     applySettings(globalSettings);
+    console.log('默认设置应用成功:', globalSettings);
     return globalSettings;
 }
 
@@ -183,6 +188,7 @@ function loadUserSettings() {
  */
 function saveUserSettings(settings) {
     try {
+        console.log('保存用户设置:', settings || globalSettings);
         localStorage.setItem('userSettings', JSON.stringify(settings || globalSettings));
         
         // 应用设置
@@ -191,11 +197,56 @@ function saveUserSettings(settings) {
             applySettings(globalSettings);
         }
         
+        // 添加一个标记，表示设置已更新
+        sessionStorage.setItem('settingsUpdated', Date.now().toString());
+        
+        console.log('设置保存成功，当前globalSettings:', globalSettings);
         return true;
     } catch (error) {
         console.error('保存设置时出错:', error);
         return false;
     }
+}
+
+// 检查设置是否更新的函数
+function checkSettingsUpdated() {
+    // 如果存在设置更新标记
+    const lastUpdate = sessionStorage.getItem('settingsUpdated');
+    if (lastUpdate) {
+        // 清除标记以避免重复加载
+        sessionStorage.removeItem('settingsUpdated');
+        
+        console.log('检测到设置已更新，重新加载设置');
+        // 重新加载设置并返回最新设置
+        try {
+            const storedSettings = localStorage.getItem('userSettings');
+            if (storedSettings) {
+                const parsedSettings = JSON.parse(storedSettings);
+                console.log('从更新检测中加载的新设置:', parsedSettings);
+                
+                // 深度合并设置
+                globalSettings = {
+                    ui: { ...DEFAULT_SETTINGS.ui, ...(parsedSettings.ui || {}) },
+                    audio: { ...DEFAULT_SETTINGS.audio, ...(parsedSettings.audio || {}) },
+                    music: { ...DEFAULT_SETTINGS.music, ...(parsedSettings.music || {}) },
+                    games: { ...DEFAULT_SETTINGS.games, ...(parsedSettings.games || {}) },
+                    forum: { ...DEFAULT_SETTINGS.forum, ...(parsedSettings.forum || {}) },
+                    tetris: { ...DEFAULT_SETTINGS.tetris, ...(parsedSettings.tetris || {}) },
+                    snake: { ...DEFAULT_SETTINGS.snake, ...(parsedSettings.snake || {}) },
+                    game2048: { ...DEFAULT_SETTINGS.game2048, ...(parsedSettings.game2048 || {}) },
+                    memory: { ...DEFAULT_SETTINGS.memory, ...(parsedSettings.memory || {}) }
+                };
+                
+                // 应用更新的设置
+                applySettings(globalSettings);
+                console.log('已重新加载最新设置:', globalSettings);
+                return globalSettings;
+            }
+        } catch (error) {
+            console.error('检查设置更新时出错:', error);
+        }
+    }
+    return null;
 }
 
 /**
@@ -262,5 +313,15 @@ window.settingsManager = {
     getSetting,
     updateSetting,
     resetAllSettings,
-    settings: globalSettings
+    checkSettingsUpdated,
+    get settings() { 
+        // 每次访问settings时，检查是否有更新
+        const updatedSettings = checkSettingsUpdated();
+        if (updatedSettings) {
+            console.log('settings getter: 检测到更新的设置');
+            return updatedSettings;
+        }
+        // 没有更新时返回当前全局设置
+        return globalSettings; 
+    }
 }; 
