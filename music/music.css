@@ -683,4 +683,65 @@ select {
 .music-container:not([style*="display: none"]) {
     transform: translateY(0);
     opacity: 1;
+}
+
+/* 添加音频状态指示器样式 */
+#audio-status-bar {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    padding: 8px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 1000;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    max-width: 80%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 音频设置样式 */
+.audio-settings {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f8f8;
+    border-radius: 5px;
+}
+
+.audio-settings h3 {
+    margin-top: 0;
+    color: #333;
+}
+
+.setting-group {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.setting-group label {
+    margin-right: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.setting-group input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.small-button {
+    padding: 5px 10px;
+    background-color: #eee;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.small-button:hover {
+    background-color: #ddd;
 } 

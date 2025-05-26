@@ -150,6 +150,68 @@ window.musicFunctions = (function() {
         return true;
     }
 
+    // 获取基础路径，处理不同环境下的路径问题
+    function getBasePath() {
+        // 尝试确定当前脚本的路径
+        const scripts = document.getElementsByTagName('script');
+        let scriptPath = '';
+        for (let i = 0; i < scripts.length; i++) {
+            const src = scripts[i].src;
+            if (src && src.includes('music.js')) {
+                // 找到当前脚本
+                scriptPath = src;
+                break;
+            }
+        }
+        
+        // 如果找到脚本路径
+        if (scriptPath) {
+            // 提取目录部分
+            const scriptDir = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
+            debugLog('检测到脚本路径:', scriptDir);
+            return scriptDir;
+        }
+        
+        // 如果无法确定脚本路径，则根据当前页面URL推断
+        const pageUrl = window.location.href;
+        const isMusic = pageUrl.includes('/music/');
+        
+        if (isMusic) {
+            // 当前在音乐模块内
+            return window.location.href.substring(0, pageUrl.lastIndexOf('/') + 1);
+        }
+        
+        // 默认回退到相对路径
+        debugLog('无法确定基础路径，使用相对路径');
+        return '';
+    }
+    
+    // 计算音频文件的路径
+    function getAudioPath(note) {
+        const fileNote = NOTE_MAPPING[note] || note;
+        const basePath = getBasePath();
+        
+        // 优先尝试使用相对于脚本的路径
+        if (basePath) {
+            return `${basePath}piano/${fileNote}.mp3`;
+        }
+        
+        // 备选方案1: 相对于当前页面的路径
+        if (window.location.href.includes('/music/')) {
+            return `piano/${fileNote}.mp3`;
+        }
+        
+        // 备选方案2: 从根路径加载
+        return `/music/piano/${fileNote}.mp3`;
+    }
+
+    // 检查URL是否可访问
+    function checkUrl(url) {
+        return fetch(url, { method: 'HEAD' })
+            .then(response => response.ok)
+            .catch(() => false);
+    }
+
     // 加载音频文件
     function loadPianoSound(note) {
         if (!initAudioContext()) return Promise.reject("AudioContext初始化失败");
@@ -166,34 +228,33 @@ window.musicFunctions = (function() {
         
         return new Promise((resolve, reject) => {
             try {
-                // 使用映射处理带有#的音符
                 const fileNote = NOTE_MAPPING[note] || note;
                 
-                // 构建音频文件路径 - 修改为正确的相对路径
-                const audioPath = `piano/${fileNote}.mp3`;
-                debugLog(`尝试加载音频文件: ${audioPath}`);
+                // 尝试多个可能的路径
+                const possiblePaths = [
+                    getAudioPath(note),         // 动态路径
+                    `piano/${fileNote}.mp3`,    // 相对路径
+                    `/music/piano/${fileNote}.mp3`, // 绝对路径
+                    `/piano/${fileNote}.mp3`,   // 备选绝对路径
+                    `../music/piano/${fileNote}.mp3` // 向上一级目录
+                ];
                 
-                // 使用Fetch API加载音频文件
-                fetch(audioPath)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`无法加载音频文件: ${audioPath}, 状态码: ${response.status}`);
-                        }
-                        return response.arrayBuffer();
-                    })
-                    .then(arrayBuffer => {
-                        debugLog(`音频文件已加载: ${audioPath}, 大小: ${arrayBuffer.byteLength} 字节`);
-                        return audioContext.decodeAudioData(arrayBuffer);
-                    })
-                    .then(audioBuffer => {
-                        debugLog(`音频解码成功: ${note}`);
-                        resolve(audioBuffer);
+                debugLog(`将尝试以下路径加载音频 ${note}:`, possiblePaths);
+                
+                // 显示加载状态
+                showAudioStatus(`正在加载音符: ${note}`, 'loading');
+                
+                // 尝试所有可能的路径
+                tryLoadFromMultiplePaths(possiblePaths)
+                    .then(result => {
+                        showAudioStatus(`音符 ${note} 加载成功`, 'success');
+                        resolve(result.buffer);
                     })
                     .catch(error => {
-                        debugError(`加载钢琴音频失败: ${note}`, error);
+                        showAudioStatus(`音符 ${note} 加载失败，使用合成音频`, 'error');
+                        debugError(`所有路径尝试失败: ${note}`, error);
                         
-                        // 尝试使用合成音频作为备选
-                        debugLog(`尝试使用合成音频作为备选: ${note}`);
+                        // 尝试合成音频作为最后的备选
                         const synthBuffer = createSynthSound(note);
                         if (synthBuffer) {
                             resolve(synthBuffer);
@@ -206,6 +267,92 @@ window.musicFunctions = (function() {
                 reject(err);
             }
         });
+    }
+    
+    // 依次尝试多个路径加载音频
+    function tryLoadFromMultiplePaths(paths) {
+        // 递归尝试所有路径
+        function tryPath(index) {
+            if (index >= paths.length) {
+                return Promise.reject(new Error("所有路径尝试失败"));
+            }
+            
+            const path = paths[index];
+            debugLog(`尝试路径 ${index + 1}/${paths.length}: ${path}`);
+            
+            return fetch(path)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`路径 ${path} 返回状态码: ${response.status}`);
+                    }
+                    return response.arrayBuffer();
+                })
+                .then(arrayBuffer => {
+                    debugLog(`音频文件已加载成功: ${path}, 大小: ${arrayBuffer.byteLength} 字节`);
+                    return audioContext.decodeAudioData(arrayBuffer);
+                })
+                .then(audioBuffer => {
+                    debugLog(`音频解码成功: ${path}`);
+                    return {
+                        buffer: audioBuffer,
+                        path: path
+                    };
+                })
+                .catch(error => {
+                    debugWarn(`路径 ${path} 加载失败: ${error.message}`);
+                    // 尝试下一个路径
+                    return tryPath(index + 1);
+                });
+        }
+        
+        return tryPath(0);
+    }
+    
+    // 显示音频状态指示器
+    function showAudioStatus(message, type = 'info') {
+        // 创建或更新状态栏
+        let statusBar = document.getElementById('audio-status-bar');
+        if (!statusBar) {
+            statusBar = document.createElement('div');
+            statusBar.id = 'audio-status-bar';
+            statusBar.style.position = 'fixed';
+            statusBar.style.bottom = '10px';
+            statusBar.style.left = '10px';
+            statusBar.style.padding = '5px 10px';
+            statusBar.style.borderRadius = '5px';
+            statusBar.style.fontSize = '14px';
+            statusBar.style.zIndex = '1000';
+            statusBar.style.opacity = '0.9';
+            statusBar.style.transition = 'opacity 0.3s';
+            document.body.appendChild(statusBar);
+        }
+        
+        // 设置样式和内容
+        switch(type) {
+            case 'loading':
+                statusBar.style.backgroundColor = '#e9f5fe';
+                statusBar.style.color = '#0078d4';
+                statusBar.innerHTML = `⏳ ${message}`;
+                break;
+            case 'success':
+                statusBar.style.backgroundColor = '#e6f7e6';
+                statusBar.style.color = '#107c10';
+                statusBar.innerHTML = `✓ ${message}`;
+                setTimeout(() => { statusBar.style.opacity = '0'; }, 2000);
+                break;
+            case 'error':
+                statusBar.style.backgroundColor = '#fde7e9';
+                statusBar.style.color = '#d13438';
+                statusBar.innerHTML = `✗ ${message}`;
+                break;
+            default:
+                statusBar.style.backgroundColor = '#f9f9f9';
+                statusBar.style.color = '#333';
+                statusBar.innerHTML = `ℹ ${message}`;
+        }
+        
+        // 确保状态栏可见
+        statusBar.style.opacity = '0.9';
     }
 
     // 创建合成音频作为备选
