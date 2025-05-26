@@ -22,6 +22,22 @@ window.musicFunctions = (function() {
         "C5": 523.25
     };
 
+    // 音符名称映射（处理#号问题）
+    const NOTE_MAPPING = {
+        "C#4": "Cs4",
+        "D#4": "Ds4",
+        "F#4": "Fs4",
+        "G#4": "Gs4",
+        "A#4": "As4"
+    };
+
+    // 需要预加载的音符列表
+    const NOTES_TO_PRELOAD = [
+        "C4", "C#4", "D4", "D#4", "E4", 
+        "F4", "F#4", "G4", "G#4", "A4", 
+        "A#4", "B4", "C5"
+    ];
+
     // 音阶定义
     const SCALES = {
         "C大调": ["C4", "D4", "E4", "F4", "G4", "A4", "B4"],
@@ -49,15 +65,84 @@ window.musicFunctions = (function() {
     const audioBufferCache = {};
     let currentPlayingSource = null;
 
+    // 调试模式
+    const DEBUG = true;
+    
+    // 增强型日志
+    function debugLog(...args) {
+        if (DEBUG) {
+            console.log('[音乐模块]', ...args);
+        }
+    }
+    
+    function debugError(...args) {
+        console.error('[音乐模块错误]', ...args);
+    }
+    
+    function debugWarn(...args) {
+        console.warn('[音乐模块警告]', ...args);
+    }
+
+    // 检查是否使用了file://协议
+    function isFileProtocol() {
+        return window.location.protocol === 'file:';
+    }
+    
+    // 显示协议警告
+    function showProtocolWarning() {
+        debugWarn("检测到通过file://协议访问，音频文件可能无法正常加载，请使用HTTP服务器");
+        
+        // 创建警告元素
+        const warningDiv = document.createElement('div');
+        warningDiv.style.position = 'fixed';
+        warningDiv.style.top = '0';
+        warningDiv.style.left = '0';
+        warningDiv.style.right = '0';
+        warningDiv.style.padding = '10px';
+        warningDiv.style.backgroundColor = '#fff3cd';
+        warningDiv.style.color = '#856404';
+        warningDiv.style.textAlign = 'center';
+        warningDiv.style.zIndex = '10000';
+        warningDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        warningDiv.innerHTML = `
+            <strong>注意!</strong> 通过直接打开文件的方式访问可能导致音频无法加载。
+            <br>请通过HTTP服务器访问此页面(例如使用http-server或其他本地服务器)。
+            <button id="close-warning" style="margin-left:10px;border:none;background:#ffeeba;padding:3px 8px;border-radius:3px;cursor:pointer">
+                我知道了
+            </button>
+            <button id="use-synth" style="margin-left:10px;border:none;background:#c3e6cb;padding:3px 8px;border-radius:3px;cursor:pointer">
+                继续使用合成音频
+            </button>
+        `;
+        
+        document.body.prepend(warningDiv);
+        
+        // 添加关闭按钮事件
+        document.getElementById('close-warning').addEventListener('click', () => {
+            warningDiv.style.display = 'none';
+        });
+        
+        // 添加使用合成音频的按钮事件
+        document.getElementById('use-synth').addEventListener('click', () => {
+            localStorage.setItem('useSynthAudio', 'true');
+            warningDiv.style.display = 'none';
+            location.reload();
+        });
+    }
+    
+    // 确定是否应该使用合成音频
+    let useSynthAudio = localStorage.getItem('useSynthAudio') === 'true' || false;
+
     // 初始化音频上下文
     function initAudioContext() {
         if (audioContext === null) {
             try {
                 window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioContext = new AudioContext();
+                debugLog('音频上下文初始化成功');
                 return true;
             } catch(e) {
-                console.error("Web Audio API 不受支持。请使用现代浏览器。", e);
+                debugError("Web Audio API 不受支持。请使用现代浏览器。", e);
                 alert("您的浏览器不支持Web Audio API，音乐功能可能无法正常工作。请使用Chrome或Firefox等现代浏览器。");
                 return false;
             }
@@ -65,49 +150,116 @@ window.musicFunctions = (function() {
         return true;
     }
 
-    // 生成音频信号
-    function generateGuitarSound(frequency, duration = 0.5) {
-        if (!initAudioContext()) return;
+    // 加载音频文件
+    function loadPianoSound(note) {
+        if (!initAudioContext()) return Promise.reject("AudioContext初始化失败");
         
-        const sampleRate = audioContext.sampleRate;
-        const frameCount = sampleRate * duration;
-        const audioBuffer = audioContext.createBuffer(1, frameCount, sampleRate);
-        const channelData = audioBuffer.getChannelData(0);
-        
-        // 吉他泛音系数
-        const harmonics = [
-            {harmonic: 1, amplitude: 1.0},    // 基频
-            {harmonic: 2, amplitude: 0.5},    // 第一泛音
-            {harmonic: 3, amplitude: 0.3},    // 第二泛音
-            {harmonic: 4, amplitude: 0.2},    // 第三泛音
-            {harmonic: 5, amplitude: 0.1}     // 第四泛音
-        ];
-        
-        // 生成音频样本
-        for (let i = 0; i < frameCount; i++) {
-            const t = i / sampleRate;
-            let sample = 0;
-            
-            // 叠加多个泛音
-            for (const h of harmonics) {
-                sample += h.amplitude * Math.sin(2 * Math.PI * frequency * h.harmonic * t);
+        // 如果用户选择使用合成音频或者检测到file://协议，直接使用合成音频
+        if (useSynthAudio || (isFileProtocol() && !localStorage.getItem('ignoreSynthWarning'))) {
+            debugLog(`使用合成音频: ${note}`);
+            const synthBuffer = createSynthSound(note);
+            if (synthBuffer) {
+                return Promise.resolve(synthBuffer);
             }
-            
-            // 添加淡入淡出效果
-            const fadeDuration = 0.1 * sampleRate;
-            if (i < fadeDuration) {
-                sample *= i / fadeDuration; // 淡入
-            } else if (i > frameCount - fadeDuration) {
-                sample *= (frameCount - i) / fadeDuration; // 淡出
-            }
-            
-            // 添加轻微的失真效果
-            sample = Math.tanh(sample * 0.8);
-            
-            channelData[i] = sample;
+            return Promise.reject("无法创建合成音频");
         }
         
-        return audioBuffer;
+        return new Promise((resolve, reject) => {
+            try {
+                // 使用映射处理带有#的音符
+                const fileNote = NOTE_MAPPING[note] || note;
+                
+                // 构建音频文件路径 - 修改为正确的相对路径
+                const audioPath = `piano/${fileNote}.mp3`;
+                debugLog(`尝试加载音频文件: ${audioPath}`);
+                
+                // 使用Fetch API加载音频文件
+                fetch(audioPath)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`无法加载音频文件: ${audioPath}, 状态码: ${response.status}`);
+                        }
+                        return response.arrayBuffer();
+                    })
+                    .then(arrayBuffer => {
+                        debugLog(`音频文件已加载: ${audioPath}, 大小: ${arrayBuffer.byteLength} 字节`);
+                        return audioContext.decodeAudioData(arrayBuffer);
+                    })
+                    .then(audioBuffer => {
+                        debugLog(`音频解码成功: ${note}`);
+                        resolve(audioBuffer);
+                    })
+                    .catch(error => {
+                        debugError(`加载钢琴音频失败: ${note}`, error);
+                        
+                        // 尝试使用合成音频作为备选
+                        debugLog(`尝试使用合成音频作为备选: ${note}`);
+                        const synthBuffer = createSynthSound(note);
+                        if (synthBuffer) {
+                            resolve(synthBuffer);
+                        } else {
+                            reject(error);
+                        }
+                    });
+            } catch (err) {
+                debugError(`加载过程中出现异常: ${note}`, err);
+                reject(err);
+            }
+        });
+    }
+
+    // 创建合成音频作为备选
+    function createSynthSound(note) {
+        try {
+            if (!NOTE_FREQUENCIES[note]) {
+                debugError(`无法为音符生成合成音频: ${note} - 频率未定义`);
+                return null;
+            }
+            
+            const frequency = NOTE_FREQUENCIES[note];
+            const duration = 2.0; // 2秒
+            const sampleRate = audioContext.sampleRate;
+            const bufferSize = duration * sampleRate;
+            
+            const buffer = audioContext.createBuffer(1, bufferSize, sampleRate);
+            const data = buffer.getChannelData(0);
+            
+            // 生成简单的正弦波
+            for (let i = 0; i < bufferSize; i++) {
+                // 添加包络，使声音更自然
+                const envelope = i < 0.1 * bufferSize 
+                    ? i / (0.1 * bufferSize) // 淡入
+                    : Math.max(0, 1 - (i - 0.1 * bufferSize) / (0.9 * bufferSize)); // 淡出
+                    
+                data[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * envelope * 0.5;
+            }
+            
+            debugLog(`已为音符创建合成音频: ${note}`);
+            return buffer;
+        } catch (err) {
+            debugError(`创建合成音频失败: ${note}`, err);
+            return null;
+        }
+    }
+
+    // 预加载所有音符
+    function preloadAllNotes() {
+        console.log("开始预加载所有音符...");
+        
+        const loadPromises = NOTES_TO_PRELOAD.map(note => {
+            return loadPianoSound(note)
+                .then(buffer => {
+                    audioBufferCache[note] = buffer;
+                    console.log(`预加载音符成功: ${note}`);
+                })
+                .catch(err => {
+                    console.warn(`预加载音符失败: ${note}`, err);
+                });
+        });
+        
+        Promise.all(loadPromises)
+            .then(() => console.log("所有音符预加载完成"))
+            .catch(err => console.error("预加载过程中出现错误", err));
     }
 
     // 播放音符
@@ -120,29 +272,59 @@ window.musicFunctions = (function() {
         
         // 停止当前正在播放的声音
         if (currentPlayingSource) {
-            currentPlayingSource.stop();
-        }
-        
-        // 获取频率
-        const frequency = NOTE_FREQUENCIES[note];
-        if (!frequency) {
-            console.error(`未知音符: ${note}`);
-            return;
+            try {
+                currentPlayingSource.stop();
+            } catch (err) {
+                debugWarn("停止当前播放源时出错", err);
+            }
         }
         
         // 检查缓存
         if (!audioBufferCache[note]) {
-            audioBufferCache[note] = generateGuitarSound(frequency);
+            // 如果缓存中没有，则尝试加载
+            debugLog(`缓存中未找到音符 ${note}, 正在加载...`);
+            loadPianoSound(note)
+                .then(audioBuffer => {
+                    // 保存到缓存
+                    audioBufferCache[note] = audioBuffer;
+                    debugLog(`音符加载完成并已缓存: ${note}`);
+                    
+                    // 播放
+                    const source = audioContext.createBufferSource();
+                    source.buffer = audioBuffer;
+                    source.connect(audioContext.destination);
+                    
+                    try {
+                        source.start();
+                        currentPlayingSource = source;
+                        debugLog(`正在播放音符: ${note}`);
+                    } catch (err) {
+                        debugError(`开始播放音符时出错: ${note}`, err);
+                    }
+                })
+                .catch(error => {
+                    debugError(`播放音符失败: ${note}`, error);
+                    alert(`无法播放音符 ${note}, 请检查控制台获取详细信息。`);
+                });
+            return;
         }
         
-        // 创建音频源并播放
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBufferCache[note];
-        source.connect(audioContext.destination);
-        source.start();
-        currentPlayingSource = source;
-        
-        return source;
+        // 如果缓存中已有，直接播放
+        try {
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBufferCache[note];
+            source.connect(audioContext.destination);
+            source.start();
+            currentPlayingSource = source;
+            debugLog(`从缓存播放音符: ${note}`);
+            return source;
+        } catch (err) {
+            debugError(`播放缓存的音符时出错: ${note}`, err);
+            // 尝试重新加载
+            delete audioBufferCache[note];
+            debugLog(`已从缓存中移除损坏的音符: ${note}, 将重新加载`);
+            playNote(note);
+        }
     }
 
     // 播放音阶
@@ -876,10 +1058,114 @@ window.musicFunctions = (function() {
         });
     }
 
+    // 尝试预加载基本音符
+    function preloadBasicNotes() {
+        if (!initAudioContext()) return;
+        
+        debugLog('开始预加载基本音符');
+        // 基本的C大调音阶
+        const basicNotes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"];
+        
+        // 创建加载进度追踪
+        let loaded = 0;
+        let total = basicNotes.length;
+        
+        // 显示加载进度
+        function updateLoadingStatus() {
+            debugLog(`音符加载进度: ${loaded}/${total}`);
+        }
+        
+        // 为每个音符创建加载Promise
+        const loadPromises = basicNotes.map(note => {
+            return loadPianoSound(note)
+                .then(buffer => {
+                    audioBufferCache[note] = buffer;
+                    loaded++;
+                    debugLog(`预加载音符成功: ${note}`);
+                    updateLoadingStatus();
+                    return {note, success: true};
+                })
+                .catch(err => {
+                    debugWarn(`预加载音符失败: ${note}`, err);
+                    loaded++;
+                    updateLoadingStatus();
+                    return {note, success: false, error: err};
+                });
+        });
+        
+        // 返回所有加载Promise的组合
+        return Promise.allSettled(loadPromises)
+            .then(results => {
+                // 统计成功和失败的数量
+                const success = results.filter(r => r.value && r.value.success).length;
+                const failed = total - success;
+                
+                if (failed > 0) {
+                    debugWarn(`音符预加载完成: ${success}成功, ${failed}失败`);
+                } else {
+                    debugLog(`所有音符(${total}个)预加载成功!`);
+                }
+                
+                return {
+                    total,
+                    success,
+                    failed
+                };
+            });
+    }
+
     // 初始化音乐应用
     document.addEventListener('DOMContentLoaded', function() {
+        debugLog('音乐模块初始化开始');
+        
+        // 检查是否通过file://协议访问
+        if (isFileProtocol() && !useSynthAudio) {
+            showProtocolWarning();
+        }
+        
         // 初始化音频上下文
-        initAudioContext();
+        if (initAudioContext()) {
+            // 预加载基本音符
+            preloadBasicNotes()
+                .then(result => {
+                    debugLog(`基本音符预加载完成: ${result.success}/${result.total} 成功`);
+                })
+                .catch(err => {
+                    debugError('预加载音符失败', err);
+                });
+        }
+        
+        // 初始化音频设置
+        const useSynthAudioCheckbox = document.getElementById('use-synth-audio');
+        if (useSynthAudioCheckbox) {
+            // 设置初始状态
+            useSynthAudioCheckbox.checked = useSynthAudio;
+            
+            // 添加切换事件
+            useSynthAudioCheckbox.addEventListener('change', function() {
+                localStorage.setItem('useSynthAudio', this.checked);
+                debugLog(`音频类型已切换为${this.checked ? '合成音频' : '真实钢琴音频'}`);
+                
+                // 清空缓存，强制重新加载
+                Object.keys(audioBufferCache).forEach(key => {
+                    delete audioBufferCache[key];
+                });
+                
+                // 预加载音符
+                preloadBasicNotes();
+            });
+        }
+        
+        // 重置音频选择按钮
+        const resetAudioChoiceBtn = document.getElementById('reset-audio-choice');
+        if (resetAudioChoiceBtn) {
+            resetAudioChoiceBtn.addEventListener('click', function() {
+                localStorage.removeItem('useSynthAudio');
+                localStorage.removeItem('ignoreSynthWarning');
+                debugLog('音频选择已重置');
+                location.reload();
+            });
+        }
         
         // 为音乐练习选项卡添加事件监听器
         const musicCards = document.querySelectorAll('.music-card');
@@ -904,11 +1190,14 @@ window.musicFunctions = (function() {
                     if (targetContainer) {
                         targetContainer.style.display = 'block';
                         // 加载相应的音乐练习内容
+                        debugLog(`加载音乐练习内容: ${id}`);
                         loadMusicContent(id);
                     }
                 }
             });
         });
+        
+        debugLog('音乐模块初始化完成');
     });
 
     // 返回公共API
@@ -923,6 +1212,24 @@ window.musicFunctions = (function() {
         playMelody: playMelody,
         stopAllSounds: stopAllSounds,
         generateRandomMelody: generateRandomMelody,
-        loadMusicContent: loadMusicContent
+        loadMusicContent: loadMusicContent,
+        // 调试函数
+        preloadBasicNotes: preloadBasicNotes,
+        debug: {
+            getAudioContext: () => audioContext,
+            getAudioCache: () => audioBufferCache,
+            testAudioPath: (path) => {
+                debugLog(`测试音频路径: ${path}`);
+                return fetch(path)
+                    .then(res => {
+                        debugLog(`路径测试结果: ${path} - ${res.ok ? '成功' : '失败'} - 状态码: ${res.status}`);
+                        return res.ok;
+                    })
+                    .catch(err => {
+                        debugError(`路径测试错误: ${path}`, err);
+                        return false;
+                    });
+            }
+        }
     };
 })(); 
