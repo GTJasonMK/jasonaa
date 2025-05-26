@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '30px Microsoft YaHei';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('游戏结束!', canvas.width / 2, canvas.height / 2 - 50);
+        ctx.fillText('游戏结束!菜鸡小牛', canvas.width / 2, canvas.height / 2 - 50);
         
         ctx.font = '20px Microsoft YaHei';
         ctx.fillText(`最终得分: ${score}`, canvas.width / 2, canvas.height / 2);
