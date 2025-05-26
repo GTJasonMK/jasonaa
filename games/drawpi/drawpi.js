@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             name: '传奇', 
             icon: '💎', 
             class: 'legend',
-            description: '圆形之神' 
+            description: '圆神' 
         }
     ];
     

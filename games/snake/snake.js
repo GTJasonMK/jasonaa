@@ -6,6 +6,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-btn');
     const scoreElement = document.getElementById('score');
     
+    // 创建等级显示元素
+    const levelDisplay = document.createElement('div');
+    levelDisplay.className = 'level-display';
+    levelDisplay.innerHTML = '<span>等级: </span><span id="level">1</span>';
+    
+    // 将等级显示添加到分数容器之后
+    const scoreContainer = document.querySelector('.score-container');
+    scoreContainer.appendChild(levelDisplay);
+    
+    const levelElement = document.getElementById('level');
+    
     // 检测是否为移动设备
     const isTouchDevice = 'ontouchstart' in window || 
                            navigator.maxTouchPoints > 0 || 
@@ -16,6 +27,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let snakeColor = '#4CAF50'; // 默认蛇身颜色
     let snakeHeadColor = '#2E7D32'; // 默认蛇头颜色
     
+    // 等级系统配置
+    const levelConfig = {
+        1: { scoreThreshold: 0, speed: 150 },
+        2: { scoreThreshold: 50, speed: 130 },
+        3: { scoreThreshold: 100, speed: 110 },
+        4: { scoreThreshold: 200, speed: 90 },
+        5: { scoreThreshold: 350, speed: 80 },
+        6: { scoreThreshold: 500, speed: 70 },
+        7: { scoreThreshold: 700, speed: 60 },
+        8: { scoreThreshold: 1000, speed: 50 },
+        9: { scoreThreshold: 1500, speed: 45 },
+        10: { scoreThreshold: 2000, speed: 40 }
+    };
+    
     // 尝试从settingsManager加载设置
     if (window.settingsManager) {
         try {
@@ -24,6 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 游戏速度: 1-10，值越大速度越快，转换为实际速度: 200-50ms
                 const speedValue = settings.games.gameSpeed || 5;
                 gameSpeed = Math.round(200 - (speedValue * 15));
+                
+                // 根据用户设置调整等级配置
+                for (let level in levelConfig) {
+                    // 保持相对比例的同时应用用户的速度设置
+                    let ratio = levelConfig[level].speed / 150;
+                    levelConfig[level].speed = Math.round(gameSpeed * ratio);
+                }
                 
                 // 设置蛇的颜色
                 if (settings.games.snakeColor) {
@@ -70,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let direction = 'right';
     let nextDirection = 'right';
     let score = 0;
+    let level = 1;
     let gameInterval;
     let isRunning = false;
     
@@ -85,13 +118,84 @@ document.addEventListener('DOMContentLoaded', () => {
         food: '#FF5722',
         border: '#ddd'
     };
+    
+    // 检查和更新等级
+    function checkAndUpdateLevel() {
+        let newLevel = 1;
+        
+        // 找到当前分数对应的最高等级
+        for (let l = 10; l >= 1; l--) {
+            if (score >= levelConfig[l].scoreThreshold) {
+                newLevel = l;
+                break;
+            }
+        }
+        
+        // 如果等级提高，显示提示并调整游戏速度
+        if (newLevel > level) {
+            level = newLevel;
+            levelElement.textContent = level;
+            
+            // 更新游戏速度
+            if (isRunning) {
+                clearInterval(gameInterval);
+                gameInterval = setInterval(moveSnake, levelConfig[level].speed);
+            }
+            
+            // 显示等级提升提示
+            showLevelUpMessage();
+        }
+    }
+    
+    // 显示等级提升消息
+    function showLevelUpMessage() {
+        const message = document.createElement('div');
+        message.className = 'level-up-message';
+        message.textContent = `升级到 ${level} 级!`;
+        document.querySelector('.game-container').appendChild(message);
+        
+        // 添加CSS样式
+        message.style.position = 'absolute';
+        message.style.top = '50%';
+        message.style.left = '50%';
+        message.style.transform = 'translate(-50%, -50%)';
+        message.style.backgroundColor = 'rgba(76, 175, 80, 0.9)';
+        message.style.color = 'white';
+        message.style.padding = '10px 20px';
+        message.style.borderRadius = '5px';
+        message.style.fontSize = '24px';
+        message.style.fontWeight = 'bold';
+        message.style.zIndex = '100';
+        message.style.animation = 'fadeInOut 2s';
+        
+        // 添加动画样式
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInOut {
+                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+                20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+                30% { transform: translate(-50%, -50%) scale(1); }
+                80% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 2秒后删除消息
+        setTimeout(() => {
+            message.remove();
+            style.remove();
+        }, 2000);
+    }
 
     // 初始化游戏
     function initGame() {
         clearInterval(gameInterval);
         isRunning = false;
         score = 0;
+        level = 1;
         scoreElement.textContent = '0';
+        levelElement.textContent = '1';
         direction = 'right';
         nextDirection = 'right';
         
@@ -133,6 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } while (onSnake);
         
         food = newFood;
+        
+        // 给食物一个随机颜色，根据当前等级提高食物价值
+        const foodColors = ['#FF5722', '#FF9800', '#FFEB3B', '#8BC34A', '#4CAF50'];
+        food.color = foodColors[Math.min(level - 1, 4)];
+        food.value = Math.min(level, 5) * 10; // 食物价值随等级提高
     }
 
     // 绘制游戏
@@ -150,10 +259,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // 绘制食物
-        ctx.fillStyle = colors.food;
+        ctx.fillStyle = food.color || colors.food;
         ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
         ctx.strokeStyle = colors.background;
         ctx.strokeRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+        
+        // 在食物上显示其价值（如果不是基础值的话）
+        if (food.value > 10) {
+            ctx.font = '10px Arial';
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.fillText(food.value, food.x * gridSize + gridSize/2, food.y * gridSize + gridSize/2 + 3);
+        }
     }
 
     // 移动蛇
@@ -201,9 +318,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 检查是否吃到食物
         if (head.x === food.x && head.y === food.y) {
-            // 增加分数
-            score += 10;
+            // 增加分数，根据食物价值
+            score += food.value || 10;
             scoreElement.textContent = score;
+            
+            // 检查等级
+            checkAndUpdateLevel();
             
             // 生成新食物
             generateFood();
@@ -229,10 +349,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.font = '30px Microsoft YaHei';
         ctx.fillStyle = 'white';
         ctx.textAlign = 'center';
-        ctx.fillText('游戏结束!', canvas.width / 2, canvas.height / 2 - 30);
+        ctx.fillText('游戏结束!', canvas.width / 2, canvas.height / 2 - 50);
         
         ctx.font = '20px Microsoft YaHei';
-        ctx.fillText(`最终得分: ${score}`, canvas.width / 2, canvas.height / 2 + 10);
+        ctx.fillText(`最终得分: ${score}`, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(`达到等级: ${level}`, canvas.width / 2, canvas.height / 2 + 30);
+        
+        // 保存最高分
+        const highScore = localStorage.getItem('snake_high_score') || 0;
+        if (score > highScore) {
+            localStorage.setItem('snake_high_score', score);
+            ctx.fillText('新纪录!', canvas.width / 2, canvas.height / 2 + 60);
+        }
     }
 
     // 开始游戏
@@ -244,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             isRunning = true;
             startBtn.textContent = '暂停游戏';
-            gameInterval = setInterval(moveSnake, gameSpeed);
+            gameInterval = setInterval(moveSnake, levelConfig[level].speed);
         }
     }
     

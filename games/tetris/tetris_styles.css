@@ -10,8 +10,9 @@
 /* 游戏区域样式 */
 .game-area {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
     margin-bottom: 20px;
 }
 
@@ -25,78 +26,241 @@
 
 /* 游戏板样式 */
 .tetris-board {
-    width: 300px;
-    height: 540px;
-    background-color: var(--tetris-board-bg);
-    border: 4px solid var(--tetris-board-border);
-    border-radius: 10px;
     display: grid;
     grid-template-columns: repeat(10, 1fr);
     grid-template-rows: repeat(20, 1fr);
-    gap: 1px;
-    box-shadow: 0 10px 20px var(--box-shadow-color);
-    margin: 0 auto;
+    width: 300px;
+    height: 600px;
+    border: 2px solid #333;
+    background-color: rgba(0, 0, 0, 0.8);
+    position: relative;
     overflow: hidden;
 }
 
-@media (max-width: 480px) {
-    .tetris-board {
-        width: 280px;
-        height: 504px; /* 保持宽高比 */
-        border-width: 3px;
-    }
-}
-
-/* 方块颜色定义 */
 .tetris-cell {
-    background-color: var(--tetris-cell-bg);
-    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-sizing: border-box;
 }
 
-/* 按钮区域样式 */
-.controls {
-    margin: 20px 0;
+/* 方块颜色 */
+.i-block {
+    background-color: #00f0f0;
+}
+
+.o-block {
+    background-color: #f0f000;
+}
+
+.t-block {
+    background-color: #a000f0;
+}
+
+.l-block {
+    background-color: #f0a000;
+}
+
+.j-block {
+    background-color: #0000f0;
+}
+
+.s-block {
+    background-color: #00f000;
+}
+
+.z-block {
+    background-color: #f00000;
+}
+
+/* 特殊方块样式 */
+.special-block {
+    background-image: linear-gradient(45deg, rgba(255,255,255,0.3) 25%, transparent 25%, 
+                      transparent 50%, rgba(255,255,255,0.3) 50%, 
+                      rgba(255,255,255,0.3) 75%, transparent 75%, transparent);
+    background-size: 10px 10px;
+    box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+/* 游戏信息区域 */
+.tetris-info {
+    width: 150px;
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
 }
 
-/* 按钮样式 */
-.controls button {
-    margin: 0 10px;
-    padding: 12px 24px;
-    background-color: var(--tetris-button-bg);
-    border: none;
-    color: white;
+.next-piece-container {
+    text-align: center;
+}
+
+.next-piece {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid #333;
+}
+
+/* 游戏统计 */
+.stats {
+    text-align: center;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
+
+/* 连击显示样式 */
+#combo {
     font-weight: bold;
-    border-radius: 6px;
+    transition: transform 0.2s, color 0.2s;
+}
+
+#combo[data-value="0"] {
+    color: #fff;
+}
+
+#combo[data-value="1"] {
+    color: #aaf;
+}
+
+#combo[data-value="2"] {
+    color: #88f;
+}
+
+#combo[data-value="3"] {
+    color: #66f;
+}
+
+#combo[data-value="4"] {
+    color: #44f;
+}
+
+#combo[data-value="5"] {
+    color: #22f;
+}
+
+#combo[data-value="6"], #combo[data-value="7"] {
+    color: #00f;
+}
+
+#combo[data-value="8"], #combo[data-value="9"] {
+    color: #f0f;
+}
+
+#combo[data-value="10"], #combo[data-value="11"], #combo[data-value="12"] {
+    color: #f00;
+    text-shadow: 0 0 5px rgba(255, 0, 0, 0.7);
+}
+
+#combo[data-value="13"], #combo[data-value="14"], #combo[data-value="15"] {
+    color: #ff0;
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.7);
+}
+
+#combo[data-value="16"], #combo[data-value="17"], #combo[data-value="18"], #combo[data-value="19"] {
+    color: #0ff;
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
+}
+
+#combo[data-value="20"] {
+    color: gold;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.9);
+    animation: pulse 0.5s infinite alternate;
+}
+
+@keyframes pulse {
+    from { transform: scale(1); }
+    to { transform: scale(1.2); }
+}
+
+/* 控制按钮 */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+/* 游戏结束覆盖层 */
+.game-over-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.game-over-overlay h2 {
+    color: #f00;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+.game-over-overlay p {
+    color: #fff;
+    font-size: 24px;
+    margin-bottom: 30px;
+}
+
+.game-over-overlay button {
+    padding: 10px 20px;
+    font-size: 18px;
+    background-color: #f00;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 6px var(--box-shadow-color);
-    text-transform: uppercase;
-    letter-spacing: 1px;
 }
 
-.controls button:hover {
-    background-color: var(--tetris-button-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 10px var(--box-shadow-color);
+.game-over-overlay button:hover {
+    background-color: #d00;
 }
 
-.controls button:active {
-    transform: translateY(0);
-    box-shadow: 0 4px 6px var(--box-shadow-color);
-}
-
-@media (max-width: 480px) {
-    .controls {
+/* 移动设备适配 */
+@media (max-width: 768px) {
+    .game-area {
         flex-direction: column;
         align-items: center;
     }
     
-    .controls button {
-        width: 80%;
-        margin: 5px 0;
+    .tetris-board {
+        width: 250px;
+        height: 500px;
+    }
+    
+    .tetris-info {
+        width: 250px;
+        flex-direction: row;
+        justify-content: space-between;
+    }
+    
+    .next-piece {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .touch-instructions {
+        display: block;
+        margin-bottom: 15px;
+        text-align: center;
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 769px) {
+    .touch-instructions {
+        display: none;
     }
 }
 
@@ -205,116 +369,6 @@
     }
 }
 
-/* 游戏结束信息样式 */
-.game-over-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.game-over-overlay h2 {
-    color: white;
-    font-size: 36px;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-    margin-bottom: 20px;
-}
-
-.game-over-overlay p {
-    color: white;
-    font-size: 24px;
-    margin-bottom: 30px;
-}
-
-.game-over-overlay button {
-    padding: 15px 30px;
-    background-color: var(--tetris-button-bg);
-    border: none;
-    color: white;
-    font-size: 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.game-over-overlay button:hover {
-    background-color: var(--tetris-button-hover);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 10px var(--box-shadow-color);
-}
-
-/* 移动端控制按钮 */
-.tetris-mobile-controls {
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 12px;
-    width: 100%;
-    max-width: 300px;
-    background-color: rgba(51, 51, 51, 0.3);
-    padding: 15px;
-    border-radius: 12px;
-    margin-top: 25px;
-}
-
-.tetris-mobile-controls .mobile-btn {
-    background-color: var(--tetris-button-bg);
-    font-size: 28px;
-    height: 60px;
-    border-radius: 8px;
-    position: relative;
-    overflow: hidden;
-}
-
-.tetris-mobile-controls .mobile-btn:active {
-    background-color: var(--tetris-button-hover);
-}
-
-/* 定义特殊按钮位置 */
-.tetris-mobile-controls .mobile-btn.left {
-    grid-column: 1;
-    grid-row: 1;
-}
-
-.tetris-mobile-controls .mobile-btn.rotate {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-.tetris-mobile-controls .mobile-btn.right {
-    grid-column: 3;
-    grid-row: 1;
-}
-
-.tetris-mobile-controls .mobile-btn.pause {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.tetris-mobile-controls .mobile-btn.down {
-    grid-column: 2;
-    grid-row: 2;
-}
-
-.tetris-mobile-controls .mobile-btn.drop {
-    grid-column: 3;
-    grid-row: 2;
-}
-
-/* 渐变效果，增强现代感 */
-.tetris-board,
-.next-piece,
-.stats,
-.mobile-controls {
-    background: linear-gradient(to bottom, var(--tetris-board-bg), var(--tetris-stats-bg));
-}
-
 /* 游戏说明区域 */
 .game-instructions {
     background-color: var(--card-bg);
@@ -338,15 +392,6 @@
     box-shadow: 0 2px 6px var(--box-shadow-color);
 }
 
-/* 方块颜色 */
-.tetris-cell.i-block { background-color: #72c3dc; }
-.tetris-cell.j-block { background-color: #5558a8; }
-.tetris-cell.l-block { background-color: #e88f23; }
-.tetris-cell.o-block { background-color: #f5dd29; }
-.tetris-cell.s-block { background-color: #7cdc41; }
-.tetris-cell.t-block { background-color: #a566b2; }
-.tetris-cell.z-block { background-color: #f35a5a; }
-
 /* 添加发光效果，增强视觉效果 */
 .tetris-cell.i-block { box-shadow: inset 0 0 8px rgba(114, 195, 220, 0.5); }
 .tetris-cell.j-block { box-shadow: inset 0 0 8px rgba(85, 88, 168, 0.5); }
@@ -354,4 +399,97 @@
 .tetris-cell.o-block { box-shadow: inset 0 0 8px rgba(245, 221, 41, 0.5); }
 .tetris-cell.s-block { box-shadow: inset 0 0 8px rgba(124, 220, 65, 0.5); }
 .tetris-cell.t-block { box-shadow: inset 0 0 8px rgba(165, 102, 178, 0.5); }
-.tetris-cell.z-block { box-shadow: inset 0 0 8px rgba(243, 90, 90, 0.5); } 
+.tetris-cell.z-block { box-shadow: inset 0 0 8px rgba(243, 90, 90, 0.5); }
+
+/* 得分和等级提升动画 */
+@keyframes scorePopup {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    80% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -150%) scale(0.8); }
+}
+
+@keyframes lineClearEffect {
+    0% { transform: scale(1); filter: brightness(1); }
+    50% { transform: scale(1.1); filter: brightness(1.5); }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes specialBlockGlow {
+    0% { filter: brightness(1); }
+    50% { filter: brightness(1.5) drop-shadow(0 0 5px gold); }
+    100% { filter: brightness(1); }
+}
+
+@keyframes specialBlockPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes levelUpAnimation {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(-5deg); }
+    20% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
+    30% { transform: translate(-50%, -50%) scale(1.2) rotate(-3deg); }
+    40% { transform: translate(-50%, -50%) scale(1.2) rotate(3deg); }
+    50% { transform: translate(-50%, -50%) scale(1.2) rotate(0); }
+    70% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+}
+
+@keyframes flashEffect {
+    0% { opacity: 0.8; }
+    100% { opacity: 0; }
+}
+
+/* 等级提升消息样式 */
+.level-up-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(76, 175, 80, 0.9);
+    color: white;
+    padding: 15px 30px;
+    border-radius: 10px;
+    font-size: 28px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    animation: levelUpAnimation 2.5s ease-out forwards;
+}
+
+/* 得分弹出样式 */
+.score-popup {
+    position: absolute;
+    color: #FFD700;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 100;
+    text-shadow: 0 0 5px rgba(0,0,0,0.5);
+    animation: scorePopup 1s forwards;
+}
+
+/* 特殊得分弹出样式 */
+.special-popup {
+    position: absolute;
+    color: #FF00FF;
+    font-size: 28px;
+    font-weight: bold;
+    z-index: 101;
+    text-shadow: 0 0 10px rgba(255,0,255,0.7);
+    animation: scorePopup 1.5s forwards;
+}
+
+/* 闪光效果样式 */
+.level-up-flash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 99;
+    animation: flashEffect 1s ease-out forwards;
+} 
