@@ -6,6 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetBtn = document.getElementById('reset-btn');
     const scoreElement = document.getElementById('score');
     
+    // 检测是否为移动设备
+    const isTouchDevice = 'ontouchstart' in window || 
+                           navigator.maxTouchPoints > 0 || 
+                           navigator.msMaxTouchPoints > 0;
+    
     // 从设置管理器加载设置
     let gameSpeed = 150; // 默认游戏速度（毫秒）
     let snakeColor = '#4CAF50'; // 默认蛇身颜色
@@ -291,30 +296,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // 触摸事件监听 - 滑动控制
-    canvas.addEventListener('touchstart', (e) => {
+    // 触摸事件 - 判断是否在游戏区域内
+    function isInCanvas(e) {
         const rect = canvas.getBoundingClientRect();
-        const touchX = e.touches[0].clientX - rect.left;
-        const touchY = e.touches[0].clientY - rect.top;
-        
-        // 只有当触摸在Canvas区域内时才阻止默认行为
-        if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            e.preventDefault(); // 防止页面滚动
-        }
-    }, { passive: false });
+        const touch = e.touches[0] || e.changedTouches[0];
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+        return touchX >= 0 && touchX <= canvas.width && 
+               touchY >= 0 && touchY <= canvas.height;
+    }
     
-    canvas.addEventListener('touchmove', (e) => {
-        if (!touchStartX || !touchStartY) return;
+    // 触摸事件监听 - 滑动控制
+    if (isTouchDevice) {
+        canvas.addEventListener('touchstart', (e) => {
+            if (isInCanvas(e)) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                e.preventDefault(); // 防止页面滚动
+            }
+        }, { passive: false });
         
-        try {
-            const rect = canvas.getBoundingClientRect();
-            const touchX = e.touches[0].clientX - rect.left;
-            const touchY = e.touches[0].clientY - rect.top;
+        canvas.addEventListener('touchmove', (e) => {
+            if (!touchStartX || !touchStartY) return;
             
-            // 只有当触摸在Canvas区域内时才阻止默认行为
-            if (touchX >= 0 && touchX <= canvas.width && touchY >= 0 && touchY <= canvas.height) {
+            if (isInCanvas(e)) {
                 const touchEndX = e.touches[0].clientX;
                 const touchEndY = e.touches[0].clientY;
                 
@@ -342,41 +347,67 @@ document.addEventListener('DOMContentLoaded', () => {
                 touchStartY = touchEndY;
                 e.preventDefault(); // 防止页面滚动
             }
-        } catch (error) {
-            console.error('处理触摸事件时出错:', error);
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', (e) => {
+            touchStartX = 0;
+            touchStartY = 0;
+        }, { passive: true });
+    }
+    
+    // 按钮通用事件处理函数
+    function setupButton(button, clickHandler) {
+        // 点击事件
+        button.addEventListener('click', clickHandler);
+        
+        // 触摸设备额外处理
+        if (isTouchDevice) {
+            // 添加触摸反馈样式
+            button.addEventListener('touchstart', () => {
+                button.classList.add('touch-active');
+            }, { passive: true });
+            
+            button.addEventListener('touchend', () => {
+                button.classList.remove('touch-active');
+                // 不在这里调用clickHandler，让系统的click事件处理
+            }, { passive: true });
         }
-    }, { passive: false });
+    }
     
-    canvas.addEventListener('touchend', (e) => {
-        touchStartX = 0;
-        touchStartY = 0;
-    }, { passive: true });
-    
-    // 简化按钮事件处理
-    startBtn.addEventListener('click', function() {
-        console.log('点击开始按钮');
+    // 设置开始/暂停按钮
+    setupButton(startBtn, () => {
+        console.log('开始/暂停按钮被点击');
         if (startBtn.textContent === '开始新游戏') {
             initGame();
         }
         startGame();
     });
     
-    resetBtn.addEventListener('click', function() {
-        console.log('点击重置按钮');
+    // 设置重置按钮
+    setupButton(resetBtn, () => {
+        console.log('重置按钮被点击');
         initGame();
     });
-    
-    // 确保在移动设备上也能快速响应
-    if ('ontouchstart' in window) {
-        startBtn.addEventListener('touchstart', function(e) {
-            console.log('触摸开始按钮');
-        }, { passive: true });
-        
-        resetBtn.addEventListener('touchstart', function(e) {
-            console.log('触摸重置按钮');
-        }, { passive: true });
-    }
 
-    // 初始化游戏
+    // 调整画布大小，确保在不同设备上显示正确
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        const containerWidth = container.clientWidth;
+        
+        // 保持画布为正方形
+        const size = Math.min(containerWidth, 400);
+        
+        canvas.width = size;
+        canvas.height = size;
+        
+        // 重新绘制游戏
+        drawGame();
+    }
+    
+    // 窗口大小变化时调整画布
+    window.addEventListener('resize', resizeCanvas);
+    
+    // 初始化
+    resizeCanvas();
     initGame();
 }); 
