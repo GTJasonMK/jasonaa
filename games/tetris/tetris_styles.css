@@ -399,7 +399,7 @@
 .tetris-cell.o-block { box-shadow: inset 0 0 8px rgba(245, 221, 41, 0.5); }
 .tetris-cell.s-block { box-shadow: inset 0 0 8px rgba(124, 220, 65, 0.5); }
 .tetris-cell.t-block { box-shadow: inset 0 0 8px rgba(165, 102, 178, 0.5); }
-.tetris-cell.z-block { box-shadow: inset 0 0 8px rgba(243, 90, 90, 0.5); }
+.tetris-cell.z-block { box-shadow: inset 0 0 8px rgba(243, 90, 90, 0.5); } 
 
 /* 得分和等级提升动画 */
 @keyframes scorePopup {

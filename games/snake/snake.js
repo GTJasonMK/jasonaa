@@ -436,25 +436,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 触摸事件监听 - 滑动控制
     if (isTouchDevice) {
-        canvas.addEventListener('touchstart', (e) => {
+    canvas.addEventListener('touchstart', (e) => {
             if (isInCanvas(e)) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                e.preventDefault(); // 防止页面滚动
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        e.preventDefault(); // 防止页面滚动
             }
-        }, { passive: false });
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => {
+        if (!touchStartX || !touchStartY) return;
         
-        canvas.addEventListener('touchmove', (e) => {
-            if (!touchStartX || !touchStartY) return;
-            
             if (isInCanvas(e)) {
-                const touchEndX = e.touches[0].clientX;
-                const touchEndY = e.touches[0].clientY;
-                
-                const dx = touchEndX - touchStartX;
-                const dy = touchEndY - touchStartY;
-                
-                // 判断滑动方向（水平或垂直滑动距离更大的方向）
+        const touchEndX = e.touches[0].clientX;
+        const touchEndY = e.touches[0].clientY;
+        
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+        
+        // 判断滑动方向（水平或垂直滑动距离更大的方向）
                 // 增加最小滑动距离阈值，避免意外触发
                 const minSwipeDistance = 20;
                 
@@ -462,24 +462,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     return; // 滑动距离太小，可能是意外触摸
                 }
                 
-                if (Math.abs(dx) > Math.abs(dy)) {
-                    // 水平滑动
-                    changeDirection(dx > 0 ? 'right' : 'left');
-                } else {
-                    // 垂直滑动
-                    changeDirection(dy > 0 ? 'down' : 'up');
-                }
-                
-                // 重置起始点，允许在同一次触摸中多次改变方向
-                touchStartX = touchEndX;
-                touchStartY = touchEndY;
-                e.preventDefault(); // 防止页面滚动
-            }
-        }, { passive: false });
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // 水平滑动
+            changeDirection(dx > 0 ? 'right' : 'left');
+        } else {
+            // 垂直滑动
+            changeDirection(dy > 0 ? 'down' : 'up');
+        }
         
+        // 重置起始点，允许在同一次触摸中多次改变方向
+        touchStartX = touchEndX;
+        touchStartY = touchEndY;
+        e.preventDefault(); // 防止页面滚动
+            }
+    }, { passive: false });
+    
         canvas.addEventListener('touchend', (e) => {
-            touchStartX = 0;
-            touchStartY = 0;
+        touchStartX = 0;
+        touchStartY = 0;
         }, { passive: true });
     }
     
@@ -514,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 设置重置按钮
     setupButton(resetBtn, () => {
         console.log('重置按钮被点击');
-        initGame();
+            initGame();
     });
 
     // 调整画布大小，确保在不同设备上显示正确

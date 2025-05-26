@@ -1013,8 +1013,8 @@ function setupMobileControls() {
         
         // 只在游戏区域内处理触摸事件
         if (touchX >= 0 && touchX <= boardElement.offsetWidth && touchY >= 0 && touchY <= boardElement.offsetHeight) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
             touchStartTime = new Date().getTime();
         }
     }, { passive: false });
