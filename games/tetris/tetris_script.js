@@ -171,8 +171,6 @@ function loadUserSettings() {
             
             // 设置减缓时间效果持续时间
             window.slowTimeEffectDuration = settings.tetris.slowTimeEffectDuration || 10000;
-            
-            console.log("已应用俄罗斯方块游戏设置");
         }
     }
 }

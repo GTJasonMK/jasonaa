@@ -84,6 +84,14 @@
     .stat-item {
         margin: 5px 10px;
     }
+    
+    .touch-hint,
+    .touch-instructions,
+    .mobile-controls, 
+    .tetris-mobile-controls, 
+    .snake-mobile-controls {
+        display: block;
+    }
 }
 
 /* 游戏结束/胜利弹窗优化 */

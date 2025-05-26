@@ -97,37 +97,9 @@ document.addEventListener('DOMContentLoaded', () => {
         message.textContent = `升级到 ${level} 级!`;
         document.querySelector('.game-container').appendChild(message);
         
-        // 添加CSS样式
-        message.style.position = 'absolute';
-        message.style.top = '50%';
-        message.style.left = '50%';
-        message.style.transform = 'translate(-50%, -50%)';
-        message.style.backgroundColor = 'rgba(76, 175, 80, 0.9)';
-        message.style.color = 'white';
-        message.style.padding = '10px 20px';
-        message.style.borderRadius = '5px';
-        message.style.fontSize = '24px';
-        message.style.fontWeight = 'bold';
-        message.style.zIndex = '100';
-        message.style.animation = 'fadeInOut 2s';
-        
-        // 添加动画样式
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeInOut {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-                30% { transform: translate(-50%, -50%) scale(1); }
-                80% { opacity: 1; }
-                100% { opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-        
         // 2秒后删除消息
         setTimeout(() => {
             message.remove();
-            style.remove();
         }, 2000);
     }
 

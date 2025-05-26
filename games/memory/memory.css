@@ -99,6 +99,8 @@ select#difficulty {
     perspective: 1000px;
     cursor: pointer;
     touch-action: manipulation; /* 改善移动端触摸体验 */
+    -webkit-tap-highlight-color: transparent; /* 移除iOS点击高亮 */
+    -webkit-touch-callout: none; /* 防止长按菜单 */
 }
 
 .card-inner {
@@ -107,6 +109,7 @@ select#difficulty {
     height: 100%;
     transform-style: preserve-3d;
     transition: transform var(--memory-animation-speed);
+    will-change: transform; /* 提升渲染性能 */
 }
 
 .memory-card.flipped .card-inner {
@@ -220,7 +223,26 @@ select#difficulty {
     box-shadow: 0 0 10px rgba(var(--primary-color-rgb, 52, 152, 219), 0.6);
 }
 
-/* 移动端优化 */
+/* 添加触摸指导提示 */
+.touch-guide {
+    display: none;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: var(--card-bg);
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-color);
+    border-left: 3px solid var(--primary-color);
+}
+
+/* 响应式样式 - 合并的媒体查询 */
+@media (max-width: 768px) {
+    .touch-guide {
+        display: block;
+    }
+}
+
 @media (max-width: 600px) {
     :root {
         --memory-grid-gap: 5px;
@@ -303,35 +325,5 @@ select#difficulty {
     
     .stats {
         margin-bottom: 5px;
-    }
-}
-
-/* 添加触摸指导提示 */
-.touch-guide {
-    display: none;
-    padding: 10px;
-    margin: 10px 0;
-    background-color: var(--card-bg);
-    border-radius: 5px;
-    text-align: center;
-    font-size: 14px;
-    color: var(--text-color);
-    border-left: 3px solid var(--primary-color);
-}
-
-@media (max-width: 768px) {
-    .touch-guide {
-        display: block;
-    }
-    
-    /* 修复iOS上的触摸事件问题 */
-    .memory-card {
-        -webkit-tap-highlight-color: transparent;
-        -webkit-touch-callout: none;
-    }
-    
-    /* 减少缩放动画效果在低端设备上的卡顿 */
-    .card-inner {
-        will-change: transform;
     }
 } 
