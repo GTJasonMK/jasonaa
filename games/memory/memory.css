@@ -1,4 +1,12 @@
 /* 记忆游戏样式 */
+:root {
+    --memory-card-size: 120px;
+    --memory-grid-gap: 10px;
+    --memory-card-font-size: 24px;
+    --memory-animation-speed: 0.5s;
+    --primary-color-rgb: 52, 152, 219;
+}
+
 .memory-container {
     display: flex;
     flex-direction: column;
@@ -63,7 +71,7 @@ select#difficulty {
 .memory-board {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: var(--memory-grid-gap);
     max-width: 600px;
     width: 100%;
     margin: 0 auto;
@@ -90,6 +98,7 @@ select#difficulty {
     aspect-ratio: 1/1;
     perspective: 1000px;
     cursor: pointer;
+    touch-action: manipulation; /* 改善移动端触摸体验 */
 }
 
 .card-inner {
@@ -97,7 +106,7 @@ select#difficulty {
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.5s;
+    transition: transform var(--memory-animation-speed);
 }
 
 .memory-card.flipped .card-inner {
@@ -122,7 +131,7 @@ select#difficulty {
     background-image: linear-gradient(45deg, var(--primary-color), var(--primary-color-light));
     color: white;
     transform: rotateY(180deg);
-    font-size: 24px;
+    font-size: var(--memory-card-font-size);
 }
 
 .card-back {
@@ -205,14 +214,22 @@ select#difficulty {
     font-size: 18px;
 }
 
-/* 响应式调整 */
+/* 触摸反馈效果 */
+.memory-card.touch-active .card-inner {
+    transform: scale(0.95);
+    box-shadow: 0 0 10px rgba(var(--primary-color-rgb, 52, 152, 219), 0.6);
+}
+
+/* 移动端优化 */
 @media (max-width: 600px) {
-    .memory-board {
-        gap: 5px;
+    :root {
+        --memory-grid-gap: 5px;
+        --memory-card-font-size: 18px;
+        --memory-animation-speed: 0.3s; /* 更快的动画，更好的响应体验 */
     }
     
-    .card-front {
-        font-size: 18px;
+    .memory-board {
+        touch-action: none; /* 防止浏览器默认行为干扰游戏 */
     }
     
     .stat-item {
@@ -224,5 +241,97 @@ select#difficulty {
     .game-controls {
         flex-direction: column;
         gap: 10px;
+        width: 100%;
+    }
+    
+    .difficulty-selector,
+    #start-btn, 
+    #reset-btn {
+        width: 100%; /* 更大的触控区域 */
+        margin-bottom: 8px;
+    }
+    
+    #start-btn, 
+    #reset-btn,
+    #play-again-btn {
+        padding: 12px 0; /* 增加按钮高度 */
+        font-size: 16px;
+        font-weight: bold;
+    }
+    
+    .memory-container {
+        padding: 10px; /* 减少页面边距，增加游戏区域空间 */
+    }
+    
+    /* 优化结果弹窗 */
+    .result-content {
+        padding: 20px;
+        width: 90%;
+        max-width: 300px;
+    }
+}
+
+/* 横屏模式优化 */
+@media (max-width: 900px) and (orientation: landscape) {
+    :root {
+        --memory-grid-gap: 6px;
+        --memory-card-font-size: 16px;
+    }
+    
+    .memory-container {
+        padding: 10px;
+    }
+    
+    .memory-board {
+        max-height: 70vh;
+        max-width: 80vw;
+    }
+    
+    .game-info {
+        margin-bottom: 10px;
+    }
+    
+    .game-controls {
+        flex-direction: row;
+    }
+    
+    .difficulty-selector,
+    #start-btn,
+    #reset-btn {
+        width: auto;
+    }
+    
+    .stats {
+        margin-bottom: 5px;
+    }
+}
+
+/* 添加触摸指导提示 */
+.touch-guide {
+    display: none;
+    padding: 10px;
+    margin: 10px 0;
+    background-color: var(--card-bg);
+    border-radius: 5px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-color);
+    border-left: 3px solid var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    .touch-guide {
+        display: block;
+    }
+    
+    /* 修复iOS上的触摸事件问题 */
+    .memory-card {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+    }
+    
+    /* 减少缩放动画效果在低端设备上的卡顿 */
+    .card-inner {
+        will-change: transform;
     }
 } 

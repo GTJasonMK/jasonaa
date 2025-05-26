@@ -186,6 +186,65 @@ document.addEventListener('DOMContentLoaded', function() {
         '🐱', '🐶', '🐼', '🐨', '🦊', '🦁', '🐯', '🐵'
     ];
 
+    // 防抖变量
+    let touchDebounce = false;
+    let lastTouchTime = 0;
+    
+    // 检测设备类型
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    // 根据设备类型调整体验
+    if (isMobile) {
+        document.body.classList.add('mobile-device');
+    }
+    if (isIOS) {
+        document.body.classList.add('ios-device');
+    }
+    
+    // 监听屏幕方向变化
+    window.addEventListener('orientationchange', adjustForOrientation);
+    window.addEventListener('resize', debounce(adjustForOrientation, 250));
+    
+    // 屏幕方向调整
+    function adjustForOrientation() {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        document.body.classList.toggle('landscape', isLandscape);
+        document.body.classList.toggle('portrait', !isLandscape);
+        
+        // 重新调整游戏布局
+        updateLayoutForOrientation();
+    }
+    
+    // 根据屏幕方向更新布局
+    function updateLayoutForOrientation() {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const difficulty = difficulties[difficultySelect.value];
+        
+        // 调整卡片尺寸和板布局
+        if (isLandscape) {
+            // 横屏优化 - 卡片较小，布局更横向
+            const maxHeight = window.innerHeight * 0.7;
+            const cardSize = Math.min(maxHeight / difficulty.rows, (window.innerWidth * 0.7) / difficulty.cols);
+            document.documentElement.style.setProperty('--memory-card-size', cardSize + 'px');
+        } else {
+            // 竖屏优化 - 默认布局
+            const cardSize = Math.min(80, (window.innerWidth - 40) / difficulty.cols);
+            document.documentElement.style.setProperty('--memory-card-size', cardSize + 'px');
+        }
+    }
+    
+    // 防抖函数
+    function debounce(func, delay) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     // 初始化游戏
     function initGame() {
         // 加载最新用户设置
@@ -229,6 +288,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // 设置网格大小
         memoryBoard.style.gridTemplateColumns = `repeat(${difficulty.cols}, 1fr)`;
         memoryBoard.style.gridTemplateRows = `repeat(${difficulty.rows}, 1fr)`;
+        
+        // 根据难度和屏幕方向调整布局
+        memoryBoard.className = `memory-board ${difficultySelect.value}`;
+        adjustForOrientation();
         
         // 更新UI
         movesDisplay.textContent = '0';
@@ -295,9 +358,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // 处理触摸开始事件
     function handleTouchStart(e) {
         e.preventDefault(); // 防止页面滚动
+        
+        // 防止快速连续点击
+        const now = Date.now();
+        if (now - lastTouchTime < 300) { // 300ms内的点击被视为重复点击
+            return;
+        }
+        lastTouchTime = now;
+        
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
         touchElement = this;
+        
+        // 添加触摸反馈效果
+        this.classList.add('touch-active');
     }
     
     // 处理触摸移动事件
@@ -305,8 +379,20 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault(); // 防止页面滚动
         if (!touchElement) return;
         
-        touchEndX = e.touches[0].clientX;
-        touchEndY = e.touches[0].clientY;
+        const touch = e.touches[0];
+        const touchMoveX = touch.clientX;
+        const touchMoveY = touch.clientY;
+        
+        // 计算移动距离
+        const diffX = touchMoveX - touchStartX;
+        const diffY = touchMoveY - touchStartY;
+        
+        // 如果移动距离超过阈值，取消点击效果并标记为拖动而非点击
+        const moveThreshold = 20;
+        if (Math.abs(diffX) > moveThreshold || Math.abs(diffY) > moveThreshold) {
+            touchElement.classList.remove('touch-active');
+            touchDebounce = true; // 标记为拖动，防止触发点击
+        }
     }
     
     // 处理触摸结束事件
@@ -314,12 +400,29 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault(); // 防止页面滚动
         if (!touchElement) return;
         
-        // 计算滑动距离
+        // 移除触摸反馈效果
+        touchElement.classList.remove('touch-active');
+        
+        // 如果是拖动而非点击，则重置状态并返回
+        if (touchDebounce) {
+            touchDebounce = false;
+            touchElement = null;
+            return;
+        }
+        
+        // 计算触摸时长，过长的触摸可能是意外触发
+        const touchEndTime = Date.now();
+        const touchDuration = touchEndTime - lastTouchTime;
+        
+        // 计算触摸位置变化
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
         const diffX = touchEndX - touchStartX;
         const diffY = touchEndY - touchStartY;
         
-        // 如果滑动距离很小，视为点击
-        if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+        // 如果触摸时长合理且移动距离小，才视为有效点击
+        const tapThreshold = 10;
+        if (touchDuration < 1000 && Math.abs(diffX) < tapThreshold && Math.abs(diffY) < tapThreshold) {
             const index = parseInt(touchElement.dataset.index);
             flipCard(touchElement, index);
         }
