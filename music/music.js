@@ -70,8 +70,23 @@ window.musicFunctions = (function() {
     
     // 设备类型检测
     const isMobileDevice = () => {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-            (window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+        // 检测常见移动设备的用户代理
+        const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
+        const isMobileUserAgent = mobileRegex.test(navigator.userAgent);
+        
+        // 检测屏幕尺寸
+        const isSmallScreen = window.matchMedia && (
+            window.matchMedia('(max-width: 768px)').matches || 
+            window.matchMedia('(max-device-width: 768px)').matches
+        );
+        
+        // 检测是否支持触摸
+        const hasTouch = 'ontouchstart' in window || 
+            navigator.maxTouchPoints > 0 || 
+            navigator.msMaxTouchPoints > 0;
+        
+        // 结合多种检测方法提高准确性
+        return isMobileUserAgent || (isSmallScreen && hasTouch);
     };
     
     // 增强型日志
@@ -145,7 +160,29 @@ window.musicFunctions = (function() {
             try {
                 window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 audioContext = new AudioContext();
-                debugLog('音频上下文初始化成功');
+                
+                // 处理移动设备上的自动播放限制
+                if (audioContext.state === 'suspended') {
+                    debugLog('AudioContext处于挂起状态，等待用户交互解锁');
+                    
+                    // 添加解锁音频上下文的事件处理
+                    const unlockAudio = () => {
+                        if (audioContext.state === 'suspended') {
+                            audioContext.resume().then(() => {
+                                debugLog('AudioContext已恢复');
+                            });
+                        }
+                    };
+                    
+                    // 监听常见的用户交互事件以解锁音频
+                    const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+                    unlockEvents.forEach(eventType => {
+                        document.body.addEventListener(eventType, unlockAudio, {once: true, passive: true});
+                    });
+                } else {
+                    debugLog('音频上下文初始化成功');
+                }
+                
                 return true;
             } catch(e) {
                 debugError("Web Audio API 不受支持。请使用现代浏览器。", e);
@@ -419,8 +456,16 @@ window.musicFunctions = (function() {
     function playNote(note) {
         if (!initAudioContext()) return;
         
+        // 尝试恢复被挂起的AudioContext (对移动设备很重要)
         if (audioContext.state === 'suspended') {
-            audioContext.resume();
+            audioContext.resume().then(() => {
+                debugLog('AudioContext已恢复，重试播放');
+                // 递归调用自身重新尝试播放
+                setTimeout(() => playNote(note), 100);
+            }).catch(err => {
+                debugError('恢复AudioContext失败', err);
+            });
+            return;
         }
         
         // 停止当前正在播放的声音
@@ -436,6 +481,12 @@ window.musicFunctions = (function() {
         if (!audioBufferCache[note]) {
             // 如果缓存中没有，则尝试加载
             debugLog(`缓存中未找到音符 ${note}, 正在加载...`);
+            
+            // 移动设备上显示加载指示
+            if (isMobileDevice()) {
+                showAudioStatus(`正在加载音符 ${note}...`, 'loading');
+            }
+            
             loadPianoSound(note)
                 .then(audioBuffer => {
                     // 保存到缓存
@@ -451,13 +502,22 @@ window.musicFunctions = (function() {
                         source.start();
                         currentPlayingSource = source;
                         debugLog(`正在播放音符: ${note}`);
+                        
+                        if (isMobileDevice()) {
+                            showAudioStatus(`播放音符: ${note}`, 'success');
+                        }
                     } catch (err) {
                         debugError(`开始播放音符时出错: ${note}`, err);
                     }
                 })
                 .catch(error => {
                     debugError(`播放音符失败: ${note}`, error);
-                    alert(`无法播放音符 ${note}, 请检查控制台获取详细信息。`);
+                    
+                    if (isMobileDevice()) {
+                        showAudioStatus(`无法播放音符 ${note}`, 'error');
+                    } else {
+                        alert(`无法播放音符 ${note}, 请检查控制台获取详细信息。`);
+                    }
                 });
             return;
         }
@@ -655,75 +715,44 @@ window.musicFunctions = (function() {
             default:
                 container.innerHTML = '<p>请选择一个练习模式</p>';
         }
+        
+        // 内容加载完成后添加触摸反馈
+        if (isMobileDevice()) {
+            setTimeout(addTouchFeedback, 100);
+        }
     }
 
     // 创建音阶练习UI
     function createScalesTrainingUI() {
-        const container = document.getElementById('scales-training-container');
-        if (!container) return;
+        const scaleNames = Object.keys(SCALES);
         
-        // 清空容器
-        container.innerHTML = '';
-        
-        // 创建音阶练习应用
-        const scalesApp = document.createElement('div');
-        scalesApp.className = 'scales-app';
-        
-        // 标题
-        const title = document.createElement('h3');
-        title.textContent = '音阶练习';
-        scalesApp.appendChild(title);
-        
-        // 说明
-        const instructions = document.createElement('div');
-        instructions.className = 'scale-instructions';
-        instructions.innerHTML = '<p>点击音阶按钮来播放和学习不同的音阶。点击"播放"来听整个音阶，点击"详情"来查看音阶中的音符。</p>';
-        scalesApp.appendChild(instructions);
-        
-        // 音阶按钮容器
-        const scaleButtons = document.createElement('div');
-        scaleButtons.className = 'scale-buttons';
-        
-        // 动态创建音阶按钮
-        for (const scaleName in SCALES) {
-            const scaleButton = document.createElement('div');
-            scaleButton.className = 'scale-button';
-            scaleButton.setAttribute('data-scale', scaleName);
-            
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'scale-name';
-            nameDiv.textContent = scaleName;
-            scaleButton.appendChild(nameDiv);
-            
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'scale-controls';
-            
-            const playBtn = document.createElement('button');
-            playBtn.className = 'play-button';
-            playBtn.textContent = '播放';
-            playBtn.setAttribute('data-scale', scaleName);
-            
-            const infoBtn = document.createElement('button');
-            infoBtn.className = 'info-button';
-            infoBtn.textContent = '详情';
-            infoBtn.setAttribute('data-scale', scaleName);
-            
-            controlsDiv.appendChild(playBtn);
-            controlsDiv.appendChild(infoBtn);
-            scaleButton.appendChild(controlsDiv);
-            
-            scaleButtons.appendChild(scaleButton);
-        }
-        
-        scalesApp.appendChild(scaleButtons);
-        
-        // 音阶详情区域
-        const scaleDetailDiv = document.createElement('div');
-        scaleDetailDiv.className = 'scale-detail';
-        scaleDetailDiv.style.display = 'none';
-        scalesApp.appendChild(scaleDetailDiv);
-        
-        container.appendChild(scalesApp);
+        return `
+            <h3>音阶练习</h3>
+            <div class="compact-container">
+                <div class="left-panel">
+                    <div class="scale-instructions">
+                        <p>选择一个音阶，然后点击"播放"按钮来聆听</p>
+                    </div>
+                    <div class="scale-buttons">
+                        ${scaleNames.map(name => 
+                            `<div class="scale-button" data-scale="${name}">
+                                <div class="scale-name">${name}</div>
+                                <div class="scale-controls">
+                                    <button class="play-button" data-scale="${name}">播放</button>
+                                    <button class="info-button" data-scale="${name}">详情</button>
+                                </div>
+                            </div>`
+                        ).join('')}
+                    </div>
+                </div>
+                <div class="right-panel">
+                    <div class="scale-detail">
+                        <h4 id="current-scale-name"></h4>
+                        <div class="scale-notes" id="scale-notes"></div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     // 初始化音阶练习事件监听器
@@ -1314,14 +1343,13 @@ window.musicFunctions = (function() {
         button.textContent = displayText;
         
         // 添加点击事件处理
-        const handleClick = (e) => {
-            e.preventDefault(); // 阻止默认行为
+        const handleClick = () => {
             clickHandler(note, button);
         };
         
         // 同时支持鼠标点击和触摸事件
         button.addEventListener('click', handleClick);
-        button.addEventListener('touchstart', handleClick, {passive: false});
+        button.addEventListener('touchstart', handleClick, {passive: true});
         
         container.appendChild(button);
         return button;
@@ -1332,9 +1360,9 @@ window.musicFunctions = (function() {
         if (!element) return;
         
         element.addEventListener('touchstart', (e) => {
-            e.preventDefault();
+            // 只在需要时阻止默认行为，允许滚动和缩放等操作
             callback(e);
-        }, {passive: false});
+        }, {passive: true});
     }
 
     // 增强型事件监听器，同时支持点击和触摸
@@ -1343,9 +1371,12 @@ window.musicFunctions = (function() {
         
         element.addEventListener('click', callback);
         element.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            callback(e);
-        }, {passive: false});
+            // 不再阻止默认行为
+            const touch = e.touches[0];
+            if (touch && element.contains(document.elementFromPoint(touch.clientX, touch.clientY))) {
+                callback(e);
+            }
+        }, {passive: true});
     }
 
     // 在页面加载完成后初始化
@@ -1405,11 +1436,17 @@ window.musicFunctions = (function() {
         const interactiveElements = document.querySelectorAll('.note-button, .scale-button, .play-button, .info-button, .music-card');
         
         interactiveElements.forEach(el => {
+            // 使用passive: true提高滚动性能
             el.addEventListener('touchstart', function() {
                 this.classList.add('touch-active');
             }, {passive: true});
             
+            // 触摸结束或取消时移除活跃状态
             el.addEventListener('touchend', function() {
+                this.classList.remove('touch-active');
+            }, {passive: true});
+            
+            el.addEventListener('touchcancel', function() {
                 this.classList.remove('touch-active');
             }, {passive: true});
         });
@@ -1419,27 +1456,54 @@ window.musicFunctions = (function() {
     function initMusicUI() {
         // 获取所有音乐卡片
         const musicCards = document.querySelectorAll('.music-card');
+        const musicContainers = document.querySelectorAll('.music-container');
         
         // 为每个卡片添加点击事件
         musicCards.forEach(card => {
-            // 同时支持点击和触摸
-            addEventListenerWithTouch(card, function() {
+            const clickHandler = function() {
                 const id = this.id;
                 
                 // 移除所有卡片的active类
                 musicCards.forEach(c => c.classList.remove('active'));
                 
+                // 隐藏所有音乐容器
+                musicContainers.forEach(container => {
+                    container.style.display = 'none';
+                });
+                
                 // 添加当前卡片的active类
                 this.classList.add('active');
                 
-                // 加载对应的音乐内容
-                loadMusicContent(id);
-            });
+                // 找到对应容器并显示
+                const targetContainer = document.getElementById(`${id}-container`);
+                if (targetContainer) {
+                    targetContainer.style.display = 'block';
+                    // 加载对应的音乐内容
+                    loadMusicContent(id);
+                }
+            };
+            
+            // 同时支持点击事件
+            card.addEventListener('click', clickHandler);
+            
+            // 在移动设备上添加额外的触摸事件支持
+            if (isMobileDevice()) {
+                card.addEventListener('touchend', function(e) {
+                    // 防止触摸结束后的点击事件
+                    e.preventDefault();
+                    clickHandler.call(this);
+                });
+            }
         });
         
         // 默认选中第一个音乐卡片
         if (musicCards.length > 0 && musicCards[0].classList.contains('active')) {
-            loadMusicContent(musicCards[0].id);
+            const firstCardId = musicCards[0].id;
+            const firstContainer = document.getElementById(`${firstCardId}-container`);
+            if (firstContainer) {
+                firstContainer.style.display = 'block';
+                loadMusicContent(firstCardId);
+            }
         }
     }
 
