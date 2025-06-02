@@ -196,6 +196,7 @@ select {
 .piano-container {
     margin: 30px 0;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .piano-keyboard {
@@ -670,6 +671,188 @@ select {
         margin-left: -10px;
         margin-right: -10px;
     }
+
+    .scales-app h3, .single-note-app h3, .multi-note-app h3 {
+        font-size: 20px;
+    }
+
+    .scale-options, .game-settings {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .scale-selection, .key-selection, .difficulty-selection, .chord-selection {
+        width: 100%;
+        justify-content: space-between;
+        margin-right: 0;
+    }
+
+    .scale-controls button {
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .note-button {
+        width: 50px;
+        height: 50px;
+        font-size: 14px;
+    }
+
+    .melody-play-section, .melody-answer-section, .notes-section {
+        padding: 10px;
+    }
+
+    .user-selection {
+        flex-wrap: wrap;
+    }
+
+    .selected-note {
+        width: 40px;
+        height: 40px;
+        font-size: 12px;
+    }
+
+    .delete-note {
+        width: 30px;
+        height: 30px;
+    }
+
+    .note-slot {
+        width: 40px;
+        height: 40px;
+        margin: 4px;
+    }
+    
+    #audio-status-bar {
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+    }
+}
+
+@media (max-width: 480px) {
+    .scales-app, .single-note-app, .multi-note-app {
+        padding: 10px;
+    }
+
+    .scale-note {
+        width: 45px;
+        height: 35px;
+        font-size: 13px;
+    }
+
+    .piano-key.white {
+        width: 22px;
+    }
+    
+    .piano-key.black {
+        width: 16px;
+        margin-left: -8px;
+        margin-right: -8px;
+        height: 70px;
+    }
+
+    .piano-container {
+        margin: 15px 0;
+    }
+
+    .note-button {
+        width: 40px;
+        height: 40px;
+        font-size: 12px;
+        padding: 0;
+    }
+
+    .notes-grid {
+        gap: 5px;
+        max-width: 100%;
+    }
+    
+    .play-button {
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+
+    .note-slot {
+        width: 30px;
+        height: 30px;
+        margin: 2px;
+        font-size: 12px;
+    }
+
+    .selected-note {
+        width: 30px;
+        height: 30px;
+        font-size: 10px;
+        margin: 2px;
+    }
+
+    .delete-note {
+        width: 25px;
+        height: 25px;
+        font-size: 12px;
+    }
+
+    .melody-display {
+        padding: 10px;
+    }
+
+    .music-card {
+        padding: 15px 10px;
+    }
+
+    .music-card h3 {
+        font-size: 16px;
+    }
+
+    .music-card p {
+        font-size: 13px;
+    }
+
+    .audio-settings h3 {
+        font-size: 16px;
+    }
+
+    .setting-group label {
+        font-size: 13px;
+        margin-right: 10px;
+    }
+
+    .small-button {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    #audio-status-bar {
+        max-width: 90%;
+        font-size: 12px;
+        padding: 6px 10px;
+        bottom: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+    }
+}
+
+/* 添加触控友好型交互样式 */
+@media (hover: none) and (pointer: coarse) {
+    .scale-note, .note-button, .music-card, .piano-key, .selected-note, .delete-note {
+        /* 增加可点击区域的大小 */
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* 移除悬停效果，改为点击效果 */
+    .scale-button:hover, .scale-note:hover, .note-button:hover,
+    .play-button:hover, .music-card:hover {
+        transform: none;
+    }
+
+    .scale-button:active, .scale-note:active, .note-button:active,
+    .play-button:active, .music-card:active {
+        transform: scale(0.95);
+    }
 }
 
 /* 音乐容器显示动画 */
@@ -744,4 +927,22 @@ select {
 
 .small-button:hover {
     background-color: #ddd;
+}
+
+/* 添加触摸反馈效果样式 */
+.touch-active {
+    transform: scale(0.95) !important;
+    transition: transform 0.1s ease-in-out !important;
+    opacity: 0.8;
+}
+
+/* 确保所有可点击元素有足够的点击区域 */
+.note-button, .scale-button button, .play-button, .selected-note, .delete-note {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* 设置全局触摸滑动行为 */
+.piano-container {
+    -webkit-overflow-scrolling: touch;
 } 
