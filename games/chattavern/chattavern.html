@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatTavern - 角色对话</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/theme.css">
+    <link rel="stylesheet" href="chattavern.css">
+</head>
+<body>
+    <div class="container">
+        <header class="ct-header">
+            <a href="../../index.html" class="back-btn">← 返回主页</a>
+            <h1>ChatTavern</h1>
+            <p class="subtitle">角色对话系统 - 兼容SillyTavern</p>
+        </header>
+
+        <main class="ct-main">
+            <!-- 快速导入区 -->
+            <section class="quick-import">
+                <div class="import-card">
+                    <div class="import-icon">📥</div>
+                    <h3>导入角色卡</h3>
+                    <p>拖拽PNG角色卡到此处，或点击选择文件</p>
+                    <input type="file" id="fileInput" accept="image/png" style="display: none;">
+                    <button class="btn btn-primary" id="selectFileBtn">选择文件</button>
+                    <small>支持SillyTavern格式的PNG角色卡</small>
+                </div>
+            </section>
+
+            <!-- 角色列表 -->
+            <section class="characters-section">
+                <h2>我的角色 (<span id="characterCount">0</span>)</h2>
+
+                <div id="characterList" class="character-grid">
+                    <!-- 角色卡片将动态添加到这里 -->
+                </div>
+
+                <!-- 空状态 -->
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon">🎭</div>
+                    <h3>还没有角色</h3>
+                    <p>导入一个PNG角色卡开始吧！</p>
+                    <p class="hint">💡 你可以从SillyTavern社区下载角色卡，或者自己创建</p>
+                </div>
+            </section>
+
+            <!-- 使用指南 -->
+            <section class="guide-section">
+                <h2>使用指南</h2>
+                <div class="guide-grid">
+                    <div class="guide-card">
+                        <h3>📥 导入角色卡</h3>
+                        <p>拖拽PNG文件或点击"选择文件"按钮导入SillyTavern格式的角色卡</p>
+                    </div>
+                    <div class="guide-card">
+                        <h3>💬 开始对话</h3>
+                        <p>点击角色卡片进入对话界面，与角色进行AI驱动的自然对话</p>
+                    </div>
+                    <div class="guide-card">
+                        <h3>⚙️ 配置AI</h3>
+                        <p>需要配置API Key才能使用AI对话功能，未配置时将使用简单回复</p>
+                    </div>
+                    <div class="guide-card">
+                        <h3>🌐 社区资源</h3>
+                        <p>访问SillyTavern社区下载海量角色卡，完全兼容！</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="ct-footer">
+            <p>&copy; 2025 ChatTavern | 基于SillyTavern兼容格式</p>
+        </footer>
+    </div>
+
+    <!-- 角色卡片模板 -->
+    <template id="characterCardTemplate">
+        <div class="character-card" data-id="">
+            <div class="character-avatar">
+                <img src="" alt="">
+            </div>
+            <div class="character-info">
+                <h3 class="character-name"></h3>
+                <p class="character-desc"></p>
+                <div class="character-tags"></div>
+            </div>
+            <div class="character-actions">
+                <button class="btn-chat">开始对话</button>
+                <button class="btn-delete">删除</button>
+            </div>
+        </div>
+    </template>
+
+    <!-- 脚本 -->
+    <script src="../../js/settings-loader.js"></script>
+    <script src="../../js/theme.js"></script>
+    <script src="PNGCardReader.js"></script>
+    <script src="PNGCardWriter.js"></script>
+    <script src="CharacterCard.js"></script>
+    <script src="DialogueMemory.js"></script>
+    <script src="AIManager.js"></script>
+    <script src="ChatTavern.js"></script>
+    <script>
+        // 初始化
+        let chatTavern;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            chatTavern = new ChatTavern();
+            await chatTavern.init();
+            renderCharacterList();
+
+            // 绑定事件
+            document.getElementById('selectFileBtn').addEventListener('click', () => {
+                document.getElementById('fileInput').click();
+            });
+
+            document.getElementById('fileInput').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await importCharacter(file);
+                }
+            });
+
+            // 拖拽支持
+            document.body.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                document.body.classList.add('dragging');
+            });
+
+            document.body.addEventListener('dragleave', () => {
+                document.body.classList.remove('dragging');
+            });
+
+            document.body.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                document.body.classList.remove('dragging');
+
+                const file = e.dataTransfer.files[0];
+                if (file && file.type === 'image/png') {
+                    await importCharacter(file);
+                }
+            });
+        });
+
+        // 导入角色
+        async function importCharacter(file) {
+            try {
+                await chatTavern.importPNGCard(file);
+                alert('✅ 角色卡导入成功！');
+                renderCharacterList();
+            } catch (error) {
+                alert('❌ 导入失败: ' + error.message);
+            }
+        }
+
+        // 渲染角色列表
+        function renderCharacterList() {
+            const characters = chatTavern.getCharacterList();
+            const listEl = document.getElementById('characterList');
+            const emptyEl = document.getElementById('emptyState');
+            const countEl = document.getElementById('characterCount');
+
+            countEl.textContent = characters.length;
+
+            if (characters.length === 0) {
+                emptyEl.style.display = 'block';
+                listEl.style.display = 'none';
+                return;
+            }
+
+            emptyEl.style.display = 'none';
+            listEl.style.display = 'grid';
+            listEl.innerHTML = '';
+
+            characters.forEach(char => {
+                const card = createCharacterCard(char);
+                listEl.appendChild(card);
+            });
+        }
+
+        // 创建角色卡片
+        function createCharacterCard(charData) {
+            const character = chatTavern.characters.get(charData.id);
+            const template = document.getElementById('characterCardTemplate');
+            const clone = template.content.cloneNode(true);
+            const card = clone.querySelector('.character-card');
+
+            card.dataset.id = charData.id;
+
+            const avatar = clone.querySelector('.character-avatar img');
+            avatar.src = character.getSpriteUrl() || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%236C63FF"/></svg>';
+            avatar.alt = character.name;
+
+            clone.querySelector('.character-name').textContent = character.name;
+            clone.querySelector('.character-desc').textContent =
+                character.description.substring(0, 80) + (character.description.length > 80 ? '...' : '');
+
+            const tagsEl = clone.querySelector('.character-tags');
+            character.tags.slice(0, 3).forEach(tag => {
+                const tagSpan = document.createElement('span');
+                tagSpan.className = 'tag';
+                tagSpan.textContent = tag;
+                tagsEl.appendChild(tagSpan);
+            });
+
+            clone.querySelector('.btn-chat').addEventListener('click', () => {
+                location.href = `chat.html?id=${charData.id}`;
+            });
+
+            clone.querySelector('.btn-delete').addEventListener('click', async () => {
+                if (confirm(`确定要删除角色"${character.name}"吗？`)) {
+                    chatTavern.deleteCharacter(charData.id);
+                    renderCharacterList();
+                }
+            });
+
+            return clone;
+        }
+    </script>
+</body>
+</html>

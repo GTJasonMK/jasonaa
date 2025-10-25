@@ -68,25 +68,10 @@ window.musicFunctions = (function() {
     // 调试模式
     const DEBUG = true;
     
-    // 设备类型检测
+    // 设备类型检测（简化版）
     const isMobileDevice = () => {
-        // 检测常见移动设备的用户代理
-        const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-        const isMobileUserAgent = mobileRegex.test(navigator.userAgent);
-        
-        // 检测屏幕尺寸
-        const isSmallScreen = window.matchMedia && (
-            window.matchMedia('(max-width: 768px)').matches || 
-            window.matchMedia('(max-device-width: 768px)').matches
-        );
-        
-        // 检测是否支持触摸
-        const hasTouch = 'ontouchstart' in window || 
-            navigator.maxTouchPoints > 0 || 
-            navigator.msMaxTouchPoints > 0;
-        
-        // 结合多种检测方法提高准确性
-        return isMobileUserAgent || (isSmallScreen && hasTouch);
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+               ('ontouchstart' in window && window.matchMedia('(max-width: 768px)').matches);
     };
     
     // 增强型日志
@@ -112,37 +97,24 @@ window.musicFunctions = (function() {
     // 显示协议警告
     function showProtocolWarning() {
         debugWarn("检测到通过file://协议访问，音频文件可能无法正常加载，请使用HTTP服务器");
-        
+
         // 创建警告元素
         const warningDiv = document.createElement('div');
-        warningDiv.style.position = 'fixed';
-        warningDiv.style.top = '0';
-        warningDiv.style.left = '0';
-        warningDiv.style.right = '0';
-        warningDiv.style.padding = '10px';
-        warningDiv.style.backgroundColor = '#fff3cd';
-        warningDiv.style.color = '#856404';
-        warningDiv.style.textAlign = 'center';
-        warningDiv.style.zIndex = '10000';
-        warningDiv.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        warningDiv.className = 'protocol-warning';
         warningDiv.innerHTML = `
             <strong>注意!</strong> 通过直接打开文件的方式访问可能导致音频无法加载。
             <br>请通过HTTP服务器访问此页面(例如使用http-server或其他本地服务器)。
-            <button id="close-warning" style="margin-left:10px;border:none;background:#ffeeba;padding:3px 8px;border-radius:3px;cursor:pointer">
-                我知道了
-            </button>
-            <button id="use-synth" style="margin-left:10px;border:none;background:#c3e6cb;padding:3px 8px;border-radius:3px;cursor:pointer">
-                继续使用合成音频
-            </button>
+            <button id="close-warning">我知道了</button>
+            <button id="use-synth">继续使用合成音频</button>
         `;
-        
+
         document.body.prepend(warningDiv);
-        
+
         // 添加关闭按钮事件
         document.getElementById('close-warning').addEventListener('click', () => {
             warningDiv.style.display = 'none';
         });
-        
+
         // 添加使用合成音频的按钮事件
         document.getElementById('use-synth').addEventListener('click', () => {
             localStorage.setItem('useSynthAudio', 'true');

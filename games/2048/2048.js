@@ -1,309 +1,377 @@
 /**
- * 2048游戏主要脚本
+ * 2048游戏 - 基于GameBase v2.0架构的优化版
+ *
+ * 功能特性：
+ * - 4x4网格系统
+ * - 四向移动和合并逻辑
+ * - 10级等级系统，使用GameBase统一的LevelSystem
+ * - 撤销功能（moveHistory）
+ * - 键盘和触摸控制
+ * - 动画系统（可配置速度）
+ * - 2048达成检测
+ * - 使用GameBase的NotificationSystem显示通知
+ * - 使用GameBase的StorageHelper管理数据
  */
-document.addEventListener('DOMContentLoaded', () => {
-    // 游戏状态变量
-    const GRID_SIZE = 4;
-    let grid = [];
-    let score = 0;
-    let bestScore = localStorage.getItem('2048-best-score') || 0;
-    let gameOver = false;
-    let gameWon = false;
-    let canContinue = false;
-    let moveHistory = [];
-    let level = 1; // 玩家当前等级
-    let animationSpeed = 150; // 动画速度（毫秒）
-    let showAnimations = true; // 是否显示动画
-    
-    // 等级系统配置（默认值）
-    const DEFAULT_LEVEL_CONFIG = {
-        1: { scoreThreshold: 0, bonusMultiplier: 1.0 },
-        2: { scoreThreshold: 500, bonusMultiplier: 1.2 },
-        3: { scoreThreshold: 1500, bonusMultiplier: 1.4 },
-        4: { scoreThreshold: 3000, bonusMultiplier: 1.6 },
-        5: { scoreThreshold: 6000, bonusMultiplier: 1.8 },
-        6: { scoreThreshold: 9000, bonusMultiplier: 2.0 },
-        7: { scoreThreshold: 15000, bonusMultiplier: 2.5 },
-        8: { scoreThreshold: 25000, bonusMultiplier: 3.0 },
-        9: { scoreThreshold: 40000, bonusMultiplier: 3.5 },
-        10: { scoreThreshold: 60000, bonusMultiplier: 4.0 }
-    };
-    
-    // 当前游戏配置（可能被用户设置修改）
-    let levelConfig = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
-    let tile4Probability = 0.1; // 生成数字4的概率（默认值）
-    
-    // 从设置管理器加载用户设置
-    function loadUserSettings() {
-        // 默认设置
-        animationSpeed = 150; // 默认动画速度
-        showAnimations = true; // 默认显示动画
-        tile4Probability = 0.1; // 默认生成数字4的概率
-        
-        // 重置等级配置为默认值
-        levelConfig = JSON.parse(JSON.stringify(DEFAULT_LEVEL_CONFIG));
-        
-        // 尝试从settingsManager加载设置
-        if (window.settingsManager) {
-            try {
-                const settings = window.settingsManager.loadUserSettings();
-                
-                if (settings && settings.game2048) {
-                    console.log('读取2048游戏设置:', settings.game2048);
-                    
-                    // 动画速度
-                    if (settings.game2048.animationSpeed !== undefined) {
-                        animationSpeed = settings.game2048.animationSpeed;
-                    }
-                    
-                    // 是否显示动画
-                    if (settings.game2048.showAnimations !== undefined) {
-                        showAnimations = settings.game2048.showAnimations;
-                    }
-                    
-                    // 数字4出现概率
-                    if (settings.game2048.initialTile4Probability !== undefined) {
-                        tile4Probability = settings.game2048.initialTile4Probability;
-                    }
-                    
-                    // 等级阈值
-                    if (settings.game2048.levelThresholds && Array.isArray(settings.game2048.levelThresholds)) {
-                        for (let i = 0; i < settings.game2048.levelThresholds.length && i < 10; i++) {
-                            levelConfig[i + 1].scoreThreshold = settings.game2048.levelThresholds[i];
-                        }
-                    }
-                    
-                    // 等级加成倍率
-                    if (settings.game2048.levelBonusMultipliers && Array.isArray(settings.game2048.levelBonusMultipliers)) {
-                        for (let i = 0; i < settings.game2048.levelBonusMultipliers.length && i < 10; i++) {
-                            levelConfig[i + 1].bonusMultiplier = settings.game2048.levelBonusMultipliers[i];
-                        }
-                    }
-                    
-                    console.log('已应用2048游戏设置');
-                }
-            } catch (e) {
-                console.error('加载2048游戏设置时出错:', e);
+
+class Game2048 extends GameBase {
+    constructor() {
+        super('game2048', { enableAutoCleanup: true, enableNotifications: true });
+
+        // 游戏常量
+        this.GRID_SIZE = 4;
+
+        // 等级系统配置（默认值）
+        this.DEFAULT_LEVEL_CONFIG = {
+            1: { scoreThreshold: 0, bonusMultiplier: 1.0 },
+            2: { scoreThreshold: 500, bonusMultiplier: 1.2 },
+            3: { scoreThreshold: 1500, bonusMultiplier: 1.4 },
+            4: { scoreThreshold: 3000, bonusMultiplier: 1.6 },
+            5: { scoreThreshold: 6000, bonusMultiplier: 1.8 },
+            6: { scoreThreshold: 9000, bonusMultiplier: 2.0 },
+            7: { scoreThreshold: 15000, bonusMultiplier: 2.5 },
+            8: { scoreThreshold: 25000, bonusMultiplier: 3.0 },
+            9: { scoreThreshold: 40000, bonusMultiplier: 3.5 },
+            10: { scoreThreshold: 60000, bonusMultiplier: 4.0 }
+        };
+
+        // 当前游戏配置
+        this.levelConfig = JSON.parse(JSON.stringify(this.DEFAULT_LEVEL_CONFIG));
+
+        // 游戏设置（从settingsManager加载，否则使用默认值）
+        this.animationSpeed = this.settings?.animationSpeed !== undefined ? this.settings.animationSpeed : 150;
+        this.showAnimations = this.settings?.showAnimations !== undefined ? this.settings.showAnimations : true;
+        this.tile4Probability = this.settings?.initialTile4Probability !== undefined ? this.settings.initialTile4Probability : 0.1;
+
+        // 从设置中加载等级配置
+        if (this.settings?.levelThresholds && Array.isArray(this.settings.levelThresholds)) {
+            for (let i = 0; i < this.settings.levelThresholds.length && i < 10; i++) {
+                this.levelConfig[i + 1].scoreThreshold = this.settings.levelThresholds[i];
             }
         }
-        
+
+        if (this.settings?.levelBonusMultipliers && Array.isArray(this.settings.levelBonusMultipliers)) {
+            for (let i = 0; i < this.settings.levelBonusMultipliers.length && i < 10; i++) {
+                this.levelConfig[i + 1].bonusMultiplier = this.settings.levelBonusMultipliers[i];
+            }
+        }
+
+        // 设置等级系统
+        this.setupLevelSystem(this.levelConfig);
+
+        // 游戏状态
+        this.grid = [];
+        this.gameOver = false;
+        this.gameWon = false;
+        this.canContinue = false;
+        this.moveHistory = [];
+
+        // 触摸事件变量
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.touchEndX = 0;
+        this.touchEndY = 0;
+
+        // DOM元素
+        this.gameBoard = document.getElementById('game2048-board');
+        this.scoreElement = document.getElementById('score');
+        this.bestScoreElement = document.getElementById('best-score');
+        this.gameOverOverlay = document.getElementById('game-over');
+        this.gameWinOverlay = document.getElementById('game-win');
+        this.finalScoreElement = document.getElementById('final-score');
+        this.winScoreElement = document.getElementById('win-score');
+        this.startBtn = document.getElementById('start-btn');
+        this.undoBtn = document.getElementById('undo-btn');
+        this.restartBtn = document.getElementById('restart-btn');
+        this.continueBtn = document.getElementById('continue-btn');
+        this.newGameBtn = document.getElementById('new-game-btn');
+
+        // 创建并添加等级显示
+        this.createLevelDisplay();
+
         // 应用CSS动画速度设置
-        document.documentElement.style.setProperty('--animation-speed', `${animationSpeed}ms`);
-        
-        // 如果不显示动画，添加no-animation类到游戏板
-        if (!showAnimations) {
-            gameBoard.classList.add('no-animation');
-        } else {
-            gameBoard.classList.remove('no-animation');
+        document.documentElement.style.setProperty('--animation-speed', `${this.animationSpeed}ms`);
+
+        // 如果不显示动画，添加no-animation类
+        if (!this.showAnimations) {
+            this.gameBoard.classList.add('no-animation');
+        }
+
+        // 加载最高分
+        this.loadBestScore();
+
+        // 初始化
+        this.init();
+    }
+
+    /**
+     * 创建等级显示元素
+     */
+    createLevelDisplay() {
+        const statsContainer = document.querySelector('.stats');
+        const levelContainer = document.createElement('div');
+        levelContainer.className = 'stat-item';
+        levelContainer.innerHTML = `
+            <span>等级:</span>
+            <span id="level">1</span>
+        `;
+        statsContainer.appendChild(levelContainer);
+        this.levelElement = document.getElementById('level');
+    }
+
+    /**
+     * 加载最高分
+     */
+    loadBestScore() {
+        this.state.highScore = this.loadGameData('bestScore', 0);
+        if (this.state.highScore > 0) {
+            console.log(`已加载最高分: ${this.state.highScore}`);
         }
     }
-    
-    // DOM 元素
-    const gameBoard = document.getElementById('game2048-board');
-    const scoreElement = document.getElementById('score');
-    const bestScoreElement = document.getElementById('best-score');
-    const gameOverOverlay = document.getElementById('game-over');
-    const gameWinOverlay = document.getElementById('game-win');
-    const finalScoreElement = document.getElementById('final-score');
-    const winScoreElement = document.getElementById('win-score');
-    const startBtn = document.getElementById('start-btn');
-    const undoBtn = document.getElementById('undo-btn');
-    const restartBtn = document.getElementById('restart-btn');
-    const continueBtn = document.getElementById('continue-btn');
-    const newGameBtn = document.getElementById('new-game-btn');
-    
-    // 创建等级显示元素
-    const statsContainer = document.querySelector('.stats');
-    const levelContainer = document.createElement('div');
-    levelContainer.className = 'stat-item';
-    levelContainer.innerHTML = `
-        <span>等级:</span>
-        <span id="level">1</span>
-    `;
-    statsContainer.appendChild(levelContainer);
-    const levelElement = document.getElementById('level');
-    
-    // 初始化游戏
-    function initGame() {
-        // 加载用户设置
-        loadUserSettings();
-        
+
+    /**
+     * 保存最高分
+     */
+    saveBestScore() {
+        if (this.state.score > this.state.highScore) {
+            this.state.highScore = this.state.score;
+            this.saveGameData('bestScore', this.state.highScore);
+            console.log(`新最高分已保存: ${this.state.highScore}`);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 初始化游戏
+     */
+    init() {
         // 创建空网格
-        grid = Array(GRID_SIZE).fill().map(() => Array(GRID_SIZE).fill(0));
-        
+        this.grid = Array(this.GRID_SIZE).fill().map(() => Array(this.GRID_SIZE).fill(0));
+
         // 清空游戏面板
-        gameBoard.innerHTML = '';
-        
+        this.gameBoard.innerHTML = '';
+
         // 创建格子
-        for (let i = 0; i < GRID_SIZE; i++) {
-            for (let j = 0; j < GRID_SIZE; j++) {
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
                 const cell = document.createElement('div');
                 cell.classList.add('game2048-cell');
                 cell.dataset.row = i;
                 cell.dataset.col = j;
-                gameBoard.appendChild(cell);
+                this.gameBoard.appendChild(cell);
             }
         }
-        
+
         // 重置游戏状态
-        score = 0;
-        level = 1;
-        gameOver = false;
-        gameWon = false;
-        canContinue = false;
-        moveHistory = [];
-        
+        this.state.score = 0;
+        this.state.level = 1;
+        this.gameOver = false;
+        this.gameWon = false;
+        this.canContinue = false;
+        this.moveHistory = [];
+
         // 更新界面
-        updateScoreDisplay();
-        updateLevelDisplay();
-        
+        this.updateScoreDisplay();
+        this.updateLevelDisplay();
+
         // 添加两个初始数字
-        addRandomNumber();
-        addRandomNumber();
-        
+        this.addRandomNumber();
+        this.addRandomNumber();
+
         // 更新网格显示
-        updateGridDisplay();
+        this.updateGridDisplay();
+
+        // 设置事件监听器
+        this.setupEventListeners();
+
+        console.log('2048游戏初始化完成（使用GameBase v2.0架构）');
     }
-    
-    // 更新分数显示
-    function updateScoreDisplay() {
-        scoreElement.textContent = score;
-        bestScoreElement.textContent = bestScore;
+
+    /**
+     * 设置事件监听器
+     */
+    setupEventListeners() {
+        // 键盘控制
+        this.on(document, 'keydown', (e) => this.handleKeyDown(e));
+
+        // 触摸屏滑动操作
+        this.on(this.gameBoard, 'touchstart', (e) => {
+            e.preventDefault();
+            this.touchStartX = e.changedTouches[0].clientX;
+            this.touchStartY = e.changedTouches[0].clientY;
+        }, { passive: false });
+
+        this.on(this.gameBoard, 'touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        this.on(this.gameBoard, 'touchend', (e) => {
+            e.preventDefault();
+            this.touchEndX = e.changedTouches[0].clientX;
+            this.touchEndY = e.changedTouches[0].clientY;
+
+            this.handleSwipe();
+
+            // 重置触摸起始点
+            this.touchStartX = 0;
+            this.touchStartY = 0;
+        }, { passive: false });
+
+        // 防止整个文档的滑动导致页面滚动
+        this.on(document, 'touchmove', (e) => {
+            const target = e.target;
+            if (this.gameBoard.contains(target)) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // 按钮事件
+        this.on(this.startBtn, 'click', () => this.init());
+        this.on(this.undoBtn, 'click', () => this.undoMove());
+        this.on(this.restartBtn, 'click', () => {
+            this.gameOverOverlay.style.display = 'none';
+            this.init();
+        });
+        this.on(this.continueBtn, 'click', () => {
+            this.gameWinOverlay.style.display = 'none';
+            this.canContinue = true;
+        });
+        this.on(this.newGameBtn, 'click', () => {
+            this.gameWinOverlay.style.display = 'none';
+            this.init();
+        });
     }
-    
-    // 更新等级显示
-    function updateLevelDisplay() {
-        levelElement.textContent = level;
-    }
-    
-    // 检查并更新等级
-    function checkAndUpdateLevel() {
-        let newLevel = 1;
-        
-        // 找到当前分数对应的最高等级
-        for (let l = 10; l >= 1; l--) {
-            if (score >= levelConfig[l].scoreThreshold) {
-                newLevel = l;
+
+    /**
+     * 处理键盘按键
+     */
+    handleKeyDown(e) {
+        switch (e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                this.move('up');
                 break;
-            }
-        }
-        
-        // 如果等级提高，显示提示
-        if (newLevel > level) {
-            level = newLevel;
-            updateLevelDisplay();
-            showLevelUpMessage();
+            case 'ArrowDown':
+                e.preventDefault();
+                this.move('down');
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                this.move('left');
+                break;
+            case 'ArrowRight':
+                e.preventDefault();
+                this.move('right');
+                break;
+            case 'z':
+            case 'Z':
+                e.preventDefault();
+                this.undoMove();
+                break;
+            case 'r':
+            case 'R':
+                e.preventDefault();
+                this.init();
+                break;
         }
     }
-    
-    // 显示等级提升消息
-    function showLevelUpMessage() {
-        const message = document.createElement('div');
-        message.className = 'level-up-message';
-        message.textContent = `升级到 ${level} 级!`;
-        document.querySelector('.game2048-container').appendChild(message);
-        
-        // 添加CSS样式
-        message.style.position = 'absolute';
-        message.style.top = '50%';
-        message.style.left = '50%';
-        message.style.transform = 'translate(-50%, -50%)';
-        message.style.backgroundColor = 'rgba(237, 194, 46, 0.9)';
-        message.style.color = 'white';
-        message.style.padding = '10px 20px';
-        message.style.borderRadius = '5px';
-        message.style.fontSize = '24px';
-        message.style.fontWeight = 'bold';
-        message.style.zIndex = '100';
-        message.style.animation = 'fadeInOut 2s';
-        
-        // 添加动画样式
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fadeInOut {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-                30% { transform: translate(-50%, -50%) scale(1); }
-                80% { opacity: 1; }
-                100% { opacity: 0; }
+
+    /**
+     * 处理滑动操作
+     */
+    handleSwipe() {
+        const xDiff = this.touchEndX - this.touchStartX;
+        const yDiff = this.touchEndY - this.touchStartY;
+
+        const minSwipeDistance = 30;
+
+        if (this.touchStartX === 0 && this.touchStartY === 0) {
+            return;
+        }
+
+        if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > minSwipeDistance) {
+            if (xDiff > 0) {
+                this.move('right');
+            } else {
+                this.move('left');
             }
-        `;
-        document.head.appendChild(style);
-        
-        // 2秒后删除消息
-        setTimeout(() => {
-            message.remove();
-            style.remove();
-        }, 2000);
+        } else if (Math.abs(yDiff) > minSwipeDistance) {
+            if (yDiff > 0) {
+                this.move('down');
+            } else {
+                this.move('up');
+            }
+        }
     }
-    
-    // 添加随机数字到网格
-    function addRandomNumber() {
+
+    /**
+     * 更新分数显示
+     */
+    updateScoreDisplay() {
+        this.scoreElement.textContent = this.state.score;
+        this.bestScoreElement.textContent = this.state.highScore;
+    }
+
+    /**
+     * 更新等级显示
+     */
+    updateLevelDisplay() {
+        this.levelElement.textContent = this.state.level;
+    }
+
+    /**
+     * 添加随机数字到网格
+     */
+    addRandomNumber() {
         const emptyCells = [];
-        
-        // 收集所有空格子的位置
-        for (let i = 0; i < GRID_SIZE; i++) {
-            for (let j = 0; j < GRID_SIZE; j++) {
-                if (grid[i][j] === 0) {
-                    emptyCells.push({i, j});
+
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                if (this.grid[i][j] === 0) {
+                    emptyCells.push({ i, j });
                 }
             }
         }
-        
+
         if (emptyCells.length === 0) return;
-        
-        // 随机选择一个空格子
+
         const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        
-        // 根据当前等级和概率配置，生成2或4
-        // 随着等级提高，生成4的概率略微增加
-        let levelAdjustedProbability = tile4Probability;
-        if (window.settingsManager) {
-            try {
-                const settings = window.settingsManager.loadUserSettings();
-                if (settings && settings.game2048) {
-                    // 根据等级增加4的出现概率，但不超过配置的最大值
-                    const increment = settings.game2048.tile4ProbabilityIncrement || 0.05;
-                    const maxProb = settings.game2048.maxTile4Probability || 0.4;
-                    
-                    levelAdjustedProbability = Math.min(
-                        tile4Probability + (level - 1) * increment,
-                        maxProb
-                    );
-                }
-            } catch (e) {
-                console.error('读取tile4Probability设置时出错:', e);
-            }
-        }
-        
-        grid[randomCell.i][randomCell.j] = Math.random() < levelAdjustedProbability ? 4 : 2;
-        
+
+        // 根据当前等级调整生成4的概率
+        const increment = this.settings?.tile4ProbabilityIncrement || 0.05;
+        const maxProb = this.settings?.maxTile4Probability || 0.4;
+        const levelAdjustedProbability = Math.min(
+            this.tile4Probability + (this.state.level - 1) * increment,
+            maxProb
+        );
+
+        this.grid[randomCell.i][randomCell.j] = Math.random() < levelAdjustedProbability ? 4 : 2;
+
         // 添加新数字的动画效果
         const cellElement = document.querySelector(`.game2048-cell[data-row="${randomCell.i}"][data-col="${randomCell.j}"]`);
-        if (cellElement && showAnimations) {
+        if (cellElement && this.showAnimations) {
             cellElement.classList.add('new-tile');
-            setTimeout(() => {
+            this.setTimeout(() => {
                 cellElement.classList.remove('new-tile');
-            }, animationSpeed);
+            }, this.animationSpeed);
         }
     }
-    
-    // 更新网格显示
-    function updateGridDisplay() {
-        for (let i = 0; i < GRID_SIZE; i++) {
-            for (let j = 0; j < GRID_SIZE; j++) {
-                const value = grid[i][j];
+
+    /**
+     * 更新网格显示
+     */
+    updateGridDisplay() {
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                const value = this.grid[i][j];
                 const cellElement = document.querySelector(`.game2048-cell[data-row="${i}"][data-col="${j}"]`);
-                
-                // 清除所有可能的类名
+
                 cellElement.className = 'game2048-cell';
-                
-                // 添加对应数字的类名
+
                 if (value > 0) {
                     cellElement.classList.add(`game2048-cell-${value}`);
                     cellElement.textContent = value;
-                    
-                    // 超过2048的数字使用特殊样式
+
                     if (value > 2048) {
                         cellElement.classList.add('game2048-cell-super');
                     }
@@ -313,167 +381,164 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
-    
-    // 保存当前状态进入历史记录
-    function saveState() {
-        const gridCopy = grid.map(row => [...row]);
-        moveHistory.push({
+
+    /**
+     * 保存当前状态进入历史记录
+     */
+    saveState() {
+        const gridCopy = this.grid.map(row => [...row]);
+        this.moveHistory.push({
             grid: gridCopy,
-            score: score
+            score: this.state.score
         });
-        
-        // 限制历史记录长度，防止内存占用过多
-        if (moveHistory.length > 20) {
-            moveHistory.shift();
+
+        if (this.moveHistory.length > 20) {
+            this.moveHistory.shift();
         }
     }
-    
-    // 撤销上一步
-    function undoMove() {
-        if (moveHistory.length === 0) return;
-        
-        const lastState = moveHistory.pop();
-        grid = lastState.grid;
-        score = lastState.score;
-        
-        updateScoreDisplay();
-        updateGridDisplay();
-        
-        // 取消游戏结束状态
-        if (gameOver) {
-            gameOver = false;
-            gameOverOverlay.style.display = 'none';
+
+    /**
+     * 撤销上一步
+     */
+    undoMove() {
+        if (this.moveHistory.length === 0) return;
+
+        const lastState = this.moveHistory.pop();
+        this.grid = lastState.grid;
+        this.state.score = lastState.score;
+
+        this.updateScoreDisplay();
+        this.updateGridDisplay();
+
+        if (this.gameOver) {
+            this.gameOver = false;
+            this.gameOverOverlay.style.display = 'none';
         }
     }
-    
-    // 检查游戏是否结束
-    function checkGameOver() {
+
+    /**
+     * 检查游戏是否结束
+     */
+    checkGameOver() {
         // 检查是否有空格子
-        for (let i = 0; i < GRID_SIZE; i++) {
-            for (let j = 0; j < GRID_SIZE; j++) {
-                if (grid[i][j] === 0) return false;
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                if (this.grid[i][j] === 0) return false;
             }
         }
-        
+
         // 检查横向是否可以合并
-        for (let i = 0; i < GRID_SIZE; i++) {
-            for (let j = 0; j < GRID_SIZE - 1; j++) {
-                if (grid[i][j] === grid[i][j + 1]) return false;
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE - 1; j++) {
+                if (this.grid[i][j] === this.grid[i][j + 1]) return false;
             }
         }
-        
+
         // 检查纵向是否可以合并
-        for (let i = 0; i < GRID_SIZE - 1; i++) {
-            for (let j = 0; j < GRID_SIZE; j++) {
-                if (grid[i][j] === grid[i + 1][j]) return false;
+        for (let i = 0; i < this.GRID_SIZE - 1; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                if (this.grid[i][j] === this.grid[i + 1][j]) return false;
             }
         }
-        
-        // 如果都不满足，游戏结束
+
         return true;
     }
-    
-    // 检查是否已经达到2048
-    function checkWin() {
-        if (gameWon && canContinue) return false;
-        
-        for (let i = 0; i < GRID_SIZE; i++) {
-            for (let j = 0; j < GRID_SIZE; j++) {
-                if (grid[i][j] === 2048) return true;
+
+    /**
+     * 检查是否已经达到2048
+     */
+    checkWin() {
+        if (this.gameWon && this.canContinue) return false;
+
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                if (this.grid[i][j] === 2048) return true;
             }
         }
-        
+
         return false;
     }
-    
-    // 移动处理函数
-    function move(direction) {
-        if (gameOver || (gameWon && !canContinue)) return false;
-        
-        // 保存移动前状态
-        saveState();
-        
+
+    /**
+     * 移动处理函数
+     */
+    move(direction) {
+        if (this.gameOver || (this.gameWon && !this.canContinue)) return false;
+
+        this.saveState();
+
         let moved = false;
-        
+
         switch (direction) {
             case 'up':
-                moved = moveUp();
+                moved = this.moveUp();
                 break;
             case 'down':
-                moved = moveDown();
+                moved = this.moveDown();
                 break;
             case 'left':
-                moved = moveLeft();
+                moved = this.moveLeft();
                 break;
             case 'right':
-                moved = moveRight();
+                moved = this.moveRight();
                 break;
         }
-        
+
         if (moved) {
-            // 添加新数字
-            addRandomNumber();
-            
-            // 检查并更新等级
-            checkAndUpdateLevel();
-            
-            // 更新分数
-            updateScoreDisplay();
-            
-            // 更新网格显示
-            updateGridDisplay();
-            
-            // 检查游戏胜利
-            if (checkWin()) {
-                showGameWin();
+            this.addRandomNumber();
+
+            // 使用GameBase的自动等级更新
+            if (this.autoUpdateLevel()) {
+                this.updateLevelDisplay();
+            }
+
+            this.updateScoreDisplay();
+            this.updateGridDisplay();
+
+            if (this.checkWin()) {
+                this.showGameWin();
                 return;
             }
-            
-            // 检查游戏结束
-            if (checkGameOver()) {
-                showGameOver();
+
+            if (this.checkGameOver()) {
+                this.showGameOver();
             }
-            
-            // 保存最高分
-            if (score > bestScore) {
-                bestScore = score;
-                localStorage.setItem('2048-best-score', bestScore);
-                bestScoreElement.textContent = bestScore;
+
+            if (this.saveBestScore()) {
+                this.bestScoreElement.textContent = this.state.highScore;
             }
-            
+
             return true;
         }
-        
-        // 如果没有移动，删除之前保存的状态
-        moveHistory.pop();
+
+        this.moveHistory.pop();
         return false;
     }
-    
-    // 向上移动
-    function moveUp() {
+
+    /**
+     * 向上移动
+     */
+    moveUp() {
         let moved = false;
-        
-        for (let j = 0; j < GRID_SIZE; j++) {
+
+        for (let j = 0; j < this.GRID_SIZE; j++) {
             // 合并相同的数字
-            for (let i = 0; i < GRID_SIZE; i++) {
-                if (grid[i][j] !== 0) {
+            for (let i = 0; i < this.GRID_SIZE; i++) {
+                if (this.grid[i][j] !== 0) {
                     let k = i + 1;
-                    while (k < GRID_SIZE) {
-                        if (grid[k][j] !== 0) {
-                            if (grid[i][j] === grid[k][j]) {
-                                // 合并相同的数字
-                                grid[i][j] *= 2;
-                                grid[k][j] = 0;
-                                // 根据等级增加分数奖励
-                                const bonusMultiplier = levelConfig[level].bonusMultiplier;
-                                score += Math.floor(grid[i][j] * bonusMultiplier);
+                    while (k < this.GRID_SIZE) {
+                        if (this.grid[k][j] !== 0) {
+                            if (this.grid[i][j] === this.grid[k][j]) {
+                                this.grid[i][j] *= 2;
+                                this.grid[k][j] = 0;
+                                const bonusMultiplier = this.levelConfig[this.state.level].bonusMultiplier;
+                                this.state.score += Math.floor(this.grid[i][j] * bonusMultiplier);
                                 moved = true;
-                                
-                                // 添加合并动画
+
                                 const cellElement = document.querySelector(`.game2048-cell[data-row="${i}"][data-col="${j}"]`);
                                 if (cellElement) {
                                     cellElement.classList.add('merged');
-                                    setTimeout(() => {
+                                    this.setTimeout(() => {
                                         cellElement.classList.remove('merged');
                                     }, 300);
                                 }
@@ -484,14 +549,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
+
             // 移动所有数字
-            for (let i = 0; i < GRID_SIZE; i++) {
-                if (grid[i][j] === 0) {
-                    for (let k = i + 1; k < GRID_SIZE; k++) {
-                        if (grid[k][j] !== 0) {
-                            grid[i][j] = grid[k][j];
-                            grid[k][j] = 0;
+            for (let i = 0; i < this.GRID_SIZE; i++) {
+                if (this.grid[i][j] === 0) {
+                    for (let k = i + 1; k < this.GRID_SIZE; k++) {
+                        if (this.grid[k][j] !== 0) {
+                            this.grid[i][j] = this.grid[k][j];
+                            this.grid[k][j] = 0;
                             moved = true;
                             break;
                         }
@@ -499,35 +564,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         return moved;
     }
-    
-    // 向下移动
-    function moveDown() {
+
+    /**
+     * 向下移动
+     */
+    moveDown() {
         let moved = false;
-        
-        for (let j = 0; j < GRID_SIZE; j++) {
-            // 合并相同的数字
-            for (let i = GRID_SIZE - 1; i >= 0; i--) {
-                if (grid[i][j] !== 0) {
+
+        for (let j = 0; j < this.GRID_SIZE; j++) {
+            for (let i = this.GRID_SIZE - 1; i >= 0; i--) {
+                if (this.grid[i][j] !== 0) {
                     let k = i - 1;
                     while (k >= 0) {
-                        if (grid[k][j] !== 0) {
-                            if (grid[i][j] === grid[k][j]) {
-                                // 合并相同的数字
-                                grid[i][j] *= 2;
-                                grid[k][j] = 0;
-                                // 根据等级增加分数奖励
-                                const bonusMultiplier = levelConfig[level].bonusMultiplier;
-                                score += Math.floor(grid[i][j] * bonusMultiplier);
+                        if (this.grid[k][j] !== 0) {
+                            if (this.grid[i][j] === this.grid[k][j]) {
+                                this.grid[i][j] *= 2;
+                                this.grid[k][j] = 0;
+                                const bonusMultiplier = this.levelConfig[this.state.level].bonusMultiplier;
+                                this.state.score += Math.floor(this.grid[i][j] * bonusMultiplier);
                                 moved = true;
-                                
-                                // 添加合并动画
+
                                 const cellElement = document.querySelector(`.game2048-cell[data-row="${i}"][data-col="${j}"]`);
                                 if (cellElement) {
                                     cellElement.classList.add('merged');
-                                    setTimeout(() => {
+                                    this.setTimeout(() => {
                                         cellElement.classList.remove('merged');
                                     }, 300);
                                 }
@@ -538,14 +601,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
-            // 移动所有数字
-            for (let i = GRID_SIZE - 1; i >= 0; i--) {
-                if (grid[i][j] === 0) {
+
+            for (let i = this.GRID_SIZE - 1; i >= 0; i--) {
+                if (this.grid[i][j] === 0) {
                     for (let k = i - 1; k >= 0; k--) {
-                        if (grid[k][j] !== 0) {
-                            grid[i][j] = grid[k][j];
-                            grid[k][j] = 0;
+                        if (this.grid[k][j] !== 0) {
+                            this.grid[i][j] = this.grid[k][j];
+                            this.grid[k][j] = 0;
                             moved = true;
                             break;
                         }
@@ -553,35 +615,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         return moved;
     }
-    
-    // 向左移动
-    function moveLeft() {
+
+    /**
+     * 向左移动
+     */
+    moveLeft() {
         let moved = false;
-        
-        for (let i = 0; i < GRID_SIZE; i++) {
-            // 合并相同的数字
-            for (let j = 0; j < GRID_SIZE; j++) {
-                if (grid[i][j] !== 0) {
+
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                if (this.grid[i][j] !== 0) {
                     let k = j + 1;
-                    while (k < GRID_SIZE) {
-                        if (grid[i][k] !== 0) {
-                            if (grid[i][j] === grid[i][k]) {
-                                // 合并相同的数字
-                                grid[i][j] *= 2;
-                                grid[i][k] = 0;
-                                // 根据等级增加分数奖励
-                                const bonusMultiplier = levelConfig[level].bonusMultiplier;
-                                score += Math.floor(grid[i][j] * bonusMultiplier);
+                    while (k < this.GRID_SIZE) {
+                        if (this.grid[i][k] !== 0) {
+                            if (this.grid[i][j] === this.grid[i][k]) {
+                                this.grid[i][j] *= 2;
+                                this.grid[i][k] = 0;
+                                const bonusMultiplier = this.levelConfig[this.state.level].bonusMultiplier;
+                                this.state.score += Math.floor(this.grid[i][j] * bonusMultiplier);
                                 moved = true;
-                                
-                                // 添加合并动画
+
                                 const cellElement = document.querySelector(`.game2048-cell[data-row="${i}"][data-col="${j}"]`);
                                 if (cellElement) {
                                     cellElement.classList.add('merged');
-                                    setTimeout(() => {
+                                    this.setTimeout(() => {
                                         cellElement.classList.remove('merged');
                                     }, 300);
                                 }
@@ -592,14 +652,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
-            // 移动所有数字
-            for (let j = 0; j < GRID_SIZE; j++) {
-                if (grid[i][j] === 0) {
-                    for (let k = j + 1; k < GRID_SIZE; k++) {
-                        if (grid[i][k] !== 0) {
-                            grid[i][j] = grid[i][k];
-                            grid[i][k] = 0;
+
+            for (let j = 0; j < this.GRID_SIZE; j++) {
+                if (this.grid[i][j] === 0) {
+                    for (let k = j + 1; k < this.GRID_SIZE; k++) {
+                        if (this.grid[i][k] !== 0) {
+                            this.grid[i][j] = this.grid[i][k];
+                            this.grid[i][k] = 0;
                             moved = true;
                             break;
                         }
@@ -607,35 +666,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         return moved;
     }
-    
-    // 向右移动
-    function moveRight() {
+
+    /**
+     * 向右移动
+     */
+    moveRight() {
         let moved = false;
-        
-        for (let i = 0; i < GRID_SIZE; i++) {
-            // 合并相同的数字
-            for (let j = GRID_SIZE - 1; j >= 0; j--) {
-                if (grid[i][j] !== 0) {
+
+        for (let i = 0; i < this.GRID_SIZE; i++) {
+            for (let j = this.GRID_SIZE - 1; j >= 0; j--) {
+                if (this.grid[i][j] !== 0) {
                     let k = j - 1;
                     while (k >= 0) {
-                        if (grid[i][k] !== 0) {
-                            if (grid[i][j] === grid[i][k]) {
-                                // 合并相同的数字
-                                grid[i][j] *= 2;
-                                grid[i][k] = 0;
-                                // 根据等级增加分数奖励
-                                const bonusMultiplier = levelConfig[level].bonusMultiplier;
-                                score += Math.floor(grid[i][j] * bonusMultiplier);
+                        if (this.grid[i][k] !== 0) {
+                            if (this.grid[i][j] === this.grid[i][k]) {
+                                this.grid[i][j] *= 2;
+                                this.grid[i][k] = 0;
+                                const bonusMultiplier = this.levelConfig[this.state.level].bonusMultiplier;
+                                this.state.score += Math.floor(this.grid[i][j] * bonusMultiplier);
                                 moved = true;
-                                
-                                // 添加合并动画
+
                                 const cellElement = document.querySelector(`.game2048-cell[data-row="${i}"][data-col="${j}"]`);
                                 if (cellElement) {
                                     cellElement.classList.add('merged');
-                                    setTimeout(() => {
+                                    this.setTimeout(() => {
                                         cellElement.classList.remove('merged');
                                     }, 300);
                                 }
@@ -646,14 +703,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             }
-            
-            // 移动所有数字
-            for (let j = GRID_SIZE - 1; j >= 0; j--) {
-                if (grid[i][j] === 0) {
+
+            for (let j = this.GRID_SIZE - 1; j >= 0; j--) {
+                if (this.grid[i][j] === 0) {
                     for (let k = j - 1; k >= 0; k--) {
-                        if (grid[i][k] !== 0) {
-                            grid[i][j] = grid[i][k];
-                            grid[i][k] = 0;
+                        if (this.grid[i][k] !== 0) {
+                            this.grid[i][j] = this.grid[i][k];
+                            this.grid[i][k] = 0;
                             moved = true;
                             break;
                         }
@@ -661,173 +717,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
         return moved;
     }
-    
-    // 事件监听
-    
-    // 键盘控制
-    document.addEventListener('keydown', (e) => {
-        switch (e.key) {
-            case 'ArrowUp':
-                e.preventDefault();
-                move('up');
-                break;
-            case 'ArrowDown':
-                e.preventDefault();
-                move('down');
-                break;
-            case 'ArrowLeft':
-                e.preventDefault();
-                move('left');
-                break;
-            case 'ArrowRight':
-                e.preventDefault();
-                move('right');
-                break;
-            case 'z':
-            case 'Z':
-                e.preventDefault();
-                undoMove();
-                break;
-            case 'r':
-            case 'R':
-                e.preventDefault();
-                initGame();
-                break;
-        }
-    });
-    
-    // 触摸屏滑动操作
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
-    
-    gameBoard.addEventListener('touchstart', function(e) {
-        e.preventDefault(); // 防止页面滚动
-        touchStartX = e.changedTouches[0].clientX;
-        touchStartY = e.changedTouches[0].clientY;
-    }, { passive: false });
-    
-    gameBoard.addEventListener('touchmove', function(e) {
-        e.preventDefault(); // 防止页面滚动
-    }, { passive: false });
-    
-    gameBoard.addEventListener('touchend', function(e) {
-        e.preventDefault(); // 防止页面滚动
-        touchEndX = e.changedTouches[0].clientX;
-        touchEndY = e.changedTouches[0].clientY;
-        
-        handleSwipe();
-        
-        // 重置触摸起始点
-        touchStartX = 0;
-        touchStartY = 0;
-    }, { passive: false });
-    
-    // 防止整个文档的滑动导致页面滚动
-    document.addEventListener('touchmove', function(e) {
-        const target = e.target;
-        // 检查触摸目标是否在游戏区域内
-        if (gameBoard.contains(target)) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-    
-    function handleSwipe() {
-        const xDiff = touchEndX - touchStartX;
-        const yDiff = touchEndY - touchStartY;
-        
-        // 设置最小滑动距离，防止意外触发
-        const minSwipeDistance = 30;
-        
-        // 确保初始触摸点不为0（有效的触摸开始）
-        if (touchStartX === 0 && touchStartY === 0) {
-            return;
-        }
-        
-        // 确定主要方向（水平或垂直）
-        if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > minSwipeDistance) {
-            if (xDiff > 0) {
-                move('right');
-            } else {
-                move('left');
-            }
-        } else if (Math.abs(yDiff) > minSwipeDistance) {
-            if (yDiff > 0) {
-                move('down');
-            } else {
-                move('up');
-            }
-        }
-    }
-    
-    // 按钮事件
-    startBtn.addEventListener('click', initGame);
-    undoBtn.addEventListener('click', undoMove);
-    restartBtn.addEventListener('click', () => {
-        gameOverOverlay.style.display = 'none';
-        initGame();
-    });
-    
-    // 游戏胜利后继续玩
-    continueBtn.addEventListener('click', () => {
-        gameWinOverlay.style.display = 'none';
-        canContinue = true;
-    });
-    
-    // 游戏胜利后开始新游戏
-    newGameBtn.addEventListener('click', () => {
-        gameWinOverlay.style.display = 'none';
-        initGame();
-    });
-    
-    // 游戏结束
-    function showGameOver() {
-        gameOver = true;
-        finalScoreElement.textContent = score;
-        gameOverOverlay.style.display = 'flex';
-        
-        // 添加等级信息
+
+    /**
+     * 游戏结束
+     */
+    showGameOver() {
+        this.gameOver = true;
+        this.finalScoreElement.textContent = this.state.score;
+        this.gameOverOverlay.style.display = 'flex';
+
         const levelInfo = document.createElement('div');
         levelInfo.className = 'level-info';
-        levelInfo.textContent = `达到等级: ${level}`;
+        levelInfo.textContent = `达到等级: ${this.state.level}`;
         levelInfo.style.fontSize = '20px';
         levelInfo.style.marginTop = '10px';
-        
-        // 检查是否已经有等级信息
-        const existingLevelInfo = gameOverOverlay.querySelector('.level-info');
+
+        const existingLevelInfo = this.gameOverOverlay.querySelector('.level-info');
         if (existingLevelInfo) {
-            existingLevelInfo.textContent = `达到等级: ${level}`;
+            existingLevelInfo.textContent = `达到等级: ${this.state.level}`;
         } else {
-            gameOverOverlay.appendChild(levelInfo);
+            this.gameOverOverlay.appendChild(levelInfo);
         }
     }
-    
-    // 显示游戏胜利界面
-    function showGameWin() {
-        gameWon = true;
-        winScoreElement.textContent = score;
-        gameWinOverlay.style.display = 'flex';
-        
-        // 添加等级信息
+
+    /**
+     * 显示游戏胜利界面
+     */
+    showGameWin() {
+        this.gameWon = true;
+        this.winScoreElement.textContent = this.state.score;
+        this.gameWinOverlay.style.display = 'flex';
+
         const levelInfo = document.createElement('div');
         levelInfo.className = 'level-info';
-        levelInfo.textContent = `当前等级: ${level}`;
+        levelInfo.textContent = `当前等级: ${this.state.level}`;
         levelInfo.style.fontSize = '20px';
         levelInfo.style.marginTop = '10px';
-        
-        // 检查是否已经有等级信息
-        const existingLevelInfo = gameWinOverlay.querySelector('.level-info');
+
+        const existingLevelInfo = this.gameWinOverlay.querySelector('.level-info');
         if (existingLevelInfo) {
-            existingLevelInfo.textContent = `当前等级: ${level}`;
+            existingLevelInfo.textContent = `当前等级: ${this.state.level}`;
         } else {
-            gameWinOverlay.appendChild(levelInfo);
+            this.gameWinOverlay.appendChild(levelInfo);
         }
+
+        // 使用GameBase的通知系统
+        this.notify.success('恭喜达到2048！', 3000);
     }
-    
-    // 初始化游戏
-    initGame();
-}); 
+}
+
+/**
+ * 初始化游戏
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof GameBase === 'undefined') {
+        console.error('GameBase未加载！请确保已引入GameBase.js');
+        return;
+    }
+
+    window.game2048 = new Game2048();
+    console.log('2048游戏已初始化（使用GameBase v2.0架构）');
+    console.log('游戏统计:', window.game2048.getStats());
+});

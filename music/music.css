@@ -945,4 +945,38 @@ select {
 /* 设置全局触摸滑动行为 */
 .piano-container {
     -webkit-overflow-scrolling: touch;
+}
+
+/* ========== 协议警告样式 ========== */
+.protocol-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    background-color: #fff3cd;
+    color: #856404;
+    text-align: center;
+    z-index: 10000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.protocol-warning button {
+    margin-left: 10px;
+    border: none;
+    padding: 3px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.protocol-warning #close-warning {
+    background: #ffeeba;
+}
+
+.protocol-warning #use-synth {
+    background: #c3e6cb;
+}
+
+.protocol-warning button:hover {
+    opacity: 0.8;
 } 

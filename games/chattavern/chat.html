@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatTavern - 对话</title>
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/theme.css">
+    <link rel="stylesheet" href="chattavern.css">
+</head>
+<body>
+    <div class="chat-container">
+        <header class="chat-header">
+            <a href="chattavern.html" class="back-btn">← 返回</a>
+            <h2 id="characterName">角色名称</h2>
+            <button class="btn-menu">⋮</button>
+        </header>
+
+        <main class="chat-main">
+            <div id="messageList" class="message-list">
+                <!-- 消息将动态添加到这里 -->
+            </div>
+        </main>
+
+        <footer class="chat-footer">
+            <div class="input-wrapper">
+                <textarea id="messageInput" placeholder="输入消息..." rows="1"></textarea>
+                <button id="sendBtn" class="btn-send">发送</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- AI配置模态窗口 -->
+    <div id="aiConfigModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>AI配置</h3>
+                <button class="modal-close" id="closeAIConfig">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="config-section">
+                    <label class="config-label">
+                        <input type="checkbox" id="aiEnabled"> 启用AI对话
+                    </label>
+                    <p class="config-hint">未启用时将使用简单回复模式</p>
+                </div>
+
+                <div class="config-section">
+                    <label>AI提供商</label>
+                    <select id="aiProvider" class="config-select">
+                        <option value="openai">OpenAI (GPT-3.5/GPT-4)</option>
+                        <option value="claude">Anthropic Claude</option>
+                        <option value="deepseek">DeepSeek (deepseek-chat/reasoner)</option>
+                        <option value="custom">自定义API</option>
+                    </select>
+                </div>
+
+                <div class="config-section">
+                    <label>API Key</label>
+                    <input type="password" id="aiApiKey" class="config-input" placeholder="输入你的API Key">
+                    <p class="config-hint">API Key仅保存在本地浏览器，不会上传</p>
+                </div>
+
+                <div class="config-section">
+                    <label>模型</label>
+                    <input type="text" id="aiModel" class="config-input" placeholder="gpt-3.5-turbo">
+                    <p class="config-hint">OpenAI: gpt-3.5-turbo, gpt-4 | Claude: claude-3-sonnet-20240229 | DeepSeek: deepseek-chat, deepseek-reasoner</p>
+                </div>
+
+                <div class="config-section" id="customApiSection" style="display: none;">
+                    <label>自定义API地址</label>
+                    <input type="text" id="aiApiUrl" class="config-input" placeholder="https://api.example.com/v1/chat/completions">
+                </div>
+
+                <div class="config-section">
+                    <label>Temperature</label>
+                    <input type="number" id="aiTemperature" class="config-input" min="0" max="2" step="0.1" value="0.8">
+                    <p class="config-hint">控制回复的随机性 (0-2)</p>
+                </div>
+
+                <div class="config-section">
+                    <label>Max Tokens</label>
+                    <input type="number" id="aiMaxTokens" class="config-input" min="10" max="4096" step="10" value="1000">
+                    <p class="config-hint">单次回复的最大长度</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="testAIConnection" class="btn btn-secondary">测试连接</button>
+                <button id="saveAIConfig" class="btn btn-primary">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/settings-loader.js"></script>
+    <script src="../../js/theme.js"></script>
+    <script src="PNGCardReader.js"></script>
+    <script src="PNGCardWriter.js"></script>
+    <script src="CharacterCard.js"></script>
+    <script src="DialogueMemory.js"></script>
+    <script src="AIManager.js"></script>
+    <script src="ChatTavern.js"></script>
+    <script>
+        let chatTavern;
+        let characterId;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(location.search);
+            characterId = params.get('id');
+
+            if (!characterId) {
+                alert('未指定角色');
+                location.href = 'chattavern.html';
+                return;
+            }
+
+            chatTavern = new ChatTavern();
+            await chatTavern.init();
+
+            try {
+                const { character, firstMessage } = await chatTavern.startChat(characterId);
+                document.getElementById('characterName').textContent = character.name;
+
+                // 加载历史消息（包含第一条消息）
+                loadHistory();
+
+            } catch (error) {
+                alert('角色不存在');
+                location.href = 'chattavern.html';
+                return;
+            }
+
+            // 绑定事件
+            document.getElementById('sendBtn').addEventListener('click', sendMessage);
+            document.getElementById('messageInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            // 绑定AI配置相关事件
+            document.querySelector('.btn-menu').addEventListener('click', () => {
+                showAIConfig();
+            });
+
+            document.getElementById('closeAIConfig').addEventListener('click', () => {
+                document.getElementById('aiConfigModal').style.display = 'none';
+            });
+
+            document.getElementById('aiProvider').addEventListener('change', (e) => {
+                document.getElementById('customApiSection').style.display =
+                    e.target.value === 'custom' ? 'block' : 'none';
+            });
+
+            document.getElementById('saveAIConfig').addEventListener('click', saveAIConfig);
+            document.getElementById('testAIConnection').addEventListener('click', testAIConnection);
+
+            // 点击模态窗口外部关闭
+            document.getElementById('aiConfigModal').addEventListener('click', (e) => {
+                if (e.target.id === 'aiConfigModal') {
+                    document.getElementById('aiConfigModal').style.display = 'none';
+                }
+            });
+        });
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // 清空输入
+            input.value = '';
+
+            // 显示用户消息
+            addMessage('user', message);
+
+            // 显示"正在输入..."
+            const typingId = addMessage('assistant', '正在输入...', true);
+
+            try {
+                // 获取AI回复
+                const response = await chatTavern.sendMessage(message);
+
+                // 移除"正在输入..."
+                removeMessage(typingId);
+
+                // 显示回复
+                addMessage('assistant', response);
+
+            } catch (error) {
+                removeMessage(typingId);
+                addMessage('system', '发送失败: ' + error.message);
+            }
+        }
+
+        function addMessage(role, content, isTemporary = false) {
+            const messageList = document.getElementById('messageList');
+            const messageEl = document.createElement('div');
+
+            messageEl.className = `message message-${role}`;
+            if (isTemporary) {
+                messageEl.id = `msg-temp-${Date.now()}`;
+            }
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = role === 'user' ? '你' : (role === 'assistant' ? chatTavern.currentCharacter.name[0] : '!');
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = content;
+
+            messageEl.appendChild(avatar);
+            messageEl.appendChild(bubble);
+            messageList.appendChild(messageEl);
+
+            // 滚动到底部
+            messageList.scrollTop = messageList.scrollHeight;
+
+            return messageEl.id;
+        }
+
+        function removeMessage(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function loadHistory() {
+            if (!chatTavern.currentMemory) return;
+
+            const history = chatTavern.currentMemory.getFormattedHistory();
+            history.forEach(msg => {
+                if (msg.role !== 'system') {
+                    addMessage(msg.role, msg.content);
+                }
+            });
+        }
+
+        // AI配置相关函数
+        function showAIConfig() {
+            if (!chatTavern || !chatTavern.aiManager) {
+                alert('AIManager未初始化');
+                return;
+            }
+
+            // 加载当前配置
+            const config = chatTavern.aiManager.getConfig();
+
+            document.getElementById('aiEnabled').checked = config.enabled;
+            document.getElementById('aiProvider').value = config.provider;
+            document.getElementById('aiApiKey').value = config.apiKey;
+            document.getElementById('aiModel').value = config.model;
+            document.getElementById('aiApiUrl').value = config.apiUrl || '';
+            document.getElementById('aiTemperature').value = config.temperature;
+            document.getElementById('aiMaxTokens').value = config.maxTokens;
+
+            // 显示/隐藏自定义API部分
+            document.getElementById('customApiSection').style.display =
+                config.provider === 'custom' ? 'block' : 'none';
+
+            // 显示模态窗口
+            document.getElementById('aiConfigModal').style.display = 'flex';
+        }
+
+        function saveAIConfig() {
+            const config = {
+                enabled: document.getElementById('aiEnabled').checked,
+                provider: document.getElementById('aiProvider').value,
+                apiKey: document.getElementById('aiApiKey').value,
+                model: document.getElementById('aiModel').value || 'gpt-3.5-turbo',
+                apiUrl: document.getElementById('aiApiUrl').value,
+                temperature: parseFloat(document.getElementById('aiTemperature').value),
+                maxTokens: parseInt(document.getElementById('aiMaxTokens').value)
+            };
+
+            chatTavern.aiManager.saveConfig(config);
+            alert('✅ AI配置已保存！');
+            document.getElementById('aiConfigModal').style.display = 'none';
+        }
+
+        async function testAIConnection() {
+            const button = document.getElementById('testAIConnection');
+            button.disabled = true;
+            button.textContent = '测试中...';
+
+            try {
+                // 先保存临时配置
+                const config = {
+                    enabled: true,  // 测试时强制启用
+                    provider: document.getElementById('aiProvider').value,
+                    apiKey: document.getElementById('aiApiKey').value,
+                    model: document.getElementById('aiModel').value || 'gpt-3.5-turbo',
+                    apiUrl: document.getElementById('aiApiUrl').value,
+                    temperature: parseFloat(document.getElementById('aiTemperature').value),
+                    maxTokens: 50  // 测试时使用少量token
+                };
+
+                chatTavern.aiManager.saveConfig(config);
+
+                const result = await chatTavern.aiManager.testConnection();
+
+                if (result.success) {
+                    alert('✅ ' + result.message);
+                } else {
+                    alert('❌ ' + result.message);
+                }
+            } catch (error) {
+                alert('❌ 测试失败: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = '测试连接';
+            }
+        }
+    </script>
+</body>
+</html>

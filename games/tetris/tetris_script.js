@@ -1,1456 +1,790 @@
-// 游戏常量
-const BOARD_WIDTH = 10;
-const BOARD_HEIGHT = 20;
-const SHAPES = {
-    'I': [
-        [0,0,0,0],
-        [1,1,1,1],
-        [0,0,0,0],
-        [0,0,0,0]
-    ],
-    'O': [
-        [1,1],
-        [1,1]
-    ],
-    'T': [
-        [0,1,0],
-        [1,1,1],
-        [0,0,0]
-    ],
-    'L': [
-        [0,0,1],
-        [1,1,1],
-        [0,0,0]
-    ],
-    'J': [
-        [1,0,0],
-        [1,1,1],
-        [0,0,0]
-    ],
-    'S': [
-        [0,1,1],
-        [1,1,0],
-        [0,0,0]
-    ],
-    'Z': [
-        [1,1,0],
-        [0,1,1],
-        [0,0,0]
-    ]
-};
+/**
+ * 俄罗斯方块游戏 - 基于GameBase v2.0架构的优化版
+ *
+ * 功能特性：
+ * - 10级渐进难度系统
+ * - 连击系统（连续消除行获得奖励）
+ * - 特殊能力系统（达到连击阈值解锁能力）
+ * - 特殊方块（闪光效果，双倍得分）
+ * - 统一触摸手势控制（TouchGestureHandler）
+ * - 外部CSS动画（替代CSS-in-JS）
+ * - 墙踢旋转系统
+ * - 硬降功能
+ * - 响应式设计
+ */
 
-// 默认等级系统配置
-let DEFAULT_LEVEL_CONFIG = {
-    1: { 
-        speed: 1000, 
-        scoreMultiplier: 1, 
-        specialPieceChance: 0
-    },
-    2: { 
-        speed: 900, 
-        scoreMultiplier: 1.1, 
-        specialPieceChance: 0
-    },
-    3: { 
-        speed: 800, 
-        scoreMultiplier: 1.2, 
-        specialPieceChance: 0.05
-    },
-    4: { 
-        speed: 700, 
-        scoreMultiplier: 1.3, 
-        specialPieceChance: 0.05
-    },
-    5: { 
-        speed: 600, 
-        scoreMultiplier: 1.4, 
-        specialPieceChance: 0.1
-    },
-    6: { 
-        speed: 500, 
-        scoreMultiplier: 1.5, 
-        specialPieceChance: 0.1
-    },
-    7: { 
-        speed: 400, 
-        scoreMultiplier: 1.6, 
-        specialPieceChance: 0.15
-    },
-    8: { 
-        speed: 300, 
-        scoreMultiplier: 1.7, 
-        specialPieceChance: 0.15
-    },
-    9: { 
-        speed: 200, 
-        scoreMultiplier: 1.8, 
-        specialPieceChance: 0.2
-    },
-    10: { 
-        speed: 100, 
-        scoreMultiplier: 2, 
-        specialPieceChance: 0.2
+class TetrisGame extends GameBase {
+    constructor() {
+        super('tetris', { enableAutoCleanup: true });
+
+        // 游戏常量
+        this.BOARD_WIDTH = 10;
+        this.BOARD_HEIGHT = 20;
+
+        // 方块形状定义
+        this.SHAPES = {
+            'I': [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
+            'O': [[1,1], [1,1]],
+            'T': [[0,1,0], [1,1,1], [0,0,0]],
+            'L': [[0,0,1], [1,1,1], [0,0,0]],
+            'J': [[1,0,0], [1,1,1], [0,0,0]],
+            'S': [[0,1,1], [1,1,0], [0,0,0]],
+            'Z': [[1,1,0], [0,1,1], [0,0,0]]
+        };
+
+        // 等级配置
+        this.levelConfig = this.generateLevelConfig();
+
+        // 连击能力配置
+        this.comboAbilities = this.loadComboAbilities();
+
+        // 游戏状态
+        this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+        this.currentPiece = null;
+        this.currentPiecePosition = { x: 0, y: 0 };
+        this.nextPiece = null;
+        this.gameLoopInterval = null;
+        this.lines = 0;
+        this.combo = 0;
+        this.isSpecialPiece = false;
+        this.activeAbilities = [];
+        this.slowTimeEffect = null;
+
+        // DOM元素
+        this.boardElement = document.querySelector('.tetris-board');
+        this.nextPieceElement = document.querySelector('.next-piece');
+        this.scoreElement = document.getElementById('score');
+        this.levelElement = document.getElementById('level');
+        this.linesElement = document.getElementById('lines');
+        this.gameOverElement = document.querySelector('.game-over-overlay');
+        this.comboElement = null;
+        this.abilitiesElement = null;
+
+        // 初始化游戏
+        this.init();
     }
-};
 
-// 连击能力配置
-let COMBO_ABILITIES = {
-    8: {
-        name: "行消除",
-        description: "消除游戏板底部一行",
-        action: clearBottomLine,
-        icon: "🧹"
-    },
-    12: {
-        name: "时间减缓",
-        description: "暂时减缓方块下落速度",
-        action: slowDownTime,
-        icon: "⏱️"
-    },
-    16: {
-        name: "方块变形",
-        description: "将当前方块变为I形方块",
-        action: transformToIShape,
-        icon: "🔄"
+    /**
+     * 生成等级配置
+     */
+    generateLevelConfig() {
+        const config = {};
+        const baseSpeed = this.settings.baseLevelSpeed || 1000;
+        const speedDecrease = this.settings.speedDecreasePerLevel || 100;
+        const minSpeed = this.settings.minSpeed || 100;
+        const scoreMultiplierBase = this.settings.scoreMultiplierBase || 1;
+        const scoreMultiplierIncrement = this.settings.scoreMultiplierIncrement || 0.1;
+
+        for (let i = 1; i <= 10; i++) {
+            const levelSpeed = Math.max(baseSpeed - (i - 1) * speedDecrease, minSpeed);
+            const multiplier = scoreMultiplierBase + (i - 1) * scoreMultiplierIncrement;
+            const specialChance = Math.min(
+                (i - 1) * (this.settings.specialPieceChanceIncrement || 0.05),
+                this.settings.maxSpecialPieceChance || 0.2
+            );
+
+            config[i] = {
+                speed: levelSpeed,
+                scoreMultiplier: parseFloat(multiplier.toFixed(1)),
+                specialPieceChance: parseFloat(specialChance.toFixed(2))
+            };
+        }
+
+        return config;
     }
-};
 
-// 读取用户设置
-function loadUserSettings() {
-    // 检查是否有settingsManager可用
-    if (window.settingsManager && window.settingsManager.settings) {
-        const settings = window.settingsManager.settings;
-        
-        // 检查是否有俄罗斯方块的特定设置
-        if (settings.tetris) {
-            // 应用基础速度设置
-            const baseSpeed = settings.tetris.baseLevelSpeed || 1000;
-            const speedDecrease = settings.tetris.speedDecreasePerLevel || 100;
-            const minSpeed = settings.tetris.minSpeed || 100;
-            const scoreMultiplierBase = settings.tetris.scoreMultiplierBase || 1;
-            const scoreMultiplierIncrement = settings.tetris.scoreMultiplierIncrement || 0.1;
-            
-            // 重新生成等级配置
-            DEFAULT_LEVEL_CONFIG = {};
-            for (let i = 1; i <= 10; i++) {
-                const levelSpeed = Math.max(baseSpeed - (i-1) * speedDecrease, minSpeed);
-                const multiplier = scoreMultiplierBase + (i-1) * scoreMultiplierIncrement;
-                const specialChance = Math.min((i-1) * (settings.tetris.specialPieceChanceIncrement || 0.05), 
-                                              settings.tetris.maxSpecialPieceChance || 0.2);
-                
-                DEFAULT_LEVEL_CONFIG[i] = {
-                    speed: levelSpeed,
-                    scoreMultiplier: parseFloat(multiplier.toFixed(1)),
-                    specialPieceChance: parseFloat(specialChance.toFixed(2))
-                };
+    /**
+     * 加载连击能力配置
+     */
+    loadComboAbilities() {
+        const defaultAbilities = {
+            8: {
+                name: "行消除",
+                description: "消除游戏板底部一行",
+                action: () => this.clearBottomLine(),
+                icon: "🧹"
+            },
+            12: {
+                name: "时间减缓",
+                description: "暂时减缓方块下落速度",
+                action: () => this.slowDownTime(),
+                icon: "⏱️"
+            },
+            16: {
+                name: "方块变形",
+                description: "将当前方块变为I形方块",
+                action: () => this.transformToIShape(),
+                icon: "🔄"
             }
-            
-            // 应用连击系统设置
-            window.comboMaxMultiplier = settings.tetris.comboMaxMultiplier || 2;
-            window.comboMultiplierStep = settings.tetris.comboMultiplierStep || 0.1;
-            
-            // 应用特殊能力阈值设置
-            const abilityAdjustment = settings.tetris.abilityThresholdAdjustment || 0;
-            if (settings.tetris.abilityUnlockThresholds) {
-                let newComboAbilities = {};
-                
-                // 行消除能力
-                const lineClearThreshold = Math.max(1, (settings.tetris.abilityUnlockThresholds.lineClear || 8) + abilityAdjustment);
-                newComboAbilities[lineClearThreshold] = COMBO_ABILITIES[8];
-                
-                // 时间减缓能力
-                const slowTimeThreshold = Math.max(1, (settings.tetris.abilityUnlockThresholds.slowTime || 12) + abilityAdjustment);
-                newComboAbilities[slowTimeThreshold] = COMBO_ABILITIES[12];
-                
-                // 方块变形能力
-                const transformThreshold = Math.max(1, (settings.tetris.abilityUnlockThresholds.shapeTransform || 16) + abilityAdjustment);
-                newComboAbilities[transformThreshold] = COMBO_ABILITIES[16];
-                
-                COMBO_ABILITIES = newComboAbilities;
+        };
+
+        // 从设置中调整阈值
+        if (this.settings.abilityUnlockThresholds) {
+            const adjustment = this.settings.abilityThresholdAdjustment || 0;
+            const newAbilities = {};
+
+            const lineClearThreshold = Math.max(1, (this.settings.abilityUnlockThresholds.lineClear || 8) + adjustment);
+            newAbilities[lineClearThreshold] = defaultAbilities[8];
+
+            const slowTimeThreshold = Math.max(1, (this.settings.abilityUnlockThresholds.slowTime || 12) + adjustment);
+            newAbilities[slowTimeThreshold] = defaultAbilities[12];
+
+            const transformThreshold = Math.max(1, (this.settings.abilityUnlockThresholds.shapeTransform || 16) + adjustment);
+            newAbilities[transformThreshold] = defaultAbilities[16];
+
+            return newAbilities;
+        }
+
+        return defaultAbilities;
+    }
+
+    /**
+     * 初始化游戏
+     */
+    init() {
+        if (!this.boardElement) {
+            console.error('游戏板元素未找到');
+            return;
+        }
+
+        // 创建连击和能力显示元素
+        this.createComboDisplay();
+        this.createAbilitiesDisplay();
+
+        // 设置控制
+        this.setupControls();
+
+        // 初始化游戏板和预览区
+        this.createBoard();
+        this.createNextPiecePreview();
+
+        // 生成初始方块
+        this.nextPiece = this.generateRandomPiece();
+        this.spawnNewPiece();
+
+        // 更新显示
+        this.updateStats();
+    }
+
+    /**
+     * 创建连击显示元素
+     */
+    createComboDisplay() {
+        const statsContainer = document.querySelector('.stats');
+        if (statsContainer && !document.getElementById('combo')) {
+            const comboContainer = document.createElement('div');
+            comboContainer.className = 'stat-item';
+            comboContainer.innerHTML = '<span>连击:</span><span id="combo">0</span>';
+            statsContainer.appendChild(comboContainer);
+        }
+        this.comboElement = document.getElementById('combo');
+    }
+
+    /**
+     * 创建能力显示区域
+     */
+    createAbilitiesDisplay() {
+        if (!document.getElementById('abilities')) {
+            const abilitiesContainer = document.createElement('div');
+            abilitiesContainer.id = 'abilities';
+            abilitiesContainer.className = 'abilities-container';
+            abilitiesContainer.innerHTML = '<h3>特殊能力</h3><div class="abilities-list"></div>';
+
+            const gameArea = document.querySelector('.game-area');
+            if (gameArea) {
+                gameArea.appendChild(abilitiesContainer);
             }
-            
-            // 设置减缓时间效果持续时间
-            window.slowTimeEffectDuration = settings.tetris.slowTimeEffectDuration || 10000;
+        }
+        this.abilitiesElement = document.querySelector('.abilities-list');
+    }
+
+    /**
+     * 设置控制
+     */
+    setupControls() {
+        // 键盘控制
+        this.on(document, 'keydown', (e) => this.handleKeyDown(e));
+
+        // 移动端触摸控制
+        if (this.deviceInfo.hasTouch) {
+            this.setupMobileControls();
+        }
+
+        // 按钮控制
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const retryBtn = this.gameOverElement?.querySelector('button');
+
+        if (startBtn) {
+            this.on(startBtn, 'click', () => this.handleStartButton());
+        }
+        if (pauseBtn) {
+            this.on(pauseBtn, 'click', () => this.togglePause());
+        }
+        if (resetBtn) {
+            this.on(resetBtn, 'click', () => this.resetGame());
+        }
+        if (retryBtn) {
+            this.on(retryBtn, 'click', () => this.resetGame());
         }
     }
-}
 
-// 游戏状态
-let tetrisBoard = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
-let currentPiece = null;
-let currentPiecePosition = {x: 0, y: 0};
-let nextPiece = null;
-let gameInterval = null;
-let isPaused = false;
-let score = 0;
-let level = 1;
-let lines = 0;
-let gameSpeed = DEFAULT_LEVEL_CONFIG[1].speed;
-let isGameOver = false;
-let isMobile = false;
-let combo = 0; // 连击次数
-let isSpecialPiece = false; // 是否是特殊方块
-let activeAbilities = []; // 当前激活的能力
-let slowTimeEffect = null; // 减缓时间效果的计时器
-
-// DOM 元素引用
-let boardElement, nextPieceElement, scoreElement, levelElement, linesElement, gameOverElement, comboElement, abilitiesElement;
-
-// 检测移动设备
-function detectMobile() {
-    return window.innerWidth <= 768 || ('ontouchstart' in window) || 
-           (navigator.maxTouchPoints > 0) || 
-           (navigator.msMaxTouchPoints > 0);
-}
-
-// 初始化游戏
-function initGame() {
-    // 先加载用户设置
-    loadUserSettings();
-    
-    boardElement = document.querySelector('.tetris-board');
-    nextPieceElement = document.querySelector('.next-piece');
-    scoreElement = document.getElementById('score');
-    levelElement = document.getElementById('level');
-    linesElement = document.getElementById('lines');
-    gameOverElement = document.querySelector('.game-over-overlay');
-    
-    // 创建连击显示元素
-    const statsContainer = document.querySelector('.stats');
-    if (statsContainer && !document.getElementById('combo')) {
-        const comboContainer = document.createElement('div');
-        comboContainer.className = 'stat-item';
-        comboContainer.innerHTML = '<span>连击:</span><span id="combo">0</span>';
-        statsContainer.appendChild(comboContainer);
-        comboElement = document.getElementById('combo');
-    } else {
-        comboElement = document.getElementById('combo');
-    }
-    
-    // 创建能力显示区域
-    if (!document.getElementById('abilities')) {
-        const abilitiesContainer = document.createElement('div');
-        abilitiesContainer.id = 'abilities';
-        abilitiesContainer.className = 'abilities-container';
-        abilitiesContainer.innerHTML = '<h3>特殊能力</h3><div class="abilities-list"></div>';
-        
-        const gameArea = document.querySelector('.game-area');
-        if (gameArea) {
-            gameArea.appendChild(abilitiesContainer);
+    /**
+     * 处理键盘输入
+     */
+    handleKeyDown(e) {
+        // P键暂停可以在任何时候使用
+        if (e.keyCode === 80) {
+            this.togglePause();
+            e.preventDefault();
+            return;
         }
-        
-        abilitiesElement = document.querySelector('.abilities-list');
-    } else {
-        abilitiesElement = document.querySelector('.abilities-list');
-    }
-    
-    // 重置游戏状态
-    combo = 0;
-    if (comboElement) comboElement.textContent = '0';
-    activeAbilities = [];
-    if (abilitiesElement) abilitiesElement.innerHTML = '';
-    
-    // 检测是否为移动设备
-    isMobile = detectMobile();
-    if (isMobile) {
-        setupMobileControls();
-    }
-    
-    // 初始化游戏板
-    createBoard();
-    
-    // 初始化下一个方块预览区
-    createNextPiecePreview();
-    
-    // 生成第一个方块
-    nextPiece = generateRandomPiece();
-    spawnNewPiece();
-    
-    // 设置键盘控制
-    setupKeyboardControls();
-    
-    // 更新分数显示
-    updateStats();
-    
-    // 应用初始游戏速度
-    gameSpeed = DEFAULT_LEVEL_CONFIG[1].speed;
-}
 
-// 创建游戏板
-function createBoard() {
-    boardElement.innerHTML = '';
-    for (let y = 0; y < BOARD_HEIGHT; y++) {
-        for (let x = 0; x < BOARD_WIDTH; x++) {
-            const cell = document.createElement('div');
+        // 其他操作需要游戏正在运行且未结束
+        if (!this.state.isRunning || this.state.isGameOver) return;
+
+        switch (e.keyCode) {
+            case 37: // 左箭头
+                this.movePiece(-1, 0);
+                e.preventDefault();
+                break;
+            case 39: // 右箭头
+                this.movePiece(1, 0);
+                e.preventDefault();
+                break;
+            case 40: // 下箭头
+                this.movePiece(0, 1);
+                e.preventDefault();
+                break;
+            case 38: // 上箭头
+                this.rotatePiece();
+                e.preventDefault();
+                break;
+            case 32: // 空格
+                this.hardDrop();
+                e.preventDefault();
+                break;
+        }
+    }
+
+    /**
+     * 设置移动端控制（使用 GameBase v2.0 的 TouchGestureHandler）
+     */
+    setupMobileControls() {
+        const touchHandler = new TouchGestureHandler(this.boardElement, {
+            minSwipeDistance: 20
+        });
+
+        // 滑动控制
+        touchHandler.enableSwipe((gesture) => {
+            // 只有游戏运行中且未暂停时才响应
+            if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+
+            if (Math.abs(gesture.deltaX) > Math.abs(gesture.deltaY)) {
+                // 水平滑动
+                this.movePiece(gesture.deltaX > 0 ? 1 : -1, 0);
+            } else {
+                // 垂直滑动
+                if (gesture.deltaY > 0) {
+                    this.movePiece(0, 1); // 向下
+                } else {
+                    this.rotatePiece(); // 向上旋转
+                }
+            }
+        });
+
+        // 双击硬降
+        touchHandler.enableDoubleTap(() => {
+            // 只有游戏运行中且未暂停时才响应
+            if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+            this.hardDrop();
+        });
+    }
+
+    /**
+     * 创建游戏板
+     */
+    createBoard() {
+        this.boardElement.innerHTML = '';
+        for (let y = 0; y < this.BOARD_HEIGHT; y++) {
+            for (let x = 0; x < this.BOARD_WIDTH; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'tetris-cell';
+                cell.setAttribute('data-x', x);
+                cell.setAttribute('data-y', y);
+                this.boardElement.appendChild(cell);
+            }
+        }
+    }
+
+    /**
+     * 创建下一个方块预览区
+     */
+    createNextPiecePreview() {
+        this.nextPieceElement.innerHTML = '';
+        for (let y = 0; y < 4; y++) {
+            for (let x = 0; x < 4; x++) {
+                const cell = document.createElement('div');
+                cell.className = 'tetris-cell';
+                this.nextPieceElement.appendChild(cell);
+            }
+        }
+    }
+
+    /**
+     * 生成随机方块
+     */
+    generateRandomPiece() {
+        const pieces = Object.keys(this.SHAPES);
+        const randomPiece = pieces[Math.floor(Math.random() * pieces.length)];
+
+        this.isSpecialPiece = Math.random() < this.levelConfig[this.state.level].specialPieceChance;
+
+        return {
+            shape: randomPiece,
+            matrix: this.SHAPES[randomPiece],
+            color: this.getPieceColor(randomPiece),
+            isSpecial: this.isSpecialPiece
+        };
+    }
+
+    /**
+     * 获取方块颜色
+     */
+    getPieceColor(shape) {
+        const colors = {
+            'I': 'i-block', 'O': 'o-block', 'T': 't-block',
+            'L': 'l-block', 'J': 'j-block', 'S': 's-block', 'Z': 'z-block'
+        };
+
+        return this.isSpecialPiece ? colors[shape] + ' special-block' : colors[shape] || '';
+    }
+
+    /**
+     * 生成新方块
+     */
+    spawnNewPiece() {
+        this.currentPiece = this.nextPiece;
+        this.nextPiece = this.generateRandomPiece();
+
+        const pieceWidth = this.currentPiece.matrix[0].length;
+        this.currentPiecePosition = {
+            x: Math.floor((this.BOARD_WIDTH - pieceWidth) / 2),
+            y: 0
+        };
+
+        if (this.checkCollision(this.currentPiecePosition.x, this.currentPiecePosition.y, this.currentPiece.matrix)) {
+            this.endGame();
+            return;
+        }
+
+        this.drawBoard();
+        this.updateNextPiecePreview();
+    }
+
+    /**
+     * 更新下一个方块预览
+     */
+    updateNextPiecePreview() {
+        const previewCells = this.nextPieceElement.querySelectorAll('.tetris-cell');
+
+        previewCells.forEach(cell => {
             cell.className = 'tetris-cell';
-            cell.setAttribute('data-x', x);
-            cell.setAttribute('data-y', y);
-            boardElement.appendChild(cell);
-        }
-    }
-}
+            cell.style.animation = '';
+        });
 
-// 创建下一个方块预览区
-function createNextPiecePreview() {
-    nextPieceElement.innerHTML = '';
-    for (let y = 0; y < 4; y++) {
-        for (let x = 0; x < 4; x++) {
-            const cell = document.createElement('div');
-            cell.className = 'tetris-cell';
-            nextPieceElement.appendChild(cell);
-        }
-    }
-}
+        const matrix = this.nextPiece.matrix;
+        const color = this.nextPiece.color;
 
-// 生成随机方块
-function generateRandomPiece() {
-    const pieces = Object.keys(SHAPES);
-    const randomPiece = pieces[Math.floor(Math.random() * pieces.length)];
-    
-    // 根据等级随机生成特殊方块
-    isSpecialPiece = Math.random() < DEFAULT_LEVEL_CONFIG[level].specialPieceChance;
-    
-    return {
-        shape: randomPiece,
-        matrix: SHAPES[randomPiece],
-        color: getPieceColor(randomPiece),
-        isSpecial: isSpecialPiece
-    };
-}
-
-// 获取方块颜色
-function getPieceColor(shape) {
-    const colors = {
-        'I': 'i-block',
-        'O': 'o-block',
-        'T': 't-block',
-        'L': 'l-block',
-        'J': 'j-block',
-        'S': 's-block',
-        'Z': 'z-block'
-    };
-    
-    // 特殊方块使用特殊颜色
-    if (isSpecialPiece) {
-        return colors[shape] + ' special-block';
-    }
-    
-    return colors[shape] || '';
-}
-
-// 生成新方块
-function spawnNewPiece() {
-    currentPiece = nextPiece;
-    nextPiece = generateRandomPiece();
-    
-    // 计算X坐标，使方块居中出现
-    const pieceWidth = currentPiece.matrix[0].length;
-    currentPiecePosition = {
-        x: Math.floor((BOARD_WIDTH - pieceWidth) / 2),
-        y: 0
-    };
-    
-    // 如果新方块一生成就发生碰撞，则游戏结束
-    if (checkCollision(currentPiecePosition.x, currentPiecePosition.y, currentPiece.matrix)) {
-        gameOver();
-        return;
-    }
-    
-    // 更新游戏板和预览区
-    drawBoard();
-    updateNextPiecePreview();
-}
-
-// 更新下一个方块预览
-function updateNextPiecePreview() {
-    const previewCells = nextPieceElement.querySelectorAll('.tetris-cell');
-    
-    // 先清空所有单元格
-    previewCells.forEach(cell => {
-        cell.className = 'tetris-cell';
-    });
-    
-    // 绘制下一个方块
-    const matrix = nextPiece.matrix;
-    const color = nextPiece.color;
-    
-    for (let y = 0; y < matrix.length; y++) {
-        for (let x = 0; x < matrix[y].length; x++) {
-            if (matrix[y][x]) {
-                const index = y * 4 + x;
-                if (previewCells[index]) {
-                    previewCells[index].className = `tetris-cell ${color}`;
-                    
-                    // 如果是特殊方块，添加闪烁动画
-                    if (nextPiece.isSpecial) {
-                        previewCells[index].style.animation = 'specialBlockGlow 1.5s infinite';
-                    } else {
-                        previewCells[index].style.animation = '';
+        for (let y = 0; y < matrix.length; y++) {
+            for (let x = 0; x < matrix[y].length; x++) {
+                if (matrix[y][x]) {
+                    const index = y * 4 + x;
+                    if (previewCells[index]) {
+                        previewCells[index].className = `tetris-cell ${color}`;
+                        if (this.nextPiece.isSpecial) {
+                            previewCells[index].style.animation = 'specialBlockGlow 1.5s infinite';
+                        }
                     }
                 }
             }
         }
     }
-}
 
-// 绘制游戏板
-function drawBoard() {
-    // 创建临时游戏板副本
-    const tempBoard = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
-    
-    // 复制当前固定的方块
-    for (let y = 0; y < BOARD_HEIGHT; y++) {
-        for (let x = 0; x < BOARD_WIDTH; x++) {
-            tempBoard[y][x] = tetrisBoard[y][x];
+    /**
+     * 绘制游戏板
+     */
+    drawBoard() {
+        const tempBoard = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+
+        // 复制固定方块
+        for (let y = 0; y < this.BOARD_HEIGHT; y++) {
+            for (let x = 0; x < this.BOARD_WIDTH; x++) {
+                tempBoard[y][x] = this.board[y][x];
+            }
+        }
+
+        // 添加当前移动中的方块
+        if (this.currentPiece) {
+            const matrix = this.currentPiece.matrix;
+            const pos = this.currentPiecePosition;
+
+            for (let y = 0; y < matrix.length; y++) {
+                for (let x = 0; x < matrix[y].length; x++) {
+                    if (matrix[y][x] && pos.y + y >= 0) {
+                        if (pos.y + y < this.BOARD_HEIGHT && pos.x + x < this.BOARD_WIDTH) {
+                            tempBoard[pos.y + y][pos.x + x] = this.currentPiece.color;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 更新DOM
+        const cells = this.boardElement.querySelectorAll('.tetris-cell');
+        for (let y = 0; y < this.BOARD_HEIGHT; y++) {
+            for (let x = 0; x < this.BOARD_WIDTH; x++) {
+                const index = y * this.BOARD_WIDTH + x;
+                cells[index].className = 'tetris-cell';
+                if (tempBoard[y][x]) {
+                    cells[index].className = `tetris-cell ${tempBoard[y][x]}`;
+                }
+            }
         }
     }
-    
-    // 添加当前移动中的方块
-    if (currentPiece) {
-        const matrix = currentPiece.matrix;
-        const pos = currentPiecePosition;
-        
+
+    /**
+     * 移动方块
+     */
+    movePiece(dx, dy) {
+        if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+
+        const newX = this.currentPiecePosition.x + dx;
+        const newY = this.currentPiecePosition.y + dy;
+
+        if (!this.checkCollision(newX, newY, this.currentPiece.matrix)) {
+            this.currentPiecePosition.x = newX;
+            this.currentPiecePosition.y = newY;
+            this.drawBoard();
+            return true;
+        }
+
+        if (dy > 0) {
+            this.fixPiece();
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * 旋转方块
+     */
+    rotatePiece() {
+        if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+
+        const matrix = this.currentPiece.matrix;
+        const n = matrix.length;
+        const rotated = Array(n).fill().map(() => Array(n).fill(0));
+
+        // 顺时针旋转90度
+        for (let y = 0; y < n; y++) {
+            for (let x = 0; x < n; x++) {
+                rotated[x][n - 1 - y] = matrix[y][x];
+            }
+        }
+
+        // 检查碰撞
+        if (!this.checkCollision(this.currentPiecePosition.x, this.currentPiecePosition.y, rotated)) {
+            this.currentPiece.matrix = rotated;
+            this.drawBoard();
+            return true;
+        }
+
+        // 墙踢尝试
+        const offsets = [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 2, y: 0}, {x: -2, y: 0}];
+        for (const offset of offsets) {
+            if (!this.checkCollision(
+                this.currentPiecePosition.x + offset.x,
+                this.currentPiecePosition.y + offset.y,
+                rotated
+            )) {
+                this.currentPiece.matrix = rotated;
+                this.currentPiecePosition.x += offset.x;
+                this.currentPiecePosition.y += offset.y;
+                this.drawBoard();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 硬降
+     */
+    hardDrop() {
+        if (!this.state.isRunning || this.state.isPaused || this.state.isGameOver) return;
+
+        while (this.movePiece(0, 1)) {
+            this.updateScore(2); // 每下落一格得2分
+        }
+        this.updateStats();
+    }
+
+    /**
+     * 检查碰撞
+     */
+    checkCollision(x, y, matrix) {
+        for (let row = 0; row < matrix.length; row++) {
+            for (let col = 0; col < matrix[row].length; col++) {
+                if (matrix[row][col]) {
+                    const newX = x + col;
+                    const newY = y + row;
+
+                    if (newX < 0 || newX >= this.BOARD_WIDTH || newY >= this.BOARD_HEIGHT) {
+                        return true;
+                    }
+
+                    if (newY >= 0 && this.board[newY][newX]) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 固定方块
+     */
+    fixPiece() {
+        const pos = this.currentPiecePosition;
+        const matrix = this.currentPiece.matrix;
+
         for (let y = 0; y < matrix.length; y++) {
             for (let x = 0; x < matrix[y].length; x++) {
                 if (matrix[y][x] && pos.y + y >= 0) {
-                    if (pos.y + y < BOARD_HEIGHT && pos.x + x < BOARD_WIDTH) {
-                        tempBoard[pos.y + y][pos.x + x] = currentPiece.color;
-                    }
+                    this.board[pos.y + y][pos.x + x] = this.currentPiece.color;
                 }
             }
         }
+
+        this.checkLines();
+        this.spawnNewPiece();
     }
-    
-    // 更新DOM
-    const cells = boardElement.querySelectorAll('.tetris-cell');
-    for (let y = 0; y < BOARD_HEIGHT; y++) {
-        for (let x = 0; x < BOARD_WIDTH; x++) {
-            const index = y * BOARD_WIDTH + x;
-            cells[index].className = 'tetris-cell';
-            if (tempBoard[y][x]) {
-                cells[index].className = `tetris-cell ${tempBoard[y][x]}`;
+
+    /**
+     * 检查并清除完整的行
+     */
+    checkLines() {
+        let linesCleared = 0;
+
+        for (let y = this.BOARD_HEIGHT - 1; y >= 0; y--) {
+            if (this.board[y].every(cell => cell)) {
+                this.board.splice(y, 1);
+                this.board.unshift(Array(this.BOARD_WIDTH).fill(0));
+                linesCleared++;
+                this.showLineClearEffect(y);
+                y++;
             }
         }
-    }
-}
 
-// 移动方块
-function movePiece(dx, dy) {
-    if (isPaused || isGameOver) return;
-    
-    const newX = currentPiecePosition.x + dx;
-    const newY = currentPiecePosition.y + dy;
-    
-    if (!checkCollision(newX, newY, currentPiece.matrix)) {
-        currentPiecePosition.x = newX;
-        currentPiecePosition.y = newY;
-        drawBoard();
-        return true;
-    }
-    
-    // 如果是向下移动并且发生碰撞，则固定方块
-    if (dy > 0) {
-        fixPiece();
-        return false;
-    }
-    
-    return false;
-}
+        if (linesCleared > 0) {
+            this.combo++;
+            if (this.comboElement) {
+                this.comboElement.textContent = this.combo;
+                this.comboElement.setAttribute('data-value', Math.min(this.combo, 20).toString());
+                this.comboElement.style.animation = '';
+                this.setTimeout(() => {
+                    this.comboElement.style.animation = 'pulse 0.3s';
+                }, 10);
+            }
 
-// 旋转方块
-function rotatePiece() {
-    if (isPaused || isGameOver) return;
-    
-    const matrix = currentPiece.matrix;
-    const n = matrix.length;
-    const rotated = Array(n).fill().map(() => Array(n).fill(0));
-    
-    // 旋转矩阵（顺时针90度）
-    for (let y = 0; y < n; y++) {
-        for (let x = 0; x < n; x++) {
-            rotated[x][n - 1 - y] = matrix[y][x];
-        }
-    }
-    
-    // 检查旋转后是否发生碰撞
-    if (!checkCollision(currentPiecePosition.x, currentPiecePosition.y, rotated)) {
-        currentPiece.matrix = rotated;
-        drawBoard();
-        return true;
-    }
-    
-    // 尝试偏移旋转（墙踢）
-    const offsets = [
-        {x: 1, y: 0},   // 右移
-        {x: -1, y: 0},  // 左移
-        {x: 0, y: -1},  // 上移
-        {x: 2, y: 0},   // 右移两格
-        {x: -2, y: 0},  // 左移两格
-    ];
-    
-    for (const offset of offsets) {
-        if (!checkCollision(currentPiecePosition.x + offset.x, currentPiecePosition.y + offset.y, rotated)) {
-            currentPiece.matrix = rotated;
-            currentPiecePosition.x += offset.x;
-            currentPiecePosition.y += offset.y;
-            drawBoard();
-            return true;
-        }
-    }
-    
-    return false;
-}
+            this.checkComboRewards();
 
-// 检查碰撞
-function checkCollision(x, y, matrix) {
-    for (let row = 0; row < matrix.length; row++) {
-        for (let col = 0; col < matrix[row].length; col++) {
-            if (matrix[row][col]) {
-                const newX = x + col;
-                const newY = y + row;
-                
-                // 检查是否超出边界
-                if (newX < 0 || newX >= BOARD_WIDTH || newY >= BOARD_HEIGHT) {
-                    return true;
-                }
-                
-                // 检查是否与固定的方块重叠
-                if (newY >= 0 && tetrisBoard[newY][newX]) {
-                    return true;
+            // 计算得分
+            const linePoints = [0, 100, 300, 500, 800];
+            let earnedScore = linePoints[linesCleared] * this.state.level;
+            earnedScore = Math.floor(earnedScore * this.levelConfig[this.state.level].scoreMultiplier);
+
+            // 连击加成
+            const comboMultiplier = Math.min(1 + (this.combo * 0.1), 2);
+            earnedScore = Math.floor(earnedScore * comboMultiplier);
+
+            // 特殊方块加成
+            if (this.currentPiece.isSpecial) {
+                earnedScore *= 2;
+                this.showSpecialScoreEffect(earnedScore);
+            }
+
+            this.updateScore(earnedScore);
+            this.lines += linesCleared;
+
+            this.showScoreEffect(earnedScore);
+
+            // 检查升级
+            const oldLevel = this.state.level;
+            const newLevel = Math.min(Math.floor(this.lines / 10) + 1, 10);
+
+            if (newLevel > oldLevel) {
+                this.updateLevel(newLevel);
+                this.showLevelUpEffect(oldLevel, newLevel);
+
+                // 更新游戏速度
+                if (this.state.isRunning && this.gameLoopInterval) {
+                    this.resourceManager.clearInterval(this.gameLoopInterval);
+                    const newSpeed = this.levelConfig[newLevel].speed;
+                    this.gameLoopInterval = this.setInterval(() => this.gameLoop(), newSpeed);
                 }
             }
-        }
-    }
-    return false;
-}
 
-// 固定当前方块
-function fixPiece() {
-    const pos = currentPiecePosition;
-    const matrix = currentPiece.matrix;
-    
-    for (let y = 0; y < matrix.length; y++) {
-        for (let x = 0; x < matrix[y].length; x++) {
-            if (matrix[y][x] && pos.y + y >= 0) {
-                tetrisBoard[pos.y + y][pos.x + x] = currentPiece.color;
-            }
-        }
-    }
-    
-    // 检查并清除完整的行
-    checkLines();
-    
-    // 生成下一个方块
-    spawnNewPiece();
-}
-
-// 快速下落（硬降）
-function hardDrop() {
-    if (isPaused || isGameOver) return;
-    
-    while (movePiece(0, 1)) {
-        // 继续下落直到碰撞
-        score += 2;  // 硬降每下落一格得2分
-    }
-    updateStats();
-}
-
-// 检查并清除完整的行
-function checkLines() {
-    let linesCleared = 0;
-    
-    for (let y = BOARD_HEIGHT - 1; y >= 0; y--) {
-        if (tetrisBoard[y].every(cell => cell)) {
-            // 整行都有方块，清除该行
-            tetrisBoard.splice(y, 1);
-            tetrisBoard.unshift(Array(BOARD_WIDTH).fill(0));
-            linesCleared++;
-            
-            // 添加行消除动画
-            showLineClearEffect(y);
-            
-            y++; // 检查同一行（现在是新行）
-        }
-    }
-    
-    if (linesCleared > 0) {
-        // 更新连击
-        combo++;
-        if (comboElement) {
-            comboElement.textContent = combo;
-            comboElement.setAttribute('data-value', Math.min(combo, 20).toString());
-            
-            // 添加连击动画
-            comboElement.style.animation = '';
-            setTimeout(() => {
-                comboElement.style.animation = 'pulse 0.3s';
-            }, 10);
-            
-            // 连击奖励系统
-            checkComboRewards();
-        }
-        
-        // 更新分数
-        const linePoints = [0, 100, 300, 500, 800]; // 0,1,2,3,4行的得分
-        let earnedScore = linePoints[linesCleared] * level;
-        
-        // 应用等级乘数
-        earnedScore = Math.floor(earnedScore * DEFAULT_LEVEL_CONFIG[level].scoreMultiplier);
-        
-        // 应用连击加成
-        const comboMultiplier = Math.min(1 + (combo * 0.1), 2); // 最高2倍连击加成
-        earnedScore = Math.floor(earnedScore * comboMultiplier);
-        
-        // 特殊方块加成
-        if (currentPiece.isSpecial) {
-            earnedScore *= 2;
-            showSpecialScoreEffect(earnedScore);
-        }
-        
-        score += earnedScore;
-        lines += linesCleared;
-        
-        // 显示得分动画
-        showScoreEffect(earnedScore);
-        
-        // 检查是否升级
-        const oldLevel = level;
-        level = Math.floor(lines / 10) + 1;
-        level = Math.min(level, 10); // 最高10级
-        
-        // 如果升级，显示升级动画
-        if (level > oldLevel) {
-            showLevelUpEffect(oldLevel, level);
-        }
-        
-        // 更新游戏速度
-        gameSpeed = DEFAULT_LEVEL_CONFIG[level].speed;
-        if (gameInterval) {
-            clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, gameSpeed);
-        }
-        
-        // 更新统计显示
-        updateStats();
-    } else {
-        // 重置连击
-        combo = 0;
-        if (comboElement) {
-            comboElement.textContent = combo;
-            comboElement.setAttribute('data-value', '0');
-        }
-    }
-}
-
-// 检查连击奖励
-function checkComboRewards() {
-    // 连击奖励阈值
-    const comboRewards = {
-        5: { points: 500, message: "连击 x5! +500分" },
-        10: { points: 1000, message: "连击 x10! +1000分" },
-        15: { points: 2000, message: "连击 x15! +2000分" },
-        20: { points: 5000, message: "连击 x20! 大师级! +5000分" }
-    };
-    
-    // 检查是否达到奖励阈值
-    if (comboRewards[combo]) {
-        const reward = comboRewards[combo];
-        score += reward.points;
-        
-        // 显示连击奖励消息
-        showComboRewardEffect(reward.message, reward.points);
-    }
-    
-    // 检查是否获得特殊能力
-    for (const comboThreshold in COMBO_ABILITIES) {
-        if (combo === parseInt(comboThreshold)) {
-            // 添加特殊能力
-            addAbility(COMBO_ABILITIES[comboThreshold]);
-            break;
-        }
-    }
-}
-
-// 显示连击奖励效果
-function showComboRewardEffect(message, points) {
-    const rewardPopup = document.createElement('div');
-    rewardPopup.className = 'combo-reward-popup';
-    rewardPopup.textContent = message;
-    rewardPopup.style.position = 'absolute';
-    rewardPopup.style.top = '30%';
-    rewardPopup.style.left = '50%';
-    rewardPopup.style.transform = 'translate(-50%, -50%)';
-    rewardPopup.style.color = '#FFD700';
-    rewardPopup.style.fontSize = '28px';
-    rewardPopup.style.fontWeight = 'bold';
-    rewardPopup.style.zIndex = '102';
-    rewardPopup.style.textShadow = '0 0 10px rgba(255, 215, 0, 0.8)';
-    rewardPopup.style.animation = 'comboRewardPopup 2s forwards';
-    
-    // 添加CSS动画
-    if (!document.getElementById('combo-reward-style')) {
-        const style = document.createElement('style');
-        style.id = 'combo-reward-style';
-        style.textContent = `
-            @keyframes comboRewardPopup {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-                70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    boardElement.appendChild(rewardPopup);
-    
-    // 播放声音（可选）
-    try {
-        const sound = new Audio('../../assets/sounds/combo-reward.mp3');
-        sound.volume = 0.6;
-        sound.play().catch(e => console.log('无法播放音效:', e));
-    } catch (error) {
-        console.log('音效播放失败:', error);
-    }
-    
-    // 移除动画元素
-    setTimeout(() => {
-        rewardPopup.remove();
-    }, 2000);
-}
-
-// 显示行消除动画效果
-function showLineClearEffect(lineY) {
-    const cells = boardElement.querySelectorAll(`.tetris-cell[data-y="${lineY}"]`);
-    cells.forEach(cell => {
-        cell.style.animation = 'lineClearEffect 0.3s';
-    });
-}
-
-// 显示得分动画效果
-function showScoreEffect(points) {
-    const scorePopup = document.createElement('div');
-    scorePopup.className = 'score-popup';
-    scorePopup.textContent = `+${points}`;
-    scorePopup.style.position = 'absolute';
-    scorePopup.style.top = '50%';
-    scorePopup.style.left = '50%';
-    scorePopup.style.transform = 'translate(-50%, -50%)';
-    scorePopup.style.color = '#FFD700';
-    scorePopup.style.fontSize = '24px';
-    scorePopup.style.fontWeight = 'bold';
-    scorePopup.style.zIndex = '100';
-    scorePopup.style.textShadow = '0 0 5px rgba(0,0,0,0.5)';
-    scorePopup.style.animation = 'scorePopup 1s forwards';
-    
-    // 添加CSS动画
-    if (!document.getElementById('score-popup-style')) {
-        const style = document.createElement('style');
-        style.id = 'score-popup-style';
-        style.textContent = `
-            @keyframes scorePopup {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-                80% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
-                100% { opacity: 0; transform: translate(-50%, -150%) scale(0.8); }
-            }
-            @keyframes lineClearEffect {
-                0% { transform: scale(1); filter: brightness(1); }
-                50% { transform: scale(1.1); filter: brightness(1.5); }
-                100% { transform: scale(1); filter: brightness(1); }
-            }
-            @keyframes specialBlockGlow {
-                0% { filter: brightness(1); }
-                50% { filter: brightness(1.5) drop-shadow(0 0 5px gold); }
-                100% { filter: brightness(1); }
-            }
-            @keyframes levelUpAnimation {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                10% { opacity: 1; transform: translate(-50%, -50%) scale(1.2) rotate(-5deg); }
-                20% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); }
-                30% { transform: translate(-50%, -50%) scale(1.2) rotate(-3deg); }
-                40% { transform: translate(-50%, -50%) scale(1.2) rotate(3deg); }
-                50% { transform: translate(-50%, -50%) scale(1.2) rotate(0); }
-                70% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-                100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    boardElement.appendChild(scorePopup);
-    
-    // 移除动画元素
-    setTimeout(() => {
-        scorePopup.remove();
-    }, 1000);
-}
-
-// 显示特殊方块得分效果
-function showSpecialScoreEffect(points) {
-    const specialPopup = document.createElement('div');
-    specialPopup.className = 'special-popup';
-    specialPopup.textContent = `特殊方块加成! +${points}`;
-    specialPopup.style.position = 'absolute';
-    specialPopup.style.top = '40%';
-    specialPopup.style.left = '50%';
-    specialPopup.style.transform = 'translate(-50%, -50%)';
-    specialPopup.style.color = '#FF00FF';
-    specialPopup.style.fontSize = '28px';
-    specialPopup.style.fontWeight = 'bold';
-    specialPopup.style.zIndex = '101';
-    specialPopup.style.textShadow = '0 0 10px rgba(255,0,255,0.7)';
-    specialPopup.style.animation = 'scorePopup 1.5s forwards';
-    
-    boardElement.appendChild(specialPopup);
-    
-    // 移除动画元素
-    setTimeout(() => {
-        specialPopup.remove();
-    }, 1500);
-}
-
-// 显示等级提升效果
-function showLevelUpEffect(oldLevel, newLevel) {
-    // 创建等级提升消息
-    const levelUpMessage = document.createElement('div');
-    levelUpMessage.className = 'level-up-message';
-    levelUpMessage.textContent = `等级提升! ${oldLevel} → ${newLevel}`;
-    levelUpMessage.style.position = 'absolute';
-    levelUpMessage.style.top = '50%';
-    levelUpMessage.style.left = '50%';
-    levelUpMessage.style.transform = 'translate(-50%, -50%)';
-    levelUpMessage.style.backgroundColor = 'rgba(76, 175, 80, 0.9)';
-    levelUpMessage.style.color = 'white';
-    levelUpMessage.style.padding = '15px 30px';
-    levelUpMessage.style.borderRadius = '10px';
-    levelUpMessage.style.fontSize = '28px';
-    levelUpMessage.style.fontWeight = 'bold';
-    levelUpMessage.style.zIndex = '1000';
-    levelUpMessage.style.boxShadow = '0 0 20px rgba(0, 0, 0, 0.3)';
-    levelUpMessage.style.animation = 'levelUpAnimation 2.5s ease-out forwards';
-    
-    // 添加到游戏板
-    const container = boardElement.parentElement;
-    container.appendChild(levelUpMessage);
-    
-    // 创建闪光效果
-    const flash = document.createElement('div');
-    flash.className = 'level-up-flash';
-    flash.style.position = 'absolute';
-    flash.style.top = '0';
-    flash.style.left = '0';
-    flash.style.width = '100%';
-    flash.style.height = '100%';
-    flash.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-    flash.style.zIndex = '99';
-    flash.style.animation = 'flashEffect 1s ease-out forwards';
-    
-    // 添加CSS动画
-    if (!document.getElementById('flash-effect-style')) {
-        const style = document.createElement('style');
-        style.id = 'flash-effect-style';
-        style.textContent = `
-            @keyframes flashEffect {
-                0% { opacity: 0.8; }
-                100% { opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
-    container.appendChild(flash);
-    
-    // 播放声音（可选）
-    try {
-        const sound = new Audio('../../assets/sounds/level-up.mp3');
-        sound.volume = 0.5;
-        sound.play().catch(e => console.log('无法播放音效:', e));
-    } catch (error) {
-        console.log('音效播放失败:', error);
-    }
-    
-    // 移除闪光效果
-    setTimeout(() => {
-        flash.remove();
-    }, 1000);
-    
-    // 移除消息
-    setTimeout(() => {
-        levelUpMessage.remove();
-    }, 2500);
-}
-
-// 更新统计信息
-function updateStats() {
-    scoreElement.textContent = score;
-    levelElement.textContent = level;
-    linesElement.textContent = lines;
-    if (comboElement) {
-        comboElement.textContent = combo;
-        comboElement.setAttribute('data-value', Math.min(combo, 20).toString());
-    }
-}
-
-// 游戏主循环
-function gameLoop() {
-    if (!isPaused && !isGameOver) {
-        movePiece(0, 1);
-    }
-}
-
-// 开始游戏
-function startGame() {
-    if (isGameOver) {
-        // 重新开始游戏
-        resetGame();
-    }
-    
-    if (!gameInterval) {
-        gameInterval = setInterval(gameLoop, gameSpeed);
-    }
-    
-    document.getElementById('start-btn').disabled = true;
-    document.getElementById('pause-btn').disabled = false;
-    isPaused = false;
-}
-
-// 暂停游戏
-function pauseGame() {
-    if (gameInterval && !isGameOver) {
-        if (isPaused) {
-            // 恢复游戏
-            document.getElementById('pause-btn').textContent = '暂停';
-            isPaused = false;
+            this.updateStats();
         } else {
-            // 暂停游戏
-            document.getElementById('pause-btn').textContent = '继续';
-            isPaused = true;
+            this.combo = 0;
+            if (this.comboElement) {
+                this.comboElement.textContent = '0';
+                this.comboElement.setAttribute('data-value', '0');
+            }
         }
     }
-}
 
-// 重置游戏
-function resetGame() {
-    // 清除游戏计时器
-    if (gameInterval) {
-        clearInterval(gameInterval);
-        gameInterval = null;
-    }
-    
-    // 清除特殊效果计时器
-    if (slowTimeEffect) {
-        clearTimeout(slowTimeEffect);
-        slowTimeEffect = null;
-    }
-    
-    // 重置游戏状态
-    tetrisBoard = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
-    currentPiece = null;
-    nextPiece = generateRandomPiece();
-    score = 0;
-    level = 1;
-    lines = 0;
-    gameSpeed = DEFAULT_LEVEL_CONFIG[1].speed;
-    isPaused = false;
-    isGameOver = false;
-    combo = 0;
-    activeAbilities = [];
-    
-    // 重置DOM元素
-    document.getElementById('start-btn').disabled = false;
-    document.getElementById('pause-btn').disabled = true;
-    document.getElementById('pause-btn').textContent = '暂停';
-    
-    // 清除特殊能力显示
-    if (abilitiesElement) {
-        abilitiesElement.innerHTML = '';
-    }
-    
-    // 移除所有特效元素
-    const effects = document.querySelectorAll('.ability-effect, .slow-time-indicator, .score-popup, .combo-reward-popup, .ability-popup');
-    effects.forEach(effect => effect.remove());
-    
-    // 隐藏游戏结束界面
-    gameOverElement.style.display = 'none';
-    
-    // 重新初始化游戏板
-    createBoard();
-    
-    // 重新初始化下一个方块预览区
-    createNextPiecePreview();
-    
-    // 生成第一个方块
-    spawnNewPiece();
-    
-    // 更新分数显示
-    updateStats();
-}
+    /**
+     * 检查连击奖励
+     */
+    checkComboRewards() {
+        const comboRewards = {
+            5: { points: 500, message: "连击 x5! +500分" },
+            10: { points: 1000, message: "连击 x10! +1000分" },
+            15: { points: 2000, message: "连击 x15! +2000分" },
+            20: { points: 5000, message: "连击 x20! 大师级! +5000分" }
+        };
 
-// 游戏结束
-function gameOver() {
-    isGameOver = true;
-    
-    if (gameInterval) {
-        clearInterval(gameInterval);
-        gameInterval = null;
-    }
-    
-    document.getElementById('start-btn').disabled = false;
-    document.getElementById('pause-btn').disabled = true;
-    
-    // 更新游戏结束界面
-    gameOverElement.style.display = 'flex';
-    document.querySelector('.game-over-overlay .final-score').textContent = score;
-    
-    // 添加等级信息
-    let levelInfo = gameOverElement.querySelector('.level-info');
-    if (!levelInfo) {
-        levelInfo = document.createElement('p');
-        levelInfo.className = 'level-info';
-        gameOverElement.querySelector('p').after(levelInfo);
-    }
-    levelInfo.textContent = `达到等级: ${level}`;
-    
-    // 添加最高分记录
-    const highScore = localStorage.getItem('tetris_high_score') || 0;
-    if (score > highScore) {
-        localStorage.setItem('tetris_high_score', score);
-        
-        let newRecordElement = gameOverElement.querySelector('.new-record');
-        if (!newRecordElement) {
-            newRecordElement = document.createElement('p');
-            newRecordElement.className = 'new-record';
-            newRecordElement.style.color = '#FFD700';
-            newRecordElement.style.fontSize = '24px';
-            newRecordElement.style.fontWeight = 'bold';
-            levelInfo.after(newRecordElement);
+        if (comboRewards[this.combo]) {
+            const reward = comboRewards[this.combo];
+            this.updateScore(reward.points);
+            this.showComboRewardEffect(reward.message, reward.points);
         }
-        newRecordElement.textContent = '新纪录!';
-    }
-}
 
-// 设置键盘控制
-function setupKeyboardControls() {
-    document.addEventListener('keydown', function(event) {
-        if (isGameOver) return;
-        
-        switch (event.keyCode) {
-            case 37: // 左箭头
-                movePiece(-1, 0);
-                event.preventDefault();
+        // 检查特殊能力解锁
+        for (const comboThreshold in this.comboAbilities) {
+            if (this.combo === parseInt(comboThreshold)) {
+                this.addAbility(this.comboAbilities[comboThreshold]);
                 break;
-            case 39: // 右箭头
-                movePiece(1, 0);
-                event.preventDefault();
-                break;
-            case 40: // 下箭头
-                movePiece(0, 1);
-                event.preventDefault();
-                break;
-            case 38: // 上箭头
-                rotatePiece();
-                event.preventDefault();
-                break;
-            case 32: // 空格
-                hardDrop();
-                event.preventDefault(); // 阻止空格键导致页面滚动
-                break;
-            case 80: // P键
-                pauseGame();
-                event.preventDefault();
-                break;
-        }
-    });
-}
-
-// 设置移动端控制
-function setupMobileControls() {
-    // 触摸滑动控制
-    let touchStartX, touchStartY;
-    let touchStartTime;
-    let lastTapTime = 0;
-    
-    boardElement.addEventListener('touchstart', function(e) {
-        e.preventDefault(); // 防止页面滚动
-        const rect = boardElement.getBoundingClientRect();
-        const touchX = e.touches[0].clientX - rect.left;
-        const touchY = e.touches[0].clientY - rect.top;
-        
-        // 只在游戏区域内处理触摸事件
-        if (touchX >= 0 && touchX <= boardElement.offsetWidth && touchY >= 0 && touchY <= boardElement.offsetHeight) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-            touchStartTime = new Date().getTime();
-        }
-    }, { passive: false });
-    
-    boardElement.addEventListener('touchmove', function(e) {
-        e.preventDefault(); // 防止页面滚动
-        if (!touchStartX || !touchStartY) return;
-    }, { passive: false });
-    
-    boardElement.addEventListener('touchend', function(e) {
-        e.preventDefault(); // 防止页面滚动
-        if (!touchStartX || !touchStartY) return;
-        
-        const touchEndX = e.changedTouches[0].clientX;
-        const touchEndY = e.changedTouches[0].clientY;
-        const touchEndTime = new Date().getTime();
-        
-        const diffX = touchEndX - touchStartX;
-        const diffY = touchEndY - touchStartY;
-        
-        // 判断是否是快速点击（双击用于硬降）
-        const tapLength = touchEndTime - touchStartTime;
-        if (tapLength < 200 && Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
-            // 检查是否是双击
-            const currentTime = new Date().getTime();
-            const tapInterval = currentTime - lastTapTime;
-            if (tapInterval < 300) {
-                // 双击实现硬降
-                hardDrop();
-                lastTapTime = 0;
-            } else {
-                lastTapTime = currentTime;
-            }
-            touchStartX = null;
-            touchStartY = null;
-            return;
-        }
-        
-        // 需要的最小滑动距离 - 调低以提高灵敏度
-        const minSwipeDistance = 20;
-        
-        if (Math.abs(diffX) > Math.abs(diffY)) {
-            // 水平滑动
-            if (Math.abs(diffX) > minSwipeDistance) {
-                if (diffX > 0) {
-                    // 向右滑动
-                    movePiece(1, 0);
-                } else {
-                    // 向左滑动
-                    movePiece(-1, 0);
-                }
-            }
-        } else {
-            // 垂直滑动
-            if (Math.abs(diffY) > minSwipeDistance) {
-                if (diffY > 0) {
-                    // 向下滑动
-                    movePiece(0, 1);
-                } else {
-                    // 向上滑动
-                    rotatePiece();
-                }
             }
         }
-        
-        touchStartX = null;
-        touchStartY = null;
-    }, { passive: false });
-    
-    // 防止整个文档的滑动导致页面滚动
-    document.addEventListener('touchmove', function(e) {
-        if (!isGameOver && !isPaused) {
-            const target = e.target;
-            // 检查触摸目标是否在游戏区域内
-            if (boardElement.contains(target)) {
-                e.preventDefault();
-            }
-        }
-    }, { passive: false });
-}
-
-// 添加特殊能力
-function addAbility(ability) {
-    // 添加到激活能力列表
-    activeAbilities.push(ability);
-    
-    // 创建能力按钮
-    const abilityButton = document.createElement('button');
-    abilityButton.className = 'ability-button';
-    abilityButton.innerHTML = `${ability.icon} ${ability.name}`;
-    abilityButton.title = ability.description;
-    abilityButton.dataset.abilityName = ability.name;
-    
-    // 添加点击事件
-    abilityButton.addEventListener('click', () => {
-        // 使用能力
-        ability.action();
-        
-        // 从激活能力列表中移除
-        activeAbilities = activeAbilities.filter(a => a.name !== ability.name);
-        
-        // 移除按钮
-        abilityButton.remove();
-        
-        // 显示能力使用效果
-        showAbilityEffect(ability.name);
-    });
-    
-    // 添加到DOM
-    if (abilitiesElement) {
-        abilitiesElement.appendChild(abilityButton);
     }
-    
-    // 显示获得能力的消息
-    showAbilityAcquiredEffect(ability);
-}
 
-// 显示获得能力的效果
-function showAbilityAcquiredEffect(ability) {
-    const abilityPopup = document.createElement('div');
-    abilityPopup.className = 'ability-popup';
-    abilityPopup.innerHTML = `获得特殊能力: <strong>${ability.icon} ${ability.name}</strong>!`;
-    abilityPopup.style.position = 'absolute';
-    abilityPopup.style.top = '40%';
-    abilityPopup.style.left = '50%';
-    abilityPopup.style.transform = 'translate(-50%, -50%)';
-    abilityPopup.style.color = '#00FFFF';
-    abilityPopup.style.fontSize = '24px';
-    abilityPopup.style.fontWeight = 'bold';
-    abilityPopup.style.zIndex = '103';
-    abilityPopup.style.textShadow = '0 0 10px rgba(0, 255, 255, 0.8)';
-    abilityPopup.style.animation = 'abilityPopup 2.5s forwards';
-    
-    // 添加CSS动画
-    if (!document.getElementById('ability-popup-style')) {
-        const style = document.createElement('style');
-        style.id = 'ability-popup-style';
-        style.textContent = `
-            @keyframes abilityPopup {
-                0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-                20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-                30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-                100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-            }
-            
-            .abilities-container {
-                margin-top: 20px;
-                text-align: center;
-                width: 100%;
-            }
-            
-            .abilities-list {
-                display: flex;
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 10px;
-                margin-top: 10px;
-            }
-            
-            .ability-button {
-                padding: 8px 12px;
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-                font-size: 16px;
-                transition: all 0.3s;
-            }
-            
-            .ability-button:hover {
-                background-color: #45a049;
-                transform: scale(1.05);
-            }
-            
-            .ability-effect {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none;
-                z-index: 50;
-            }
+    /**
+     * 添加特殊能力
+     */
+    addAbility(ability) {
+        this.activeAbilities.push(ability);
+
+        const abilityButton = document.createElement('button');
+        abilityButton.className = 'ability-button';
+        abilityButton.innerHTML = `${ability.icon} ${ability.name}`;
+        abilityButton.title = ability.description;
+        abilityButton.dataset.abilityName = ability.name;
+
+        this.on(abilityButton, 'click', () => {
+            ability.action();
+            this.activeAbilities = this.activeAbilities.filter(a => a.name !== ability.name);
+            abilityButton.remove();
+            this.showAbilityEffect(ability.name);
+        });
+
+        if (this.abilitiesElement) {
+            this.abilitiesElement.appendChild(abilityButton);
+        }
+
+        this.showAbilityAcquiredEffect(ability);
+    }
+
+    /**
+     * 特殊能力：清除底部一行
+     */
+    clearBottomLine() {
+        this.board.pop();
+        this.board.unshift(Array(this.BOARD_WIDTH).fill(0));
+        this.updateScore(100 * this.state.level);
+        this.showLineClearEffect(this.BOARD_HEIGHT - 1);
+        this.drawBoard();
+        this.updateStats();
+    }
+
+    /**
+     * 特殊能力：减缓时间
+     */
+    slowDownTime() {
+        const originalSpeed = this.levelConfig[this.state.level].speed;
+        const slowedSpeed = originalSpeed * 2;
+
+        if (this.gameLoopInterval) {
+            this.resourceManager.clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = this.setInterval(() => this.gameLoop(), slowedSpeed);
+        }
+
+        const slowTimeIndicator = document.createElement('div');
+        slowTimeIndicator.className = 'slow-time-indicator';
+        slowTimeIndicator.textContent = '时间减缓中...';
+        slowTimeIndicator.style.cssText = `
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            color: #00FFFF; font-weight: bold; z-index: 104; padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7); border-radius: 5px;
         `;
-        document.head.appendChild(style);
-    }
-    
-    boardElement.appendChild(abilityPopup);
-    
-    // 播放声音（可选）
-    try {
-        const sound = new Audio('../../assets/sounds/ability-acquired.mp3');
-        sound.volume = 0.6;
-        sound.play().catch(e => console.log('无法播放音效:', e));
-    } catch (error) {
-        console.log('音效播放失败:', error);
-    }
-    
-    // 移除动画元素
-    setTimeout(() => {
-        abilityPopup.remove();
-    }, 2500);
-}
 
-// 显示使用能力效果
-function showAbilityEffect(abilityName) {
-    const effectElement = document.createElement('div');
-    effectElement.className = 'ability-effect';
-    
-    // 根据不同能力设置不同效果
-    switch (abilityName) {
-        case "行消除":
-            effectElement.style.background = 'linear-gradient(to top, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%)';
-            effectElement.style.animation = 'fadeOut 1s forwards';
-            break;
-        case "时间减缓":
-            effectElement.style.background = 'radial-gradient(circle, rgba(0,255,255,0.3) 0%, rgba(0,0,0,0) 70%)';
-            effectElement.style.animation = 'pulseOut 2s forwards';
-            break;
-        case "方块变形":
-            effectElement.style.background = 'radial-gradient(circle, rgba(255,255,0,0.3) 0%, rgba(0,0,0,0) 70%)';
-            effectElement.style.animation = 'rotateOut 1s forwards';
-            break;
-    }
-    
-    // 添加CSS动画
-    if (!document.getElementById('ability-effect-style')) {
-        const style = document.createElement('style');
-        style.id = 'ability-effect-style';
-        style.textContent = `
-            @keyframes fadeOut {
-                0% { opacity: 0.8; }
-                100% { opacity: 0; }
+        this.boardElement.appendChild(slowTimeIndicator);
+
+        const duration = this.settings.slowTimeEffectDuration || 10000;
+        this.slowTimeEffect = this.setTimeout(() => {
+            if (this.gameLoopInterval) {
+                this.resourceManager.clearInterval(this.gameLoopInterval);
+                this.gameLoopInterval = this.setInterval(() => this.gameLoop(), originalSpeed);
             }
-            
-            @keyframes pulseOut {
-                0% { opacity: 0.8; transform: scale(0.8); }
-                50% { opacity: 0.5; transform: scale(1.2); }
-                100% { opacity: 0; transform: scale(1.5); }
-            }
-            
-            @keyframes rotateOut {
-                0% { opacity: 0.8; transform: rotate(0deg); }
-                100% { opacity: 0; transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
+            slowTimeIndicator.remove();
+        }, duration);
     }
-    
-    boardElement.appendChild(effectElement);
-    
-    // 移除效果元素
-    setTimeout(() => {
-        effectElement.remove();
-    }, 2000);
-}
 
-// 特殊能力：消除底部一行
-function clearBottomLine() {
-    // 移除底部一行
-    tetrisBoard.pop();
-    // 在顶部添加一行空行
-    tetrisBoard.unshift(Array(BOARD_WIDTH).fill(0));
-    
-    // 更新分数
-    score += 100 * level;
-    
-    // 显示效果
-    showLineClearEffect(BOARD_HEIGHT - 1);
-    
-    // 更新游戏板
-    drawBoard();
-    
-    // 更新统计
-    updateStats();
-}
+    /**
+     * 特殊能力：变形为I形方块
+     */
+    transformToIShape() {
+        const originalPiece = { ...this.currentPiece };
+        const currentX = this.currentPiecePosition.x;
+        const currentY = this.currentPiecePosition.y;
 
-// 特殊能力：减缓时间
-function slowDownTime() {
-    // 保存当前游戏速度
-    const originalSpeed = gameSpeed;
-    
-    // 减缓速度（当前速度的2倍）
-    gameSpeed = gameSpeed * 2;
-    
-    // 更新游戏间隔
-    if (gameInterval) {
-        clearInterval(gameInterval);
-        gameInterval = setInterval(gameLoop, gameSpeed);
-    }
-    
-    // 显示效果
-    const slowTimeIndicator = document.createElement('div');
-    slowTimeIndicator.className = 'slow-time-indicator';
-    slowTimeIndicator.textContent = '时间减缓中...';
-    slowTimeIndicator.style.position = 'absolute';
-    slowTimeIndicator.style.top = '10px';
-    slowTimeIndicator.style.left = '50%';
-    slowTimeIndicator.style.transform = 'translateX(-50%)';
-    slowTimeIndicator.style.color = '#00FFFF';
-    slowTimeIndicator.style.fontWeight = 'bold';
-    slowTimeIndicator.style.zIndex = '104';
-    slowTimeIndicator.style.padding = '5px 10px';
-    slowTimeIndicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-    slowTimeIndicator.style.borderRadius = '5px';
-    
-    boardElement.appendChild(slowTimeIndicator);
-    
-    // 10秒后恢复正常速度
-    slowTimeEffect = setTimeout(() => {
-        gameSpeed = originalSpeed;
-        if (gameInterval) {
-            clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, gameSpeed);
-        }
-        
-        // 移除指示器
-        slowTimeIndicator.remove();
-    }, 10000);
-}
+        this.currentPiece = {
+            shape: 'I',
+            matrix: this.SHAPES['I'],
+            color: this.getPieceColor('I'),
+            isSpecial: true
+        };
 
-// 特殊能力：将当前方块变为I形方块
-function transformToIShape() {
-    // 保存当前位置和方块
-    const currentX = currentPiecePosition.x;
-    const currentY = currentPiecePosition.y;
-    const originalPiece = {...currentPiece};
-    
-    // 创建I形方块
-    currentPiece = {
-        shape: 'I',
-        matrix: SHAPES['I'],
-        color: getPieceColor('I'),
-        isSpecial: true
-    };
-    
-    // 调整位置以避免碰撞
-    let newX = currentX;
-    let newY = currentY;
-    
-    // 检查是否会碰撞，如果会则尝试调整位置
-    if (checkCollision(newX, newY, currentPiece.matrix)) {
-        // 尝试不同的X位置
+        // 尝试找到有效位置
         const offsets = [-1, 1, -2, 2, 0, -3, 3];
         let validPosition = false;
-        
-        // 先尝试不同的水平位置
+
         for (const offsetX of offsets) {
-            if (!checkCollision(currentX + offsetX, currentY, currentPiece.matrix)) {
-                newX = currentX + offsetX;
+            if (!this.checkCollision(currentX + offsetX, currentY, this.currentPiece.matrix)) {
+                this.currentPiecePosition.x = currentX + offsetX;
                 validPosition = true;
                 break;
             }
         }
-        
-        // 如果水平调整不行，尝试上移或下移
+
         if (!validPosition) {
             for (const offsetY of [-1, -2, 1]) {
-                if (!checkCollision(currentX, currentY + offsetY, currentPiece.matrix)) {
-                    newY = currentY + offsetY;
+                if (!this.checkCollision(currentX, currentY + offsetY, this.currentPiece.matrix)) {
+                    this.currentPiecePosition.y = currentY + offsetY;
                     validPosition = true;
                     break;
                 }
-                // 尝试水平和垂直组合位移
                 for (const offsetX of [-1, 1, -2, 2]) {
-                    if (!checkCollision(currentX + offsetX, currentY + offsetY, currentPiece.matrix)) {
-                        newX = currentX + offsetX;
-                        newY = currentY + offsetY;
+                    if (!this.checkCollision(currentX + offsetX, currentY + offsetY, this.currentPiece.matrix)) {
+                        this.currentPiecePosition.x = currentX + offsetX;
+                        this.currentPiecePosition.y = currentY + offsetY;
                         validPosition = true;
                         break;
                     }
@@ -1458,67 +792,296 @@ function transformToIShape() {
                 if (validPosition) break;
             }
         }
-        
-        // 如果仍然不行，放弃变形
+
         if (!validPosition) {
-            // 恢复原来的方块
-            currentPiece = originalPiece;
-            
-            // 显示失败消息
-            const message = document.createElement('div');
-            message.className = 'transform-failed';
-            message.textContent = "变形失败!";
-            message.style.position = 'absolute';
-            message.style.top = '20%';
-            message.style.left = '50%';
-            message.style.transform = 'translate(-50%, -50%)';
-            message.style.color = 'red';
-            message.style.fontSize = '24px';
-            message.style.fontWeight = 'bold';
-            message.style.zIndex = '1000';
-            message.style.animation = 'fadeOut 1s forwards';
-            
-            // 添加CSS动画
-            if (!document.getElementById('transform-failed-style')) {
-                const style = document.createElement('style');
-                style.id = 'transform-failed-style';
-                style.textContent = `
-                    @keyframes fadeOut {
-                        0% { opacity: 1; }
-                        90% { opacity: 1; }
-                        100% { opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-            
-            boardElement.parentElement.appendChild(message);
-            
-            // 1秒后移除消息
-            setTimeout(() => {
-                message.remove();
-            }, 1000);
-            
+            this.currentPiece = originalPiece;
+            this.showTransformFailedEffect();
             return false;
         }
+
+        this.drawBoard();
+        return true;
     }
-    
-    // 更新位置
-    currentPiecePosition.x = newX;
-    currentPiecePosition.y = newY;
-    
-    // 更新游戏板
-    drawBoard();
-    return true;
+
+    /**
+     * 游戏主循环
+     */
+    gameLoop() {
+        if (!this.state.isPaused && !this.state.isGameOver) {
+            this.movePiece(0, 1);
+        }
+    }
+
+    /**
+     * 处理开始按钮
+     */
+    handleStartButton() {
+        if (this.state.isGameOver) {
+            this.resetGame();
+        }
+        this.startGame();
+    }
+
+    /**
+     * 开始游戏
+     */
+    startGame() {
+        if (this.state.isRunning) return;
+
+        super.start();
+
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+
+        if (startBtn) startBtn.disabled = true;
+        if (pauseBtn) pauseBtn.disabled = false;
+
+        const speed = this.levelConfig[this.state.level].speed;
+        this.gameLoopInterval = this.setInterval(() => this.gameLoop(), speed);
+    }
+
+    /**
+     * 切换暂停
+     */
+    togglePause() {
+        if (this.state.isGameOver) return;
+
+        const pauseBtn = document.getElementById('pause-btn');
+
+        if (this.state.isPaused) {
+            super.resume();
+            if (pauseBtn) pauseBtn.textContent = '暂停';
+        } else {
+            super.pause();
+            if (pauseBtn) pauseBtn.textContent = '继续';
+        }
+    }
+
+    /**
+     * 重置游戏
+     */
+    resetGame() {
+        // 清除计时器
+        if (this.gameLoopInterval) {
+            this.resourceManager.clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
+        }
+        if (this.slowTimeEffect) {
+            this.resourceManager.clearTimeout(this.slowTimeEffect);
+            this.slowTimeEffect = null;
+        }
+
+        // 调用父类reset
+        super.reset();
+
+        // 重置游戏特定状态
+        this.board = Array(this.BOARD_HEIGHT).fill().map(() => Array(this.BOARD_WIDTH).fill(0));
+        this.currentPiece = null;
+        this.nextPiece = this.generateRandomPiece();
+        this.lines = 0;
+        this.combo = 0;
+        this.activeAbilities = [];
+
+        // 重置UI
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+
+        if (startBtn) startBtn.disabled = false;
+        if (pauseBtn) {
+            pauseBtn.disabled = true;
+            pauseBtn.textContent = '暂停';
+        }
+
+        if (this.abilitiesElement) this.abilitiesElement.innerHTML = '';
+        if (this.gameOverElement) this.gameOverElement.style.display = 'none';
+
+        // 移除特效元素
+        const effects = document.querySelectorAll('.ability-effect, .slow-time-indicator, .score-popup, .combo-reward-popup, .ability-popup');
+        effects.forEach(effect => effect.remove());
+
+        // 重新初始化
+        this.createBoard();
+        this.createNextPiecePreview();
+        this.spawnNewPiece();
+        this.updateStats();
+    }
+
+    /**
+     * 结束游戏
+     */
+    endGame() {
+        // 清除计时器
+        if (this.gameLoopInterval) {
+            this.resourceManager.clearInterval(this.gameLoopInterval);
+            this.gameLoopInterval = null;
+        }
+
+        // 调用父类gameOver（自动保存最高分）
+        super.gameOver();
+
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+
+        if (startBtn) startBtn.disabled = false;
+        if (pauseBtn) pauseBtn.disabled = true;
+
+        // 显示游戏结束界面
+        if (this.gameOverElement) {
+            this.gameOverElement.style.display = 'flex';
+            const finalScoreElement = this.gameOverElement.querySelector('.final-score');
+            if (finalScoreElement) {
+                finalScoreElement.textContent = this.state.score;
+            }
+
+            // 添加等级信息
+            let levelInfo = this.gameOverElement.querySelector('.level-info');
+            if (!levelInfo) {
+                levelInfo = document.createElement('p');
+                levelInfo.className = 'level-info';
+                this.gameOverElement.querySelector('p').after(levelInfo);
+            }
+            levelInfo.textContent = `达到等级: ${this.state.level}`;
+
+            // 显示新纪录
+            if (this.state.score === this.state.highScore && this.state.score > 0) {
+                let newRecordElement = this.gameOverElement.querySelector('.new-record');
+                if (!newRecordElement) {
+                    newRecordElement = document.createElement('p');
+                    newRecordElement.className = 'new-record';
+                    newRecordElement.style.cssText = 'color: #FFD700; font-size: 24px; font-weight: bold;';
+                    levelInfo.after(newRecordElement);
+                }
+                newRecordElement.textContent = '新纪录!';
+            }
+        }
+    }
+
+    /**
+     * 更新统计显示
+     */
+    updateStats() {
+        if (this.scoreElement) this.scoreElement.textContent = this.state.score;
+        if (this.levelElement) this.levelElement.textContent = this.state.level;
+        if (this.linesElement) this.linesElement.textContent = this.lines;
+        if (this.comboElement) {
+            this.comboElement.textContent = this.combo;
+            this.comboElement.setAttribute('data-value', Math.min(this.combo, 20).toString());
+        }
+    }
+
+    // ========== 动画效果方法 ==========
+
+    showLineClearEffect(lineY) {
+        const cells = this.boardElement.querySelectorAll(`.tetris-cell[data-y="${lineY}"]`);
+        cells.forEach(cell => {
+            cell.style.animation = 'lineClearEffect 0.3s';
+        });
+    }
+
+    showScoreEffect(points) {
+        const popup = this.createPopup(
+            `+${points}`,
+            { color: '#FFD700', fontSize: '24px', top: '50%', animation: 'scorePopup 1s forwards' }
+        );
+        this.setTimeout(() => popup.remove(), 1000);
+    }
+
+    showSpecialScoreEffect(points) {
+        const popup = this.createPopup(
+            `特殊方块加成! +${points}`,
+            { color: '#FF00FF', fontSize: '28px', top: '40%', animation: 'scorePopup 1.5s forwards' }
+        );
+        this.setTimeout(() => popup.remove(), 1500);
+    }
+
+    showComboRewardEffect(message, points) {
+        const popup = this.createPopup(
+            message,
+            { color: '#FFD700', fontSize: '28px', top: '30%', textShadow: '0 0 10px rgba(255, 215, 0, 0.8)', zIndex: '102', animation: 'comboRewardPopup 2s forwards' }
+        );
+        this.setTimeout(() => popup.remove(), 2000);
+    }
+
+    showLevelUpEffect(oldLevel, newLevel) {
+        const message = document.createElement('div');
+        message.className = 'level-up-message';
+        message.textContent = `等级提���! ${oldLevel} → ${newLevel}`;
+        message.style.cssText = `
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background-color: rgba(76, 175, 80, 0.9); color: white; padding: 15px 30px;
+            border-radius: 10px; font-size: 28px; font-weight: bold; z-index: 1000;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); animation: levelUpAnimation 2.5s ease-out forwards;
+        `;
+
+        this.boardElement.parentElement.appendChild(message);
+        this.setTimeout(() => message.remove(), 2500);
+    }
+
+    showAbilityAcquiredEffect(ability) {
+        const popup = this.createPopup(
+            `获得特殊能力: <strong>${ability.icon} ${ability.name}</strong>!`,
+            { color: '#00FFFF', fontSize: '24px', top: '40%', textShadow: '0 0 10px rgba(0, 255, 255, 0.8)', zIndex: '103', animation: 'abilityPopup 2.5s forwards' }
+        );
+        this.setTimeout(() => popup.remove(), 2500);
+    }
+
+    showAbilityEffect(abilityName) {
+        const effectElement = document.createElement('div');
+        effectElement.className = 'ability-effect';
+
+        switch (abilityName) {
+            case "行消除":
+                effectElement.style.cssText = 'background: linear-gradient(to top, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 100%); animation: fadeOut 1s forwards;';
+                break;
+            case "时间减缓":
+                effectElement.style.cssText = 'background: radial-gradient(circle, rgba(0,255,255,0.3) 0%, rgba(0,0,0,0) 70%); animation: pulseOut 2s forwards;';
+                break;
+            case "方块变形":
+                effectElement.style.cssText = 'background: radial-gradient(circle, rgba(255,255,0,0.3) 0%, rgba(0,0,0,0) 70%); animation: rotateOut 1s forwards;';
+                break;
+        }
+
+        this.boardElement.appendChild(effectElement);
+        this.setTimeout(() => effectElement.remove(), 2000);
+    }
+
+    showTransformFailedEffect() {
+        const message = this.createPopup(
+            "变形失败!",
+            { color: 'red', fontSize: '24px', top: '20%', animation: 'fadeOut 1s forwards', zIndex: '1000' }
+        );
+        this.setTimeout(() => message.remove(), 1000);
+    }
+
+    createPopup(content, styles) {
+        const popup = document.createElement('div');
+        popup.innerHTML = content;
+        const baseStyles = {
+            position: 'absolute',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            fontWeight: 'bold',
+            zIndex: '100'
+        };
+        popup.style.cssText = Object.entries({ ...baseStyles, ...styles })
+            .map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`)
+            .join('; ');
+        this.boardElement.appendChild(popup);
+        return popup;
+    }
+
 }
 
-// 窗口加载完毕后初始化游戏
-window.addEventListener('DOMContentLoaded', function() {
-    initGame();
-    
-    // 绑定按钮事件
-    document.getElementById('start-btn').addEventListener('click', startGame);
-    document.getElementById('pause-btn').addEventListener('click', pauseGame);
-    document.getElementById('reset-btn').addEventListener('click', resetGame);
-    document.querySelector('.game-over-overlay button').addEventListener('click', resetGame);
-}); 
+/**
+ * 初始化游戏
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof GameBase === 'undefined') {
+        console.error('GameBase未加载！请确保已引入GameBase.js');
+        return;
+    }
+
+    window.tetrisGame = new TetrisGame();
+    console.log('俄罗斯方块游戏已初始化（使用GameBase架构）');
+    console.log('游戏统计:', window.tetrisGame.getStats());
+});

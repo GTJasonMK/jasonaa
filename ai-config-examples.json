@@ -1,0 +1,212 @@
+{
+  "_comment": "ChatTavern AI配置示例文件",
+  "_usage": "将此文件中的配置复制到游戏的AI配置界面中",
+
+  "presets": {
+    "openai_official": {
+      "name": "OpenAI官方API",
+      "providerType": "openai",
+      "apiUrl": "https://api.openai.com/v1",
+      "apiKey": "YOUR_OPENAI_API_KEY_HERE",
+      "model": "gpt-3.5-turbo",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false
+    },
+
+    "openai_gpt4": {
+      "name": "OpenAI GPT-4",
+      "providerType": "openai",
+      "apiUrl": "https://api.openai.com/v1",
+      "apiKey": "YOUR_OPENAI_API_KEY_HERE",
+      "model": "gpt-4-turbo",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false
+    },
+
+    "claude_official": {
+      "name": "Claude官方API",
+      "providerType": "claude",
+      "apiUrl": "https://api.anthropic.com/v1",
+      "apiKey": "YOUR_CLAUDE_API_KEY_HERE",
+      "model": "claude-3-haiku-20240307",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": true,
+      "proxyUrl": "YOUR_CORS_PROXY_URL_HERE"
+    },
+
+    "azure_openai": {
+      "name": "Azure OpenAI",
+      "providerType": "openai",
+      "apiUrl": "https://YOUR-RESOURCE-NAME.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT-NAME",
+      "apiKey": "YOUR_AZURE_API_KEY_HERE",
+      "model": "gpt-35-turbo",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false
+    },
+
+    "openrouter": {
+      "name": "OpenRouter（多模型聚合）",
+      "providerType": "openai",
+      "apiUrl": "https://openrouter.ai/api/v1",
+      "apiKey": "YOUR_OPENROUTER_API_KEY_HERE",
+      "model": "anthropic/claude-3-haiku",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false,
+      "_note": "OpenRouter支持多种模型：anthropic/claude-3-haiku, meta-llama/llama-3-8b, google/gemini-pro等"
+    },
+
+    "together_ai": {
+      "name": "Together AI",
+      "providerType": "openai",
+      "apiUrl": "https://api.together.xyz/v1",
+      "apiKey": "YOUR_TOGETHER_API_KEY_HERE",
+      "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false
+    },
+
+    "ollama_local": {
+      "name": "Ollama本地部署",
+      "providerType": "custom",
+      "apiUrl": "http://localhost:11434/api/chat",
+      "apiKey": "",
+      "model": "llama2",
+      "requestFormat": "custom",
+      "responseFormat": "custom",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false,
+      "_setup": [
+        "1. 安装Ollama: https://ollama.ai",
+        "2. 下载模型: ollama pull llama2",
+        "3. 运行模型: ollama run llama2",
+        "4. 使用此配置"
+      ]
+    },
+
+    "lmstudio_local": {
+      "name": "LM Studio本地部署",
+      "providerType": "openai",
+      "apiUrl": "http://localhost:1234/v1",
+      "apiKey": "lm-studio",
+      "model": "local-model",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false,
+      "_setup": [
+        "1. 安装LM Studio: https://lmstudio.ai",
+        "2. 下载并加载模型",
+        "3. 启动本地服务器（Settings -> Server）",
+        "4. 使用此配置"
+      ]
+    },
+
+    "huggingface": {
+      "name": "HuggingFace Inference API（免费额度）",
+      "providerType": "custom",
+      "apiUrl": "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
+      "apiKey": "YOUR_HUGGINGFACE_TOKEN_HERE",
+      "model": "mistralai/Mistral-7B-Instruct-v0.2",
+      "requestFormat": "custom",
+      "responseFormat": "custom",
+      "temperature": 0.8,
+      "maxTokens": 150,
+      "useProxy": false,
+      "_note": "HuggingFace提供免费推理额度，但速度较慢"
+    }
+  },
+
+  "recommended_models": {
+    "cost_effective": {
+      "name": "性价比之选",
+      "options": [
+        "gpt-3.5-turbo (OpenAI) - $0.001/1K tokens",
+        "claude-3-haiku (Anthropic) - $0.00025/1K tokens",
+        "llama2 (本地Ollama) - 完全免费"
+      ]
+    },
+    "high_quality": {
+      "name": "高质量选择",
+      "options": [
+        "gpt-4-turbo (OpenAI) - 最智能但较贵",
+        "claude-3-opus (Anthropic) - 最强推理能力",
+        "mixtral-8x7b (Together AI/OpenRouter) - 开源高质量"
+      ]
+    },
+    "free": {
+      "name": "完全免费选项",
+      "options": [
+        "Ollama本地部署 - 需要下载模型",
+        "LM Studio本地部署 - 需要下载模型",
+        "HuggingFace免费额度 - 有使用限制"
+      ]
+    }
+  },
+
+  "cors_proxy_options": {
+    "cloudflare_worker": {
+      "description": "使用Cloudflare Workers搭建免费CORS代理",
+      "url": "https://workers.cloudflare.com",
+      "code_template": "参见CHATTAVERN_LLM_INTEGRATION.md中的Cloudflare Worker代码"
+    },
+    "vercel_serverless": {
+      "description": "使用Vercel Serverless Functions",
+      "url": "https://vercel.com"
+    },
+    "self_hosted": {
+      "description": "自己搭建简单的CORS代理服务器",
+      "note": "适合有服务器的用户"
+    }
+  },
+
+  "security_checklist": [
+    "✅ 不要将API Key提交到GitHub等公共仓库",
+    "✅ 不要在公共设备上保存API配置",
+    "✅ 定期检查API使用量，避免意外高额费用",
+    "✅ 使用最小权限的API Key（如果平台支持）",
+    "✅ 考虑设置API使用限额",
+    "⚠️ 浏览器localStorage并非完全安全，公共电脑上使用后记得清除配置"
+  ],
+
+  "troubleshooting": {
+    "cors_error": {
+      "error": "CORS policy错误",
+      "solutions": [
+        "启用CORS代理选项",
+        "使用支持CORS的API（如OpenAI、OpenRouter）",
+        "使用本地部署的模型（Ollama、LM Studio）"
+      ]
+    },
+    "401_unauthorized": {
+      "error": "401 Unauthorized",
+      "solutions": [
+        "检查API Key是否正确",
+        "确认API Key有效且未过期",
+        "检查账户是否有足够余额"
+      ]
+    },
+    "429_rate_limit": {
+      "error": "429 Too Many Requests",
+      "solutions": [
+        "降低请求频率",
+        "等待一段时间后重试",
+        "升级API套餐"
+      ]
+    },
+    "network_error": {
+      "error": "网络错误/连接超时",
+      "solutions": [
+        "检查网络连接",
+        "检查API URL是否正确",
+        "如果使用本地模型，确认服务已启动",
+        "尝试使用代理"
+      ]
+    }
+  }
+}

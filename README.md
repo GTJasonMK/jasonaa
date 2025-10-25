@@ -1,342 +1,421 @@
-# 多功能娱乐平台
+# 🎮 多功能娱乐平台
 
-一个功能丰富的HTML5网页游戏和学习平台，包含经典游戏、音乐练习及社区论坛等多种模块。本项目采用纯前端技术栈实现，无需后端支持，可以轻松部署在任何静态网站托管服务上。
+> 一个纯前端的多功能娱乐平台，集成经典游戏、音乐练习和社区论坛功能
 
-## 平台特色
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 
-- **丰富多样的游戏集合**：包含贪吃蛇、俄罗斯方块、2048、记忆游戏等经典休闲游戏
-- **音乐练习模块**：提供音阶练习、单音辨听、多音辨听等音乐训练功能
-- **社区论坛**：用户可以交流游戏攻略和音乐学习心得
-- **主题切换**：支持深色/浅色主题切换，自动适应系统偏好
-- **响应式设计**：适配桌面端和移动端，提供良好的跨设备体验
-- **本地存储**：使用localStorage存储用户设置和游戏进度
-- **完全离线支持**：所有功能均可在离线环境下运行
+## ✨ 功能特性
 
-## 游戏模块
+### 🎮 经典游戏模块
+- **贪吃蛇 (Snake)** - 经典贪吃蛇游戏，支持键盘和触摸控制
+- **俄罗斯方块 (Tetris)** - 支持方块旋转、消行计分，多种难度
+- **2048** - 数字合并益智游戏
+- **记忆翻牌 (Memory)** - 卡牌记忆配对游戏
+- **画圆周率 (DrawPi)** - 创意绘图游戏
 
-### 贪吃蛇
-- 经典贪吃蛇游戏
-- 支持键盘和触摸屏操控
-- 随机生成食物，吃到食物后蛇身变长
-- 碰到边界或自身游戏结束
+所有游戏均支持：
+- ⌨️ 键盘控制
+- 📱 触摸屏操作
+- 🏆 本地最高分记录
+- 🎨 深色/浅色主题切换
+- 📊 实时计分系统
 
-### 俄罗斯方块
-- 经典的俄罗斯方块游戏
-- 支持键盘和触摸控制
-- 方块旋转、移动和快速下落功能
-- 消除完整行获得分数，难度随等级提升增加
+### 🎵 音乐练习模块
+- **音阶练习** - 支持多种调式（C大调、G大调等）和音域范围
+- **音程识别** - 训练音乐听力，识别不同音程
+- **真实钢琴音色** - 使用MP3钢琴采样音频
+- **Web Audio API** - 高质量音频播放和合成
 
-### 2048
-- 流行的数字合并游戏
-- 使用方向键或滑动控制所有方块移动
-- 相同数字相撞时合并为它们的和
-- 支持撤销操作和游戏记录保存
+### 💬 社区论坛模块
+- 基于 **GitHub Issues API** 实现的轻量级论坛
+- 支持发帖、评论、点赞功能
+- 支持Markdown格式
+- 用户资料存储（使用GitHub Gist同步）
+- 搜索和标签过滤
+- 分页浏览
 
-### 画圆测π
-- 趣味数学游戏，通过手绘圆形来近似计算π值
-- 测试用户手绘精确度
-- 提供实时反馈和评分
+### 🎨 全局功能
+- **深色/浅色主题** - 自动检测系统偏好或手动切换
+- **响应式设计** - 完美适配桌面、平板、手机
+- **统一设置系统** - 集中管理所有模块的配置
+- **纯前端实现** - 无需后端，可部署到任何静态托管服务
 
-### 记忆游戏
-- 经典的卡片匹配记忆游戏
-- 翻转卡片找出匹配对
-- 计时模式和计步模式
-- 难度可调整
+## 🚀 在线演示
 
-## 音乐练习模块
+访问地址：[在线演示](https://你的域名)
 
-平台提供一系列音乐练习功能，帮助用户提升音乐素养和听力技能：
+## 🛠️ 技术栈
 
-### 音阶练习
-- 展示和播放各种音阶
-- 可视化音阶组成
-- 支持常见大调音阶
+- **前端框架**: 纯原生 HTML5、CSS3、JavaScript (ES6+)
+- **模块化**: ES6 Modules
+- **音频处理**: Web Audio API
+- **数据存储**: LocalStorage API
+- **API集成**: GitHub REST API (Issues, Gists, Reactions)
+- **主题系统**: CSS Custom Properties (CSS变量)
+- **响应式**: Media Queries + Flexbox
 
-### 单音辨听
-- 播放单个音符，用户进行识别
-- 多种难度级别可选
-- 实时反馈和统计
-
-### 多音辨听
-- 播放由多个音符组成的旋律
-- 用户需要依次识别每个音符
-- 提供即时反馈和计分系统
-
-### 节奏训练（开发中）
-- 跟随节奏模式练习
-- 提升用户节奏感和音乐时值理解
-
-## 操作说明
-
-### 游戏通用操作
-- 桌面设备：使用键盘（方向键、空格键等）控制
-- 移动设备：使用触摸屏滑动和点击操作
-- 部分游戏支持特殊按键，具体见游戏内说明
-
-### 音乐模块操作
-- 点击按钮播放音频
-- 选择音符或音阶进行练习
-- 调整难度和音域范围
-- 查看统计和进度反馈
-
-## 项目结构
+## 📦 项目结构
 
 ```
-/
-├── index.html              # 主页
-├── main.js                 # 主页JavaScript逻辑
-├── config.js               # 全局配置文件
-├── CNAME                   # 域名配置文件
-├── css/                    # 全局样式
-│   ├── style.css           # 主要样式表
-│   └── theme.css           # 主题相关样式
-├── js/                     # 全局JavaScript
-│   ├── settings-loader.js  # 设置加载器
-│   └── theme.js            # 主题切换功能
-├── games/                  # 游戏模块目录
-│   ├── responsive_games.css# 游戏通用响应式样式
-│   ├── tetris/             # 俄罗斯方块游戏
-│   │   ├── tetris.html
-│   │   ├── tetris_script.js
-│   │   └── tetris_styles.css
-│   ├── 2048/               # 2048游戏
-│   │   ├── 2048.html
-│   │   ├── 2048.js
-│   │   └── 2048_styles.css
-│   ├── snake/              # 贪吃蛇游戏
-│   │   ├── snake.html
-│   │   ├── snake.js
-│   │   └── snake_styles.css
-│   ├── drawpi/             # 画圆测π游戏
-│   │   ├── drawpi.html
-│   │   ├── drawpi.js
-│   │   └── drawpi_styles.css
-│   └── memory/             # 记忆游戏
-│       ├── memory.html
-│       ├── memory.js
-│       └── memory_styles.css
-├── music/                  # 音乐练习模块
-│   ├── music.html          # 音乐练习页面
-│   ├── music.js            # 音乐练习逻辑
-│   ├── music.css           # 音乐练习样式
-│   └── piano/              # 钢琴音频文件
-│       ├── A0.mp3          # 钢琴A0音符
-│       ├── A4.mp3          # 钢琴A4音符
-│       └── ...             # 其他钢琴音符
-├── forum/                  # 论坛模块
-│   ├── forum.html          # 论坛页面
-│   ├── forum.js            # 论坛逻辑
-│   └── forum.css           # 论坛样式
-├── settings/               # 设置模块
-│   ├── settings.html       # 设置页面
-│   ├── settings.js         # 设置逻辑
-│   └── settings.css        # 设置样式
-├── images/                 # 图片资源
-│   ├── snake.svg           # 游戏图标
-│   ├── tetris.svg          # 游戏图标
-│   └── ...                 # 其他图片资源
-└── sounds/                 # 音频资源
-    ├── click.mp3           # 点击音效
-    ├── success.mp3         # 成功音效
-    └── ...                 # 其他音效
+jasonaa/
+├── index.html              # 主页入口
+├── config.js              # 全局配置
+├── main.js                # 主页逻辑
+├── .gitignore            # Git忽略规则
+│
+├── css/                  # 全局样式
+│   ├── style.css        # 基础样式
+│   └── theme.css        # 主题样式
+│
+├── js/                   # 全局脚本
+│   ├── event-manager.js     # 事件管理器
+│   ├── resource-manager.js  # 资源管理器
+│   ├── settings-loader.js   # 设置加载器
+│   └── theme.js            # 主题控制
+│
+├── games/                # 游戏模块
+│   ├── GameBase.js      # 游戏基类（v2.0）
+│   ├── 2048/           # 2048游戏
+│   ├── snake/          # 贪吃蛇游戏
+│   ├── tetris/         # 俄罗斯方块
+│   ├── memory/         # 记忆翻牌
+│   └── drawpi/         # 画圆周率
+│
+├── music/               # 音乐模块
+│   ├── music.html      # 音乐练习页面
+│   ├── music.js        # 音乐逻辑
+│   ├── music.css       # 音乐样式
+│   └── piano/          # 钢琴音频文件（17个MP3）
+│
+├── forum/               # 论坛模块
+│   ├── forum.html      # 论坛页面
+│   ├── forum.js        # 主入口（380行）
+│   ├── forum.css       # 论坛样式
+│   └── modules/        # 模块化架构
+│       ├── config.js       # 配置管理
+│       ├── github-api.js   # API封装
+│       ├── auth.js         # 认证模块
+│       ├── ui.js           # UI控制
+│       ├── issues.js       # Issue管理
+│       ├── comments.js     # 评论系统
+│       ├── reactions.js    # 点赞功能
+│       ├── profile.js      # 用户资料
+│       └── utils.js        # 工具函数
+│
+├── settings/            # 设置模块
+│   ├── settings.html   # 设置页面
+│   ├── settings.js     # 设置逻辑
+│   └── settings.css    # 设置样式
+│
+└── images/             # 图片资源
+    └── *.svg          # 游戏图标
 ```
 
-## 开发环境设置
+## 🔧 本地运行
 
-### 本地开发
+### 前置要求
 
-1. 克隆仓库
-   ```bash
-   git clone https://github.com/username/entertainment-platform.git
-   cd entertainment-platform
-   ```
+- 现代浏览器（Chrome 60+, Firefox 55+, Safari 11+, Edge 79+）
+- Python 3.x 或 Node.js（用于启动本地服务器）
 
-2. 启动本地服务器（推荐，避免音频文件加载问题）
-   ```bash
-   # 使用Python启动简易HTTP服务器
-   python -m http.server 8080
-   
-   # 或使用Node.js的http-server（需要先安装）
-   npx http-server -p 8080
-   ```
+### 快速开始
 
-3. 访问 `http://localhost:8080` 开始开发
+**方式1：使用Python**
 
-### 注意事项
+```bash
+# 克隆仓库
+git clone https://github.com/你的用户名/jasonaa.git
+cd jasonaa
 
-- 由于浏览器安全限制，某些功能（如音频播放）在直接打开HTML文件时可能无法正常工作，建议使用本地服务器
-- 项目使用了ES6+特性，请使用现代浏览器进行开发和测试
-- 本项目完全由前端技术实现，无需配置后端服务
+# 启动HTTP服务器
+python -m http.server 8080
 
-## 部署指南
-
-### GitHub Pages部署
-
-1. 将此项目推送到您的GitHub仓库
-   ```bash
-   git remote set-url origin https://github.com/您的用户名/您的仓库名.git
-   git push -u origin main
-   ```
-
-2. 在GitHub仓库页面，点击"Settings"标签
-3. 在左侧菜单中找到"Pages"选项
-4. 在"Source"部分，选择"main"分支和"/(root)"文件夹
-5. 点击"Save"按钮
-6. 几分钟后，您的网站将在`https://[用户名].github.io/[仓库名]`上可用
-
-### 自定义域名部署
-
-1. 在DNS提供商处创建CNAME记录，指向`[用户名].github.io`
-2. 在项目根目录创建`CNAME`文件，文件内容为您的自定义域名
-3. 提交并推送更改到GitHub
-4. 在GitHub Pages设置中勾选"Enforce HTTPS"选项（如可用）
-
-## 主题切换功能
-
-本平台实现了完整的深色/浅色主题切换功能，用户可以根据自己的偏好选择适合的界面风格：
-
-1. **自动检测系统偏好**：首次访问网站时，会自动检测用户操作系统的主题设置，并应用相应的主题
-2. **用户偏好保存**：用户手动切换主题后，会将偏好保存在浏览器本地存储中，下次访问时自动应用
-3. **跨页面同步**：所有页面共享同一主题设置，确保一致的用户体验
-4. **响应式设计**：所有页面在不同主题下都能保持良好的可读性和视觉效果
-
-### 为新页面添加主题切换支持
-
-如果你需要创建新页面并支持主题切换功能，请按照以下步骤操作：
-
-1. **引入必要文件**：在HTML头部引入主题CSS文件和主题切换脚本
-
-```html
-<head>
-    <!-- 其他标签 -->
-    <link rel="stylesheet" href="../css/style.css">
-    <link rel="stylesheet" href="../css/theme.css">
-    <!-- 页面特定样式 -->
-    <script src="../js/theme.js"></script>
-</head>
+# 浏览器访问
+# http://localhost:8080
 ```
 
-2. **使用CSS变量**：在编写CSS时，使用主题变量而不是硬编码颜色值
+**方式2：使用Node.js**
+
+```bash
+# 克隆仓库
+git clone https://github.com/你的用户名/jasonaa.git
+cd jasonaa
+
+# 使用http-server（需要先安装）
+npx http-server -p 8080
+
+# 浏览器访问
+# http://localhost:8080
+```
+
+⚠️ **重要提示**：
+- 必须通过HTTP服务器访问，不能直接双击打开HTML文件
+- ES6模块和音频加载需要HTTP(S)协议支持
+
+## 📖 使用指南
+
+### 游戏模块
+
+1. 在主页点击任意游戏图标进入
+2. 使用键盘方向键或触摸屏控制
+3. 游戏分数会自动保存到本地
+
+**贪吃蛇控制**：
+- 方向键：控制移动方向
+- 空格键：暂停/继续
+- 触摸屏：滑动控制方向
+
+**俄罗斯方块控制**：
+- 左右方向键：移动方块
+- 上方向键：旋转方块
+- 下方向键：加速下落
+- 空格键：快速下落
+- P键：暂停/继续
+
+### 音乐模块
+
+1. 选择练习模式（音阶练习/音程识别）
+2. 选择调式和音域范围
+3. 点击"开始练习"按钮
+4. 听音识别或弹奏音符
+
+**音频问题排查**：
+- 确保使用HTTP服务器访问（非file://协议）
+- 检查浏览器是否允许音频自动播放
+- 移动设备需要用户交互后才能播放音频
+
+### 论坛模块
+
+#### 首次使用配置
+
+1. **获取GitHub Personal Access Token**：
+   - 访问 [GitHub Settings > Tokens](https://github.com/settings/tokens)
+   - 点击 "Generate new token (classic)"
+   - 勾选权限：`public_repo` 和 `gist`
+   - 生成并复制Token
+
+2. **登录论坛**：
+   - 输入GitHub用户名
+   - 粘贴上面生成的Token
+   - 点击"登录"按钮
+
+3. **使用功能**：
+   - 发表新贴：切换到"发表新贴"标签页
+   - 浏览讨论：在"讨论区"查看和搜索
+   - 评论点赞：点击Issue查看详情
+   - 个人资料：在"个人主页"设置昵称和签名
+
+#### 切换仓库
+
+默认使用`13108387302/jasonaa`仓库，可以通过URL参数切换：
+
+```
+http://localhost:8080/forum/forum.html?owner=你的用户名&repo=你的仓库名
+```
+
+### 设置模块
+
+在任何页面点击右上角的齿轮图标⚙️进入设置：
+- 主题设置：深色/浅色/跟随系统
+- 游戏设置：速度、难度等
+- 音乐设置：默认调式、音域等
+- 论坛设置：显示选项等
+
+所有设置自动保存到浏览器LocalStorage。
+
+## 🌐 部署到GitHub Pages
+
+1. **创建GitHub仓库**
+
+```bash
+# 初始化Git（如果还没有）
+git init
+
+# 添加所有文件
+git add .
+
+# 提交
+git commit -m "Initial commit"
+
+# 添加远程仓库
+git remote add origin https://github.com/你的用户名/jasonaa.git
+
+# 推送
+git push -u origin main
+```
+
+2. **启用GitHub Pages**
+   - 进入仓库 Settings → Pages
+   - Source: `main` 分支
+   - 目录: `/` (root)
+   - 点击 Save
+
+3. **访问网站**
+   - 等待1-2分钟部署完成
+   - 访问 `https://你的用户名.github.io/jasonaa`
+
+### 自定义域名（可选）
+
+如果有自定义域名：
+
+1. 在域名DNS设置中添加CNAME记录：
+   ```
+   www  CNAME  你的用户名.github.io
+   ```
+
+2. 修改项目根目录的`CNAME`文件，写入你的域名：
+   ```
+   www.你的域名.com
+   ```
+
+3. 在GitHub Pages设置中填入自定义域名
+
+## 🎯 核心特性说明
+
+### 模块化架构
+
+项目采用ES6模块化设计：
+
+**游戏模块**：
+- 所有游戏继承自`GameBase.js`基类
+- 统一的生命周期管理
+- 内置TouchGestureHandler（触摸手势）
+- LevelSystem（等级系统）
+- NotificationSystem（通知系统）
+- StorageHelper（存储助手）
+
+**论坛模块**：
+- 采用8+1模块化架构
+- 统一的GitHub API封装层
+- 事件驱动的模块间通信
+- 集中式状态管理
+
+### 主题系统
+
+使用CSS变量实现动态主题切换：
 
 ```css
-.your-element {
-    background-color: var(--container-bg);
-    color: var(--text-color);
-    border: 1px solid var(--box-shadow-color);
-}
+/* 浅色主题 */
+--bg-color: #f0f4f8;
+--text-color: #2d3748;
 
-.your-button {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.your-button:hover {
-    background-color: var(--button-hover);
-}
+/* 深色主题 */
+--bg-color: #1a202c;
+--text-color: #e2e8f0;
 ```
 
-3. **支持iframe通信**：如果页面包含iframe，主题切换脚本会自动处理同源iframe的主题同步
+支持：
+- 自动检测系统主题偏好
+- 手动切换深色/浅色模式
+- iframe内嵌页面主题同步
+- 主题设置持久化
 
-### 可用主题变量
+### 响应式设计
 
-主题系统提供了丰富的CSS变量，可以在任何样式文件中使用：
+断点设置：
+- `768px` - 平板和小屏设备
+- `480px` - 手机设备
 
-#### 基础颜色变量
-- `--bg-color`: 页面背景色
-- `--container-bg`: 容器背景色
-- `--primary-color`: 主色调
-- `--secondary-color`: 辅助色
-- `--text-color`: 文本颜色
-- `--header-color`: 标题文字颜色
-- `--link-color`: 链接颜色
-- `--link-hover`: 链接悬停颜色
-- `--button-bg`: 按钮背景色
-- `--button-hover`: 按钮悬停背景色
-- `--card-bg`: 卡片背景色
-- `--box-shadow-color`: 阴影颜色
+移动端优化：
+- 最小可点击区域 44px × 44px
+- 触摸反馈效果（:active）
+- 滚动优化（-webkit-overflow-scrolling: touch）
+- 双重事件绑定（touch + click）
 
-#### 半透明颜色变量
-- `--primary-color-transparent`: 半透明主色
-- `--secondary-color-transparent`: 半透明辅助色
-- `--accent-color`: 强调色
-- `--accent-color-transparent`: 半透明强调色
+## 🔍 浏览器兼容性
 
-#### 模块特定颜色变量
-根据功能模块，我们还提供了特定的颜色变量：
+| 浏览器 | 最低版本 | 说明 |
+|--------|---------|------|
+| Chrome | 60+ | 推荐使用 |
+| Firefox | 55+ | 完全支持 |
+| Safari | 11+ | 完全支持 |
+| Edge | 79+ | 基于Chromium |
+| IE | ❌ 不支持 | 需要ES6+ |
 
-**游戏模块**
-- `--tetris-board-bg`, `--tetris-board-border`, `--tetris-cell-bg`, 等
+**依赖的关键API**：
+- ES6+ (箭头函数、模板字符串、Promise、async/await)
+- Web Audio API
+- CSS Custom Properties
+- LocalStorage API
+- Touch Events API
+- Fetch API
 
-**音乐模块**
-- `--music-card-bg`, `--music-card-active`, `--note-correct`, `--note-incorrect`, 等
+## 🐛 常见问题
 
-**论坛模块**
-- `--forum-container-bg`, `--forum-card-bg`, `--forum-input-bg`, 等
+**Q: 音频文件无法加载？**
+A: 确保使用HTTP服务器访问（http://localhost），而不是file://协议
 
-## 音乐模块移动端适配优化
-### 2023.11.16更新
-为提升移动设备上的用户体验，完成了以下优化：
+**Q: 论坛登录失败？**
+A: 检查GitHub Token是否正确，是否勾选了`public_repo`和`gist`权限
 
-1. **响应式布局增强**:
-   - 添加针对不同屏幕尺寸(768px和480px)的详细媒体查询
-   - 优化组件大小和间距，确保在小屏幕上合理显示
-   - 调整文字大小和按钮尺寸，提高可读性和可点击性
+**Q: 游戏控制没反应？**
+A: 确保游戏已开始，某些游戏需要先点击"开始"按钮
 
-2. **触摸体验优化**:
-   - 添加触摸反馈效果(.touch-active类)
-   - 确保所有可交互元素符合最小44px×44px的可点击区域标准
-   - 替换hover效果为active效果，更适合触摸设备
-   - 优化滚动体验，添加-webkit-overflow-scrolling:touch
+**Q: 主题切换后样式错乱？**
+A: 尝试刷新页面，或清除浏览器缓存
 
-3. **设备适应性**:
-   - 添加设备类型检测功能(isMobileDevice)
-   - 针对不同设备类型自动应用不同UI策略
-   - 优化音频控制元素在移动设备上的位置和大小
+**Q: 触摸控制不灵敏？**
+A: 检查是否在移动设备上使用，或者浏览器DevTools的移动模拟模式
 
-4. **事件处理增强**:
-   - 添加对触摸事件的全面支持
-   - 实现统一的事件处理逻辑，同时支持点击和触摸
-   - 修复移动端触摸事件问题，确保交互流畅
-   - 解决了移动设备上的音频播放限制问题
+## 📄 开源协议
 
-5. **音频体验优化**:
-   - 改进了音频上下文初始化过程
-   - 增强了错误处理和用户反馈
-   - 为移动设备添加了特殊的音频状态指示
-   - 解决了iOS设备上的AudioContext限制问题
+本项目采用 [MIT License](https://opensource.org/licenses/MIT) 开源协议
 
-这些优化确保音乐模块在移动设备上运行流畅，操作便捷，视觉体验与桌面端一致。
+```
+MIT License
 
-## 技术栈
+Copyright (c) 2024 [你的名字]
 
-- **HTML5**: 页面结构和Canvas绘图
-- **CSS3**: 样式和动画，包括Flexbox和Grid布局
-- **JavaScript (ES6+)**: 核心功能实现
-- **Web Audio API**: 音频播放和处理
-- **LocalStorage API**: 本地数据存储
-- **Media Queries**: 响应式设计
-- **Touch Events API**: 移动设备触摸支持
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-## 未来计划
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
 
-1. 增加更多游戏类型
-2. 改进音乐练习模块的教学功能
-3. 增加更多的主题选项
-4. 引入多语言支持
-5. 优化移动端体验
-6. 添加键盘快捷键列表
-7. 增加本地用户配置文件功能
-8. 增强可访问性支持
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
-## 贡献指南
+## 🤝 贡献指南
 
-欢迎提交Pull Request或Issue来改进这个项目。请确保您的代码符合以下要求：
+欢迎提交Issue和Pull Request！
 
-1. 保持代码风格一致
-2. 添加适当的注释
-3. 确保在主要浏览器中测试通过
-4. 对于新功能，请先提交Issue讨论
+**贡献流程**：
+1. Fork本仓库
+2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启Pull Request
 
-## 许可证
+**代码规范**：
+- 所有注释使用中文
+- 变量和函数使用驼峰命名
+- 常量使用全大写蛇形命名
+- 禁止在代码中使用emoji
 
-本项目采用MIT许可证。详情请见LICENSE文件。
+## 📞 联系方式
+
+- 项目主页: [GitHub](https://github.com/你的用户名/jasonaa)
+- 问题反馈: [Issues](https://github.com/你的用户名/jasonaa/issues)
+
+## 🙏 致谢
+
+- 音频采样来自公共领域钢琴录音
+- 图标使用SVG矢量格式
+- 感谢所有贡献者
+
+---
+
+**⭐ 如果这个项目对你有帮助，请给个Star支持一下！**

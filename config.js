@@ -1,165 +1,126 @@
 /**
- * 应用程序配置文件
- * 定义各种可配置的设置及其默认值
+ * 应用程序配置代理
+ * 作为settingsManager的便捷访问层，保持向后兼容性
+ *
+ * 重要：此文件已简化，所有配置都统一由settingsManager管理
+ * 不再维护独立的配置系统，避免数据不一致
+ */
+
+/**
+ * 初始化配置系统
+ * 依赖settingsManager必须先加载
  */
 document.addEventListener('DOMContentLoaded', () => {
-    // 尝试从settings-loader中获取配置
-    if (window.settingsManager) {
-        const loadedSettings = window.settingsManager.loadUserSettings();
-        if (loadedSettings) {
-            try {
-                // 使用已加载的设置
-                window.appConfig = {
-                    audio: {
-                        volume: loadedSettings.audio?.volume || 0.8,
-                        noteDelay: loadedSettings.audio?.noteDelay || 400,
-                        answerDelay: loadedSettings.audio?.answerDelay || 1000,
-                        autoPlayNext: loadedSettings.audio?.autoPlayNext ?? true,
-                        soundEffects: loadedSettings.audio?.soundEffects ?? true
-                    },
-                    game: {
-                        startingDifficulty: loadedSettings.music?.startingDifficulty || 0,
-                        defaultMelodyLength: loadedSettings.music?.melodyLength || 3,
-                        pointsPerCorrect: loadedSettings.music?.pointsPerCorrect || 10,
-                        showHints: loadedSettings.music?.showHints ?? true,
-                        gameSpeed: loadedSettings.games?.gameSpeed || 5,
-                        vibrationFeedback: loadedSettings.games?.vibrationFeedback ?? true,
-                        snakeColor: loadedSettings.games?.snakeColor || 'green',
-                        tetrisRotationSystem: loadedSettings.games?.tetrisRotationSystem || 'classic'
-                    },
-                    ui: {
-                        theme: loadedSettings.ui?.theme || 'dark',
-                        fontSize: loadedSettings.ui?.fontSize || 16,
-                        animations: loadedSettings.ui?.animations ?? true
-                    },
-                    accessibility: {
-                        colorBlindMode: loadedSettings.ui?.highContrast ?? false,
-                        highContrast: loadedSettings.ui?.highContrast ?? false,
-                        keyboardShortcuts: true
-                    },
-                    forum: {
-                        showAvatars: loadedSettings.forum?.showAvatars ?? true,
-                        commentsPerPage: loadedSettings.forum?.commentsPerPage || 10,
-                        defaultSort: loadedSettings.forum?.defaultSort || 'newest'
-                    }
-                };
-                
-                // 导出配置管理函数
-                window.configManager = {
-                    saveConfig: function() {
-                        return window.settingsManager.saveUserSettings();
-                    },
-                    resetConfig: function() {
-                        return window.settingsManager.resetAllSettings();
-                    },
-                    updateConfig: function(category, setting, value) {
-                        return window.settingsManager.updateSetting(category, setting, value);
-                    }
-                };
-                
-                console.log('配置已从settingsManager加载');
-                return;
-            } catch (error) {
-                console.error('从settingsManager加载配置时出错:', error);
-                // 继续使用默认配置
-            }
-        }
-    }
-    
-    // 如果无法从settingsManager获取，则使用默认配置
-    // 默认配置
-    const defaultConfig = {
-        audio: {
-            volume: 0.8,                // 音量 (0-1)
-            noteDelay: 400,             // 音符间隔时间 (毫秒)
-            correctAnswerDelay: 1000,   // 答案反馈延迟 (毫秒)
-            autoPlayNext: true,         // 回答正确后自动播放下一个音符
-            highlightDuration: 500      // 高亮持续时间 (毫秒)
-        },
-        game: {
-            startingDifficulty: 0,      // 初始难度 (0=基础, 1=进阶, 2=扩展)
-            defaultMelodyLength: 3,     // 默认旋律长度
-            pointsPerCorrect: 10,       // 每个正确答案的分数
-            showHints: true             // 是否显示提示
-        },
-        ui: {
-            theme: 'light',             // 主题 (light, dark)
-            fontSize: 'medium',         // 字体大小 (small, medium, large)
-            compactMode: false,         // 紧凑模式
-            animationsEnabled: true     // 是否启用动画
-        },
-        accessibility: {
-            colorBlindMode: false,      // 色盲模式
-            highContrast: false,        // 高对比度
-            keyboardShortcuts: true     // 启用键盘快捷键
-        }
-    };
+    // 确保settingsManager已加载
+    if (!window.settingsManager) {
+        console.error('配置系统错误: settingsManager未找到！请确保settings-loader.js已正确加载。');
 
-    // 尝试从本地存储中加载配置
-    let appConfig;
-    try {
-        const savedConfig = localStorage.getItem('musicAppConfig');
-        if (savedConfig) {
-            // 将保存的配置与默认配置合并
-            appConfig = {
-                ...defaultConfig,
-                ...JSON.parse(savedConfig)
+        // 提供最小的降级配置，避免页面完全崩溃
+        window.appConfig = {
+            audio: { volume: 0.8, noteDelay: 400, answerDelay: 1000, autoPlayNext: true, soundEffects: true },
+            game: { startingDifficulty: 0, defaultMelodyLength: 3, pointsPerCorrect: 10, showHints: true, gameSpeed: 5, vibrationFeedback: true, snakeColor: 'green', tetrisRotationSystem: 'classic' },
+            ui: { theme: 'dark', fontSize: 16, animations: true },
+            accessibility: { colorBlindMode: false, highContrast: false, keyboardShortcuts: true },
+            forum: { showAvatars: true, commentsPerPage: 10, defaultSort: 'newest' }
+        };
+
+        window.configManager = {
+            saveConfig: () => console.warn('settingsManager不可用，无法保存配置'),
+            resetConfig: () => console.warn('settingsManager不可用，无法重置配置'),
+            updateConfig: () => console.warn('settingsManager不可用，无法更新配置')
+        };
+
+        return;
+    }
+
+    // 确保settingsManager已初始化
+    const settings = window.settingsManager.loadUserSettings();
+
+    /**
+     * 配置对象代理
+     * 提供便捷的配置访问接口，数据直接来自settingsManager
+     */
+    window.appConfig = {
+        get audio() {
+            return window.settingsManager.settings.audio || {};
+        },
+
+        get game() {
+            // 兼容旧的命名：合并music和games配置
+            const musicSettings = window.settingsManager.settings.music || {};
+            const gameSettings = window.settingsManager.settings.games || {};
+            return {
+                // 音乐练习相关
+                startingDifficulty: musicSettings.startingDifficulty,
+                defaultMelodyLength: musicSettings.melodyLength,
+                pointsPerCorrect: musicSettings.pointsPerCorrect,
+                showHints: musicSettings.showHints,
+                // 游戏相关
+                gameSpeed: gameSettings.gameSpeed,
+                vibrationFeedback: gameSettings.vibrationFeedback,
+                snakeColor: gameSettings.snakeColor,
+                tetrisRotationSystem: gameSettings.tetrisRotationSystem
             };
-            
-            // 确保所有新添加的配置项也包含在内
-            if (!appConfig.audio) appConfig.audio = defaultConfig.audio;
-            else appConfig.audio = {...defaultConfig.audio, ...appConfig.audio};
-            
-            if (!appConfig.game) appConfig.game = defaultConfig.game;
-            else appConfig.game = {...defaultConfig.game, ...appConfig.game};
-            
-            if (!appConfig.ui) appConfig.ui = defaultConfig.ui;
-            else appConfig.ui = {...defaultConfig.ui, ...appConfig.ui};
-            
-            if (!appConfig.accessibility) appConfig.accessibility = defaultConfig.accessibility;
-            else appConfig.accessibility = {...defaultConfig.accessibility, ...appConfig.accessibility};
-        } else {
-            appConfig = defaultConfig;
+        },
+
+        get ui() {
+            return window.settingsManager.settings.ui || {};
+        },
+
+        get accessibility() {
+            // 将高对比度等UI设置映射到accessibility
+            const uiSettings = window.settingsManager.settings.ui || {};
+            return {
+                colorBlindMode: uiSettings.highContrast || false,
+                highContrast: uiSettings.highContrast || false,
+                keyboardShortcuts: true
+            };
+        },
+
+        get forum() {
+            return window.settingsManager.settings.forum || {};
         }
-    } catch (error) {
-        console.error('加载配置时出错:', error);
-        appConfig = defaultConfig;
-    }
-
-    // 保存配置到本地存储
-    function saveConfig() {
-        try {
-            localStorage.setItem('musicAppConfig', JSON.stringify(appConfig));
-            console.log('配置已保存');
-        } catch (error) {
-            console.error('保存配置时出错:', error);
-        }
-    }
-
-    // 重置配置为默认值
-    function resetConfig() {
-        appConfig = {...defaultConfig};
-        saveConfig();
-        return appConfig;
-    }
-
-    // 更新单个配置项
-    function updateConfig(category, setting, value) {
-        if (appConfig[category] && appConfig[category][setting] !== undefined) {
-            appConfig[category][setting] = value;
-            saveConfig();
-            return true;
-        }
-        return false;
-    }
-
-    // 将配置对象和管理函数暴露给全局
-    window.appConfig = appConfig;
-    window.configManager = {
-        saveConfig,
-        resetConfig,
-        updateConfig
     };
-    
-    console.log('使用默认配置 (settingsManager未找到)');
-}); 
+
+    /**
+     * 配置管理器代理
+     * 所有操作委托给settingsManager
+     */
+    window.configManager = {
+        /**
+         * 保存配置到localStorage
+         * @returns {boolean} 是否保存成功
+         */
+        saveConfig: function() {
+            return window.settingsManager.saveUserSettings();
+        },
+
+        /**
+         * 重置所有配置为默认值
+         * @returns {Object} 重置后的配置对象
+         */
+        resetConfig: function() {
+            return window.settingsManager.resetAllSettings();
+        },
+
+        /**
+         * 更新单个配置项
+         * @param {string} category - 配置类别
+         * @param {string} setting - 配置键名
+         * @param {any} value - 配置值
+         * @returns {boolean} 是否更新成功
+         */
+        updateConfig: function(category, setting, value) {
+            return window.settingsManager.updateSetting(category, setting, value);
+        }
+    };
+
+    console.log('配置系统已初始化（通过settingsManager）');
+
+    // 清理旧的musicAppConfig（迁移）
+    if (localStorage.getItem('musicAppConfig')) {
+        console.log('检测到旧的musicAppConfig，将在下次保存时自动清理');
+        // 不立即删除，以防万一需要回滚
+        // localStorage.removeItem('musicAppConfig');
+    }
+});
