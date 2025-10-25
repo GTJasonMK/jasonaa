@@ -26,6 +26,10 @@
                     <input type="file" id="fileInput" accept="image/png" style="display: none;">
                     <button class="btn btn-primary" id="selectFileBtn">选择文件</button>
                     <small>支持SillyTavern格式的PNG角色卡</small>
+                    <div class="import-help">
+                        <p>💡 <strong>注意：</strong>需要是<strong>角色卡PNG</strong>，不是普通图片</p>
+                        <p>🔗 获取角色卡：<a href="https://chub.ai/" target="_blank">chub.ai</a> | <a href="https://characterhub.org/" target="_blank">characterhub.org</a></p>
+                    </div>
                 </div>
             </section>
 
@@ -75,6 +79,76 @@
         </footer>
     </div>
 
+    <!-- 角色编辑模态窗口 -->
+    <div id="editCharacterModal" class="modal" style="display: none;">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>编辑角色卡</h3>
+                <button class="modal-close" id="closeEditModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- 基础信息 -->
+                <div class="config-section">
+                    <h4>基础信息</h4>
+                    <label>角色名称</label>
+                    <input type="text" id="editName" class="config-input" placeholder="角色名称">
+                </div>
+
+                <div class="config-section">
+                    <label>角色描述</label>
+                    <textarea id="editDescription" class="config-textarea" rows="4" placeholder="角色的背景、外貌、特征等"></textarea>
+                </div>
+
+                <div class="config-section">
+                    <label>性格特征</label>
+                    <textarea id="editPersonality" class="config-textarea" rows="3" placeholder="角色的性格、行为方式等"></textarea>
+                </div>
+
+                <div class="config-section">
+                    <label>当前场景</label>
+                    <textarea id="editScenario" class="config-textarea" rows="3" placeholder="角色所处的场景和情境"></textarea>
+                </div>
+
+                <div class="config-section">
+                    <label>第一条消息</label>
+                    <textarea id="editFirstMessage" class="config-textarea" rows="2" placeholder="角色的开场白"></textarea>
+                </div>
+
+                <div class="config-section">
+                    <label>标签（用逗号分隔）</label>
+                    <input type="text" id="editTags" class="config-input" placeholder="例如：温柔,可爱,治愈系">
+                    <p class="config-hint">用逗号分隔多个标签</p>
+                </div>
+
+                <!-- AI参数 -->
+                <div class="config-section">
+                    <h4>AI参数</h4>
+                    <label>System Prompt（系统提示词）</label>
+                    <textarea id="editSystemPrompt" class="config-textarea" rows="6" placeholder="留空则自动根据角色信息生成。自定义System Prompt可以更精确地控制AI的回复风格"></textarea>
+                    <p class="config-hint">高级选项：自定义System Prompt会覆盖默认生成的提示词</p>
+                </div>
+
+                <div class="config-section">
+                    <label>Temperature</label>
+                    <input type="number" id="editTemperature" class="config-input" min="0" max="2" step="0.1" value="0.9">
+                    <p class="config-hint">控制回复的随机性和创造性 (0-2)</p>
+                </div>
+
+                <div class="config-section">
+                    <label>Max Tokens</label>
+                    <input type="number" id="editMaxTokens" class="config-input" min="100" max="8000" step="100" value="2000">
+                    <p class="config-hint">单次回复的最大长度</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="cancelEditCharacter" class="btn btn-secondary">取消</button>
+                <button id="saveEditCharacter" class="btn btn-primary">保存修改</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 角色卡片模板 -->
     <template id="characterCardTemplate">
         <div class="character-card" data-id="">
@@ -88,6 +162,7 @@
             </div>
             <div class="character-actions">
                 <button class="btn-chat">开始对话</button>
+                <button class="btn-edit">编辑</button>
                 <button class="btn-delete">删除</button>
             </div>
         </div>
@@ -151,7 +226,24 @@
                 alert('✅ 角色卡导入成功！');
                 renderCharacterList();
             } catch (error) {
-                alert('❌ 导入失败: ' + error.message);
+                console.error('导入错误:', error);
+
+                // 友好的错误提示
+                let errorMsg = '❌ 导入失败\n\n';
+
+                if (error.message.includes('未找到角色卡数据') || error.message.includes('chara')) {
+                    errorMsg += '⚠️ 这个PNG文件不包含角色卡数据！\n\n';
+                    errorMsg += '📖 什么是角色卡PNG？\n';
+                    errorMsg += '角色卡PNG不是普通图片，而是在PNG文件中嵌入了角色信息的特殊文件。\n\n';
+                    errorMsg += '🔍 如何获取角色卡？\n';
+                    errorMsg += '1. 从 chub.ai 或 characterhub.org 下载\n';
+                    errorMsg += '2. 使用SillyTavern创建并导出\n\n';
+                    errorMsg += '💡 提示：普通动漫图片无法作为角色卡导入。';
+                } else {
+                    errorMsg += '错误详情: ' + error.message;
+                }
+
+                alert(errorMsg);
             }
         }
 
@@ -209,6 +301,10 @@
                 location.href = `chat.html?id=${charData.id}`;
             });
 
+            clone.querySelector('.btn-edit').addEventListener('click', () => {
+                showEditCharacter(charData.id);
+            });
+
             clone.querySelector('.btn-delete').addEventListener('click', async () => {
                 if (confirm(`确定要删除角色"${character.name}"吗？`)) {
                     chatTavern.deleteCharacter(charData.id);
@@ -218,6 +314,103 @@
 
             return clone;
         }
+
+        // 全局变量，记录当前编辑的角色ID
+        let currentEditingCharacterId = null;
+
+        // 显示角色编辑界面
+        function showEditCharacter(characterId) {
+            const character = chatTavern.characters.get(characterId);
+            if (!character) {
+                alert('角色不存在');
+                return;
+            }
+
+            currentEditingCharacterId = characterId;
+
+            // 填充表单数据
+            document.getElementById('editName').value = character.name || '';
+            document.getElementById('editDescription').value = character.description || '';
+            document.getElementById('editPersonality').value = character.personality || '';
+            document.getElementById('editScenario').value = character.scenario || '';
+            document.getElementById('editFirstMessage').value = character.first_mes || '';
+            document.getElementById('editTags').value = character.tags.join(', ');
+            document.getElementById('editSystemPrompt').value = character.system_prompt || '';
+            document.getElementById('editTemperature').value = character.temperature || 0.9;
+            document.getElementById('editMaxTokens').value = character.max_tokens || 2000;
+
+            // 显示模态窗口
+            document.getElementById('editCharacterModal').style.display = 'flex';
+        }
+
+        // 保存角色编辑
+        function saveCharacterEdits() {
+            if (!currentEditingCharacterId) {
+                alert('无法保存：未选择角色');
+                return;
+            }
+
+            // 收集表单数据
+            const updates = {
+                name: document.getElementById('editName').value.trim(),
+                description: document.getElementById('editDescription').value.trim(),
+                personality: document.getElementById('editPersonality').value.trim(),
+                scenario: document.getElementById('editScenario').value.trim(),
+                first_mes: document.getElementById('editFirstMessage').value.trim(),
+                tags: document.getElementById('editTags').value.split(',').map(t => t.trim()).filter(t => t),
+                system_prompt: document.getElementById('editSystemPrompt').value.trim(),
+                temperature: parseFloat(document.getElementById('editTemperature').value),
+                max_tokens: parseInt(document.getElementById('editMaxTokens').value)
+            };
+
+            // 验证必填字段
+            if (!updates.name) {
+                alert('角色名称不能为空！');
+                return;
+            }
+
+            try {
+                // 更新角色
+                chatTavern.updateCharacter(currentEditingCharacterId, updates);
+
+                // 关闭模态窗口
+                document.getElementById('editCharacterModal').style.display = 'none';
+                currentEditingCharacterId = null;
+
+                // 刷新角色列表
+                renderCharacterList();
+
+                alert('✅ 角色信息已更新！');
+            } catch (error) {
+                alert('❌ 保存失败: ' + error.message);
+            }
+        }
+
+        // 绑定编辑模态窗口的事件
+        document.addEventListener('DOMContentLoaded', () => {
+            // 关闭按钮
+            document.getElementById('closeEditModal').addEventListener('click', () => {
+                document.getElementById('editCharacterModal').style.display = 'none';
+                currentEditingCharacterId = null;
+            });
+
+            // 取消按钮
+            document.getElementById('cancelEditCharacter').addEventListener('click', () => {
+                document.getElementById('editCharacterModal').style.display = 'none';
+                currentEditingCharacterId = null;
+            });
+
+            // 保存按钮
+            document.getElementById('saveEditCharacter').addEventListener('click', saveCharacterEdits);
+
+            // 点击模态窗口外部关闭
+            document.getElementById('editCharacterModal').addEventListener('click', (e) => {
+                if (e.target.id === 'editCharacterModal') {
+                    document.getElementById('editCharacterModal').style.display = 'none';
+                    currentEditingCharacterId = null;
+                }
+            });
+        });
     </script>
 </body>
 </html>

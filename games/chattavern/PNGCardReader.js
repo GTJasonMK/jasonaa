@@ -156,8 +156,17 @@ class PNGCardReader {
         const base64Data = this.bytesToString(data.subarray(nullIndex + 1));
 
         try {
-            // 解码Base64
-            const jsonString = atob(base64Data);
+            // 解码Base64为二进制字符串
+            const binaryString = atob(base64Data);
+
+            // 将二进制字符串转换为Uint8Array
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+
+            // 使用TextDecoder正确解码UTF-8
+            const jsonString = new TextDecoder('utf-8').decode(bytes);
 
             // 解析JSON
             const characterData = JSON.parse(jsonString);

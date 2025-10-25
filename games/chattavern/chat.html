@@ -75,14 +75,14 @@
 
                 <div class="config-section">
                     <label>Temperature</label>
-                    <input type="number" id="aiTemperature" class="config-input" min="0" max="2" step="0.1" value="0.8">
-                    <p class="config-hint">控制回复的随机性 (0-2)</p>
+                    <input type="number" id="aiTemperature" class="config-input" min="0" max="2" step="0.1" value="0.9">
+                    <p class="config-hint">控制回复的随机性和创造性 (0-2)。角色扮演推荐 0.8-1.0</p>
                 </div>
 
                 <div class="config-section">
                     <label>Max Tokens</label>
-                    <input type="number" id="aiMaxTokens" class="config-input" min="10" max="4096" step="10" value="1000">
-                    <p class="config-hint">单次回复的最大长度</p>
+                    <input type="number" id="aiMaxTokens" class="config-input" min="100" max="8000" step="100" value="2000">
+                    <p class="config-hint">单次回复的最大长度。日常对话: 500-1000，角色扮演: 1500-3000，详细回复: 3000+</p>
                 </div>
             </div>
 
@@ -287,19 +287,24 @@
             button.textContent = '测试中...';
 
             try {
-                // 先保存临时配置
-                const config = {
-                    enabled: true,  // 测试时强制启用
+                // 保存用户原始配置（备份）
+                const originalConfig = chatTavern.aiManager.getConfig();
+
+                // 创建测试用的临时配置
+                const testConfig = {
+                    enabled: true,
                     provider: document.getElementById('aiProvider').value,
                     apiKey: document.getElementById('aiApiKey').value,
                     model: document.getElementById('aiModel').value || 'gpt-3.5-turbo',
                     apiUrl: document.getElementById('aiApiUrl').value,
                     temperature: parseFloat(document.getElementById('aiTemperature').value),
-                    maxTokens: 50  // 测试时使用少量token
+                    maxTokens: parseInt(document.getElementById('aiMaxTokens').value) || 1000  // 使用用户填写的值
                 };
 
-                chatTavern.aiManager.saveConfig(config);
+                // 临时保存用于测试
+                chatTavern.aiManager.saveConfig(testConfig);
 
+                // 执行测试
                 const result = await chatTavern.aiManager.testConnection();
 
                 if (result.success) {

@@ -212,6 +212,38 @@ class ChatTavern {
     }
 
     /**
+     * 更新角色信息
+     */
+    updateCharacter(characterId, updates) {
+        const character = this.characters.get(characterId);
+        if (!character) {
+            throw new Error('角色不存在');
+        }
+
+        console.log('[ChatTavern] 更新角色:', characterId, updates);
+
+        // 更新字段
+        if (updates.name !== undefined) character.name = updates.name;
+        if (updates.description !== undefined) character.description = updates.description;
+        if (updates.personality !== undefined) character.personality = updates.personality;
+        if (updates.scenario !== undefined) character.scenario = updates.scenario;
+        if (updates.first_mes !== undefined) character.first_mes = updates.first_mes;
+        if (updates.system_prompt !== undefined) character.system_prompt = updates.system_prompt;
+        if (updates.temperature !== undefined) character.temperature = updates.temperature;
+        if (updates.max_tokens !== undefined) character.max_tokens = updates.max_tokens;
+        if (updates.tags !== undefined) character.tags = updates.tags;
+
+        // 更新时间戳
+        character.updatedAt = Date.now();
+
+        // 保存到localStorage
+        this.saveCharacters();
+
+        console.log('[ChatTavern] 角色更新完成');
+        return character;
+    }
+
+    /**
      * 获取所有角色列表
      */
     getCharacterList() {

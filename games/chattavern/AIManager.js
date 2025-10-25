@@ -17,8 +17,8 @@ class AIManager {
             apiKey: '',
             model: 'gpt-3.5-turbo',
             apiUrl: '',  // 自定义API地址（可选）
-            temperature: 0.8,
-            maxTokens: 1000,
+            temperature: 0.9,  // 角色扮演建议使用较高的temperature
+            maxTokens: 2000,   // 增大默认值，支持更长的回复
             enabled: false
         };
 
@@ -315,8 +315,8 @@ class AIManager {
             const testContext = [];
             const testCharacter = {
                 getSystemPrompt: () => '你是一个友好的助手',
-                temperature: 0.7,
-                max_tokens: 50
+                temperature: this.config.temperature,
+                max_tokens: 100  // 测试时使用少量token以节省成本
             };
 
             await this.getResponse('test', testMessage, testContext, testCharacter);

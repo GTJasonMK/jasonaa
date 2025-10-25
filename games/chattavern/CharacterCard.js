@@ -59,8 +59,8 @@ class CharacterCard {
         this.dislikeTopics = Array.isArray(data.dislikeTopics) ? data.dislikeTopics : [];
 
         // AI配置
-        this.temperature = typeof data.temperature === 'number' ? data.temperature : 0.8;
-        this.max_tokens = typeof data.max_tokens === 'number' ? data.max_tokens : 150;
+        this.temperature = typeof data.temperature === 'number' ? data.temperature : 0.9;
+        this.max_tokens = typeof data.max_tokens === 'number' ? data.max_tokens : 2000;
 
         // 内部标识
         this.id = data.id || this.generateId();
@@ -258,9 +258,8 @@ class CharacterCard {
             errors.push('角色名称不能为空');
         }
 
-        if (!this.description && !this.personality) {
-            errors.push('角色描述或性格特征至少需要填写一项');
-        }
+        // 放宽验证：只要有名字和第一条消息就可以，其他字段是可选的
+        // description和personality不再强制要求
 
         if (!this.first_mes || this.first_mes.trim() === '') {
             errors.push('第一条消息不能为空');
@@ -271,8 +270,8 @@ class CharacterCard {
             errors.push('Temperature值应该在0-2之间');
         }
 
-        if (this.max_tokens < 10 || this.max_tokens > 4096) {
-            errors.push('max_tokens值应该在10-4096之间');
+        if (this.max_tokens < 10 || this.max_tokens > 8000) {
+            errors.push('max_tokens值应该在10-8000之间');
         }
 
         // 数组字段检查
