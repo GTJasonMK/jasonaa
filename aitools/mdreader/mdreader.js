@@ -25,10 +25,17 @@ class MarkdownReader {
         this.tocCloseBtn = document.getElementById('toc-close-btn');
         this.openProjectBtn = document.getElementById('open-project-btn');
 
+        // 阅读进度条
+        this.progressBar = document.getElementById('reading-progress-bar');
+        this.progressThumb = document.getElementById('progress-thumb');
+        this.progressPercentage = document.getElementById('progress-percentage');
+        this.progressTrack = this.progressBar?.querySelector('.progress-track');
+
         // 状态
         this.currentFile = null;
         this.currentMarkdown = '';
         this.tocVisible = true;
+        this.isDraggingProgress = false;
 
         // 初始化
         this.init();
@@ -91,8 +98,122 @@ class MarkdownReader {
 
         // 打开项目按钮触发目录选择，由ProjectManager处理
 
-        // 滚动同步TOC高亮
-        this.markdownContent.addEventListener('scroll', () => this.updateTocHighlight());
+        // 滚动同步TOC高亮和进度条
+        this.markdownContent.addEventListener('scroll', () => {
+            this.updateTocHighlight();
+            this.updateProgressBar();
+        });
+
+        // 进度条拖动事件
+        this.setupProgressBarDrag();
+    }
+
+    /**
+     * 设置进度条拖动功能
+     */
+    setupProgressBarDrag() {
+        if (!this.progressThumb || !this.progressTrack) return;
+
+        // 点击轨道跳转
+        this.progressTrack.addEventListener('click', (e) => {
+            if (e.target === this.progressThumb) return;
+            const rect = this.progressTrack.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const percentage = clickY / rect.height;
+            this.scrollToPercentage(percentage);
+        });
+
+        // 拖动滑块
+        this.progressThumb.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            this.isDraggingProgress = true;
+            document.body.style.userSelect = 'none';
+
+            const handleMouseMove = (e) => {
+                if (!this.isDraggingProgress) return;
+                const rect = this.progressTrack.getBoundingClientRect();
+                const mouseY = e.clientY - rect.top;
+                const percentage = Math.max(0, Math.min(1, mouseY / rect.height));
+
+                // 直接更新滑块视觉位置
+                const trackHeight = this.progressTrack.offsetHeight;
+                const thumbY = percentage * (trackHeight - 24);
+                this.progressThumb.style.top = `${thumbY}px`;
+                this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
+
+                // 滚动内容
+                this.scrollToPercentage(percentage);
+            };
+
+            const handleMouseUp = () => {
+                this.isDraggingProgress = false;
+                document.body.style.userSelect = '';
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        });
+
+        // 触摸支持
+        this.progressThumb.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.isDraggingProgress = true;
+
+            const handleTouchMove = (e) => {
+                if (!this.isDraggingProgress) return;
+                const rect = this.progressTrack.getBoundingClientRect();
+                const touch = e.touches[0];
+                const touchY = touch.clientY - rect.top;
+                const percentage = Math.max(0, Math.min(1, touchY / rect.height));
+
+                // 直接更新滑块视觉位置
+                const trackHeight = this.progressTrack.offsetHeight;
+                const thumbY = percentage * (trackHeight - 24);
+                this.progressThumb.style.top = `${thumbY}px`;
+                this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
+
+                // 滚动内容
+                this.scrollToPercentage(percentage);
+            };
+
+            const handleTouchEnd = () => {
+                this.isDraggingProgress = false;
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
+            };
+
+            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchend', handleTouchEnd);
+        });
+    }
+
+    /**
+     * 更新进度条位置
+     */
+    updateProgressBar() {
+        if (!this.progressBar || !this.progressThumb || !this.progressPercentage) return;
+        if (this.isDraggingProgress) return;
+
+        const scrollTop = this.markdownContent.scrollTop;
+        const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
+        const percentage = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+
+        const trackHeight = this.progressTrack.offsetHeight;
+        const thumbY = percentage * (trackHeight - 24);
+
+        this.progressThumb.style.top = `${thumbY}px`;
+        this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
+    }
+
+    /**
+     * 滚动到指定百分比位置
+     */
+    scrollToPercentage(percentage) {
+        const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
+        const targetScroll = percentage * scrollHeight;
+        this.markdownContent.scrollTop = targetScroll;
     }
 
     /**
@@ -236,6 +357,12 @@ class MarkdownReader {
             this.markdownContent.style.display = 'block';
             this.fileInfo.style.display = 'flex';
             this.fileName.textContent = this.currentFile ? this.currentFile.name : '未命名文档';
+
+            // 显示阅读进度条
+            if (this.progressBar) {
+                this.progressBar.style.display = 'block';
+                setTimeout(() => this.updateProgressBar(), 100);
+            }
 
             // 滚动到顶部
             this.markdownContent.scrollTop = 0;
@@ -462,6 +589,12 @@ ${this.markdownContent.innerHTML}
         this.markdownContent.innerHTML = '';
         this.tocNav.innerHTML = '<p class="toc-empty">暂无目录</p>';
         this.fileInput.value = '';
+
+        // 隐藏阅读进度条
+        if (this.progressBar) {
+            this.progressBar.style.display = 'none';
+        }
+
         this.clearStorage();
     }
 
@@ -548,6 +681,20 @@ class ProjectManager {
         this.passwordCancelBtn = document.getElementById('password-cancel-btn');
         this.passwordError = document.getElementById('password-error');
 
+        // 检查必要的DOM元素
+        if (!this.openProjectBtn) {
+            console.error('未找到打开项目按钮元素');
+        }
+        if (!this.directoryInput) {
+            console.error('未找到目录选择输入元素');
+        }
+        if (!this.secretBtn) {
+            console.error('未找到隐秘按钮元素');
+        }
+        if (!this.passwordModal) {
+            console.error('未找到密码模态框元素');
+        }
+
         this.init();
     }
 
@@ -563,31 +710,45 @@ class ProjectManager {
      */
     setupEventListeners() {
         // 打开项目按钮 - 触发本地目录选择
-        this.openProjectBtn.addEventListener('click', () => this.directoryInput.click());
+        if (this.openProjectBtn && this.directoryInput) {
+            this.openProjectBtn.addEventListener('click', () => this.directoryInput.click());
+        }
 
         // 目录选择
-        this.directoryInput.addEventListener('change', (e) => this.handleDirectorySelect(e));
+        if (this.directoryInput) {
+            this.directoryInput.addEventListener('change', (e) => this.handleDirectorySelect(e));
+        }
 
         // 隐秘按钮 - 打开内置项目
-        this.secretBtn.addEventListener('click', () => this.openBuiltInProject());
+        if (this.secretBtn) {
+            this.secretBtn.addEventListener('click', () => this.openBuiltInProject());
+        }
 
         // 密码提交
-        this.passwordSubmitBtn.addEventListener('click', () => this.verifyPassword());
-        this.passwordCancelBtn.addEventListener('click', () => this.cancelPasswordInput());
+        if (this.passwordSubmitBtn) {
+            this.passwordSubmitBtn.addEventListener('click', () => this.verifyPassword());
+        }
+        if (this.passwordCancelBtn) {
+            this.passwordCancelBtn.addEventListener('click', () => this.cancelPasswordInput());
+        }
 
         // 回车提交密码
-        this.passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                this.verifyPassword();
-            }
-        });
+        if (this.passwordInput) {
+            this.passwordInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.verifyPassword();
+                }
+            });
+        }
 
         // 点击模态框外部关闭
-        this.passwordModal.addEventListener('click', (e) => {
-            if (e.target === this.passwordModal) {
-                this.cancelPasswordInput();
-            }
-        });
+        if (this.passwordModal) {
+            this.passwordModal.addEventListener('click', (e) => {
+                if (e.target === this.passwordModal) {
+                    this.cancelPasswordInput();
+                }
+            });
+        }
     }
 
     /**
@@ -829,6 +990,11 @@ class ProjectManager {
         // 显示内容区
         this.reader.markdownContent.style.display = 'block';
         this.reader.markdownContent.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">请从左侧目录选择要查看的文档</div>';
+
+        // 显示阅读进度条
+        if (this.reader.progressBar) {
+            this.reader.progressBar.style.display = 'block';
+        }
     }
 
     /**
@@ -914,6 +1080,11 @@ class ProjectManager {
 
         // 恢复TOC
         this.reader.tocNav.innerHTML = '<p class="toc-empty">暂无目录</p>';
+
+        // 隐藏阅读进度条
+        if (this.reader.progressBar) {
+            this.reader.progressBar.style.display = 'none';
+        }
 
         console.log('项目已关闭');
     }
