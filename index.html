@@ -22,6 +22,7 @@
             <nav>
                 <ul>
                     <li><a href="#games" class="active">游戏</a></li>
+                    <li><a href="#aitools">AI工具</a></li>
                     <li><a href="#music">音乐练习</a></li>
                     <li><a href="#forum">社区论坛</a></li>
                 </ul>
@@ -72,17 +73,44 @@
                     <h3>记忆游戏</h3>
                     <p>锻炼你的记忆力，匹配所有卡片！</p>
                 </div>
-                <div class="game-card" onclick="window.location.href='games/chattavern/chattavern.html'" style="border: 2px solid var(--accent-color);">
+            </div>
+        </div>
+
+        <div id="aitools" class="section module-section">
+            <h2>AI工具</h2>
+            <p class="module-intro">使用先进的AI技术，体验智能对话和创作助手。支持多种AI模型，灵活配置，满足您的个性化需求。</p>
+            <div class="game-grid">
+                <div class="game-card" onclick="window.location.href='aitools/aichat/index.html'" style="border: 2px solid var(--accent-color);">
+                    <div class="game-icon" style="font-size: 3rem;">
+                        🤖
+                    </div>
+                    <h3>AI聊天室</h3>
+                    <p>轻量级AI对话工具，支持New API、OpenAI、DeepSeek等服务</p>
+                    <small style="color: var(--accent-color); font-weight: bold;">✨ 新功能</small>
+                </div>
+                <div class="game-card" onclick="window.location.href='aitools/chattavern/chattavern.html'">
                     <div class="game-icon" style="font-size: 3rem;">
                         💬
                     </div>
                     <h3>ChatTavern</h3>
-                    <p>AI角色对话系统，兼容SillyTavern角色卡！</p>
-                    <small style="color: var(--accent-color); font-weight: bold;">✨ 新功能</small>
+                    <p>AI角色对话系统，兼容SillyTavern角色卡</p>
+                </div>
+                <div class="game-card" onclick="window.location.href='aitools/mdreader/index.html'">
+                    <div class="game-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Markdown阅读器</h3>
+                    <p>支持拖拽上传，代码高亮，自动生成目录</p>
                 </div>
             </div>
         </div>
-        
+
         <div id="music" class="section module-section">
             <h2>音乐练习</h2>
             <p class="module-intro">通过互动练习提升您的音乐技能，从音阶练习到多音辨听，帮助您在音乐之路上稳步前进。适合各个水平的音乐爱好者。</p>

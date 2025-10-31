@@ -99,7 +99,22 @@ class AIManager {
      * 调用OpenAI API
      */
     async callOpenAI(userMessage, context, character) {
-        const apiUrl = this.config.apiUrl || 'https://api.openai.com/v1/chat/completions';
+        // URL处理：自动补全endpoint
+        let apiUrl = this.config.apiUrl || 'https://api.openai.com/v1/chat/completions';
+
+        // 如果URL不包含/chat/completions，自动补全（用于New API等服务）
+        if (this.config.apiUrl && !this.config.apiUrl.includes('/chat/completions')) {
+            // 移除末尾的斜杠
+            const baseUrl = this.config.apiUrl.replace(/\/$/, '');
+            // 如果URL已经包含/v1，直接加/chat/completions
+            if (baseUrl.endsWith('/v1')) {
+                apiUrl = baseUrl + '/chat/completions';
+            } else {
+                // 否则加/v1/chat/completions
+                apiUrl = baseUrl + '/v1/chat/completions';
+            }
+            console.log('[AIManager] 自动补全URL:', this.config.apiUrl, '→', apiUrl);
+        }
 
         // 构建消息数组
         const messages = [];
@@ -129,8 +144,6 @@ class AIManager {
             content: userMessage
         });
 
-        console.log('[AIManager] OpenAI请求消息数:', messages.length);
-
         const requestBody = {
             model: this.config.model,
             messages: messages,
@@ -138,22 +151,65 @@ class AIManager {
             max_tokens: character?.max_tokens || this.config.maxTokens
         };
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.apiKey}`
-            },
-            body: JSON.stringify(requestBody)
-        });
+        console.log('[AIManager] ========== API请求详情 ==========');
+        console.log('[AIManager] 请求URL:', apiUrl);
+        console.log('[AIManager] 请求模型:', requestBody.model);
+        console.log('[AIManager] 消息数量:', messages.length);
+        console.log('[AIManager] Temperature:', requestBody.temperature);
+        console.log('[AIManager] Max Tokens:', requestBody.max_tokens);
+        console.log('[AIManager] API Key前缀:', this.config.apiKey.substring(0, 15) + '...');
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`OpenAI API错误: ${response.status} - ${errorData.error?.message || response.statusText}`);
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                mode: 'cors', // 明确指定CORS模式
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.config.apiKey}`
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log('[AIManager] 响应状态:', response.status, response.statusText);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error?.message || errorData.message || response.statusText;
+                console.error('[AIManager] API返回错误:', errorData);
+                throw new Error(`API错误 (${response.status}): ${errorMsg}`);
+            }
+
+            const data = await response.json();
+            console.log('[AIManager] 请求成功，返回内容长度:', data.choices?.[0]?.message?.content?.length || 0);
+            return data.choices[0].message.content;
+
+        } catch (error) {
+            console.error('[AIManager] ========== 请求失败详情 ==========');
+            console.error('[AIManager] 错误类型:', error.name);
+            console.error('[AIManager] 错误信息:', error.message);
+
+            // 检测CORS错误
+            if (error.message.includes('CORS') ||
+                error.message.includes('Failed to fetch') ||
+                error.name === 'TypeError' && error.message.includes('fetch')) {
+                throw new Error(`❌ 网络请求失败（CORS跨域问题）
+
+可能的原因：
+1. API服务器未配置CORS允许跨域访问
+2. 请求的URL：${apiUrl}
+
+🔧 New API解决方案：
+在docker run命令中添加环境变量：
+-e ALLOWED_ORIGIN="*"
+
+或在.env文件中添加：
+ALLOWED_ORIGIN=*
+
+详细错误: ${error.message}`);
+            }
+
+            throw error;
         }
-
-        const data = await response.json();
-        return data.choices[0].message.content;
     }
 
     /**

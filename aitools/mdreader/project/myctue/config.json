@@ -1,0 +1,152 @@
+{
+  "name": "Myctue游戏设计文档",
+  "password": "888888",
+  "description": "桌宠养成游戏的完整设计文档",
+  "documents": [
+    {
+      "title": "游戏玩法设计文档",
+      "path": "游戏玩法设计文档.md",
+      "category": "概览"
+    },
+    {
+      "title": "文档导航（README）",
+      "path": "docs/README.md",
+      "category": "概览"
+    },
+    {
+      "title": "项目总览与导航",
+      "path": "docs/00-规划/00-项目总览与导航.md",
+      "category": "规划"
+    },
+    {
+      "title": "设计理念与哲学",
+      "path": "docs/00-规划/01-设计理念与哲学.md",
+      "category": "规划"
+    },
+    {
+      "title": "游戏概念文档",
+      "path": "docs/00-规划/02-游戏概念文档.md",
+      "category": "规划"
+    },
+    {
+      "title": "开发路线图",
+      "path": "docs/00-规划/03-开发路线图.md",
+      "category": "规划"
+    },
+    {
+      "title": "设计优化建议",
+      "path": "docs/00-规划/04-设计优化建议.md",
+      "category": "规划"
+    },
+    {
+      "title": "全局一致性审计报告",
+      "path": "docs/00-规划/06-全局一致性审计报告.md",
+      "category": "规划"
+    },
+    {
+      "title": "术语表与概念定义",
+      "path": "docs/00-规划/07-术语表与概念定义.md",
+      "category": "规划"
+    },
+    {
+      "title": "场景系统",
+      "path": "docs/10-核心系统/10-场景系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "桌宠AI与需求系统",
+      "path": "docs/10-核心系统/11-桌宠AI与需求系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "时间与天气系统",
+      "path": "docs/10-核心系统/12-时间与天气系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "资源与经济系统",
+      "path": "docs/10-核心系统/13-资源与经济系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "供奉系统",
+      "path": "docs/10-核心系统/14-供奉系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "任务系统",
+      "path": "docs/10-核心系统/15-任务系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "神力系统",
+      "path": "docs/10-核心系统/16-神力系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "成长与技能系统",
+      "path": "docs/10-核心系统/17-成长与技能系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "工具学习与使用系统",
+      "path": "docs/10-核心系统/18-工具学习与使用系统.md",
+      "category": "核心系统"
+    },
+    {
+      "title": "个性化系统",
+      "path": "docs/30-扩展系统/30-个性化系统.md",
+      "category": "扩展系统"
+    },
+    {
+      "title": "情感与记忆系统",
+      "path": "docs/30-扩展系统/31-情感与记忆系统.md",
+      "category": "扩展系统"
+    },
+    {
+      "title": "关系系统",
+      "path": "docs/30-扩展系统/32-关系系统.md",
+      "category": "扩展系统"
+    },
+    {
+      "title": "生命阶段系统",
+      "path": "docs/30-扩展系统/33-生命阶段系统.md",
+      "category": "扩展系统"
+    },
+    {
+      "title": "神力代价与哲学",
+      "path": "docs/30-扩展系统/34-神力代价与哲学.md",
+      "category": "扩展系统"
+    },
+    {
+      "title": "新场景扩展",
+      "path": "docs/30-扩展系统/37-新场景扩展.md",
+      "category": "扩展系统"
+    },
+    {
+      "title": "数据结构设计",
+      "path": "docs/50-技术实现/50-数据结构设计.md",
+      "category": "技术实现"
+    },
+    {
+      "title": "架构设计",
+      "path": "docs/50-技术实现/51-架构设计.md",
+      "category": "技术实现"
+    },
+    {
+      "title": "AI实现方案",
+      "path": "docs/50-技术实现/52-AI实现方案.md",
+      "category": "技术实现"
+    },
+    {
+      "title": "MCP集成方案",
+      "path": "docs/50-技术实现/56-MCP集成方案.md",
+      "category": "技术实现"
+    },
+    {
+      "title": "资源文件说明",
+      "path": "docs/assets/README.md",
+      "category": "资源"
+    }
+  ]
+}

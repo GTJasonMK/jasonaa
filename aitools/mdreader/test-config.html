@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置文件加载测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>配置文件加载测试</h1>
+    <p>这个页面将测试是否能正确加载 project/myctue/config.json 文件</p>
+
+    <button onclick="testConfigLoad()">测试加载配置文件</button>
+
+    <div id="results"></div>
+
+    <script>
+        async function testConfigLoad() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>测试中...</p>';
+
+            try {
+                // 测试1: 检查当前页面URL
+                const currentUrl = window.location.href;
+                resultsDiv.innerHTML += `<div class="test-result success">
+                    <strong>✓ 当前页面URL:</strong><br>
+                    <code>${currentUrl}</code>
+                </div>`;
+
+                // 测试2: 构造配置文件URL
+                const configPath = 'project/myctue/config.json';
+                const configUrl = new URL(configPath, window.location.href).href;
+                resultsDiv.innerHTML += `<div class="test-result success">
+                    <strong>✓ 配置文件完整URL:</strong><br>
+                    <code>${configUrl}</code>
+                </div>`;
+
+                // 测试3: 尝试加载配置文件
+                console.log('尝试加载:', configUrl);
+                const response = await fetch(configPath);
+
+                resultsDiv.innerHTML += `<div class="test-result success">
+                    <strong>✓ HTTP响应状态:</strong> ${response.status} ${response.statusText}
+                </div>`;
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                // 测试4: 读取响应内容
+                const text = await response.text();
+                resultsDiv.innerHTML += `<div class="test-result success">
+                    <strong>✓ 响应内容长度:</strong> ${text.length} 字节
+                </div>`;
+
+                // 测试5: 解析JSON
+                const config = JSON.parse(text);
+                resultsDiv.innerHTML += `<div class="test-result success">
+                    <strong>✓ JSON解析成功:</strong><br>
+                    <pre>${JSON.stringify(config, null, 2)}</pre>
+                </div>`;
+
+                resultsDiv.innerHTML += `<div class="test-result success">
+                    <strong>✓✓✓ 所有测试通过！配置文件可以正常加载。</strong>
+                </div>`;
+
+            } catch (error) {
+                console.error('测试失败:', error);
+                resultsDiv.innerHTML += `<div class="test-result error">
+                    <strong>✗ 测试失败:</strong><br>
+                    <strong>错误类型:</strong> ${error.name}<br>
+                    <strong>错误信息:</strong> ${error.message}<br>
+                    <strong>详细信息:</strong><br>
+                    <pre>${error.stack}</pre>
+                </div>`;
+
+                // 常见问题诊断
+                if (error.message.includes('Failed to fetch')) {
+                    resultsDiv.innerHTML += `<div class="test-result error">
+                        <strong>可能的原因：</strong><br>
+                        1. HTTP服务器未运行<br>
+                        2. 文件路径不正确<br>
+                        3. CORS策略问题<br>
+                        <br>
+                        <strong>建议：</strong><br>
+                        请确保从正确的目录启动HTTP服务器：<br>
+                        <code>cd E:\\code\\jasonaa && python -m http.server 8080</code>
+                    </div>`;
+                } else if (error.name === 'SyntaxError') {
+                    resultsDiv.innerHTML += `<div class="test-result error">
+                        <strong>可能的原因：</strong><br>
+                        配置文件JSON格式有误<br>
+                        <br>
+                        <strong>建议：</strong><br>
+                        请检查 config.json 文件的语法是否正确
+                    </div>`;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
