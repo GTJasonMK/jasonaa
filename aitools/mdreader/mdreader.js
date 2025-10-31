@@ -647,9 +647,19 @@ ${this.markdownContent.innerHTML}
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {
-    const reader = new MarkdownReader();
-    const projectManager = new ProjectManager(reader);
-    console.log('Markdown阅读器已初始化');
+    try {
+        console.log('开始初始化Markdown阅读器...');
+        const reader = new MarkdownReader();
+        console.log('MarkdownReader初始化成功');
+
+        const projectManager = new ProjectManager(reader);
+        console.log('ProjectManager初始化成功');
+
+        console.log('Markdown阅读器已初始化');
+    } catch (error) {
+        console.error('初始化失败:', error);
+        console.error('错误堆栈:', error.stack);
+    }
 });
 
 /**
@@ -709,19 +719,32 @@ class ProjectManager {
      * 设置事件监听器
      */
     setupEventListeners() {
+        console.log('设置项目管理器事件监听器...');
+        console.log('openProjectBtn:', this.openProjectBtn ? '存在' : '不存在');
+        console.log('directoryInput:', this.directoryInput ? '存在' : '不存在');
+        console.log('secretBtn:', this.secretBtn ? '存在' : '不存在');
+        console.log('passwordModal:', this.passwordModal ? '存在' : '不存在');
+
         // 打开项目按钮 - 触发本地目录选择
         if (this.openProjectBtn && this.directoryInput) {
             this.openProjectBtn.addEventListener('click', () => this.directoryInput.click());
+            console.log('打开项目按钮事件已绑定');
+        } else {
+            console.warn('打开项目按钮或目录输入框不存在，跳过绑定');
         }
 
         // 目录选择
         if (this.directoryInput) {
             this.directoryInput.addEventListener('change', (e) => this.handleDirectorySelect(e));
+            console.log('目录选择事件已绑定');
         }
 
         // 隐秘按钮 - 打开内置项目
         if (this.secretBtn) {
             this.secretBtn.addEventListener('click', () => this.openBuiltInProject());
+            console.log('隐秘按钮事件已绑定');
+        } else {
+            console.warn('隐秘按钮不存在，跳过绑定');
         }
 
         // 密码提交
@@ -749,6 +772,8 @@ class ProjectManager {
                 }
             });
         }
+
+        console.log('项目管理器事件监听器设置完成');
     }
 
     /**
