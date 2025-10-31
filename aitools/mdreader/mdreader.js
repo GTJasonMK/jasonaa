@@ -8,6 +8,7 @@ class MarkdownReader {
         // DOM元素引用
         this.uploadArea = document.getElementById('upload-area');
         this.fileInput = document.getElementById('file-input');
+        this.directoryInput = document.getElementById('directory-input');
         this.selectFileBtn = document.getElementById('select-file-btn');
         this.markdownContent = document.getElementById('markdown-content');
         this.tocNav = document.getElementById('toc-nav');
@@ -22,6 +23,7 @@ class MarkdownReader {
         this.fullscreenBtn = document.getElementById('fullscreen-btn');
         this.closeFileBtn = document.getElementById('close-file-btn');
         this.tocCloseBtn = document.getElementById('toc-close-btn');
+        this.openProjectBtn = document.getElementById('open-project-btn');
 
         // 状态
         this.currentFile = null;
@@ -86,6 +88,8 @@ class MarkdownReader {
         this.exportHtmlBtn.addEventListener('click', () => this.exportHtml());
         this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
         this.closeFileBtn.addEventListener('click', () => this.closeFile());
+
+        // 打开项目按钮触发目录选择，由ProjectManager处理
 
         // 滚动同步TOC高亮
         this.markdownContent.addEventListener('scroll', () => this.updateTocHighlight());
@@ -517,25 +521,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * 项目管理器
- * 负责加载和管理文档项目
+ * 负责管理文档项目（本地项目和内置加密项目）
  */
 class ProjectManager {
     constructor(reader) {
         this.reader = reader;
-        this.projects = [];
         this.currentProject = null;
         this.currentProjectConfig = null;
+        this.projectSource = null; // 'local' 或 'builtin'
+        this.localProjectFiles = new Map(); // 本地项目的文件映射
+
+        // 内置项目信息
+        this.builtInProject = {
+            id: 'myctue',
+            name: 'Myctue游戏设计文档',
+            path: 'project/myctue'
+        };
 
         // DOM元素
-        this.openProjectBtn = document.getElementById('open-project-btn');
-        this.projectListModal = document.getElementById('project-list-modal');
-        this.projectList = document.getElementById('project-list');
+        this.openProjectBtn = this.reader.openProjectBtn;
+        this.directoryInput = this.reader.directoryInput;
+        this.secretBtn = document.getElementById('secret-project-btn');
         this.passwordModal = document.getElementById('password-modal');
         this.passwordInput = document.getElementById('project-password-input');
         this.passwordSubmitBtn = document.getElementById('password-submit-btn');
         this.passwordCancelBtn = document.getElementById('password-cancel-btn');
         this.passwordError = document.getElementById('password-error');
-        this.passwordProjectName = document.getElementById('password-project-name');
 
         this.init();
     }
@@ -545,19 +556,24 @@ class ProjectManager {
      */
     init() {
         this.setupEventListeners();
-        this.loadProjects();
     }
 
     /**
      * 设置事件监听器
      */
     setupEventListeners() {
-        // 打开项目按钮
-        this.openProjectBtn.addEventListener('click', () => this.showProjectList());
+        // 打开项目按钮 - 触发本地目录选择
+        this.openProjectBtn.addEventListener('click', () => this.directoryInput.click());
+
+        // 目录选择
+        this.directoryInput.addEventListener('change', (e) => this.handleDirectorySelect(e));
+
+        // 隐秘按钮 - 打开内置项目
+        this.secretBtn.addEventListener('click', () => this.openBuiltInProject());
 
         // 密码提交
         this.passwordSubmitBtn.addEventListener('click', () => this.verifyPassword());
-        this.passwordCancelBtn.addEventListener('click', () => this.hidePasswordModal());
+        this.passwordCancelBtn.addEventListener('click', () => this.cancelPasswordInput());
 
         // 回车提交密码
         this.passwordInput.addEventListener('keypress', (e) => {
@@ -567,87 +583,90 @@ class ProjectManager {
         });
 
         // 点击模态框外部关闭
-        this.projectListModal.addEventListener('click', (e) => {
-            if (e.target === this.projectListModal) {
-                this.hideProjectList();
-            }
-        });
-
         this.passwordModal.addEventListener('click', (e) => {
             if (e.target === this.passwordModal) {
-                this.hidePasswordModal();
+                this.cancelPasswordInput();
             }
         });
     }
 
     /**
-     * 加载项目列表
+     * 处理目录选择（本地项目）
      */
-    async loadProjects() {
-        try {
-            // 扫描project目录下的项目
-            // 由于浏览器无法直接扫描目录，我们这里硬编码已知项目
-            // 未来可以通过一个projects.json配置文件来管理
-            this.projects = [
-                { id: 'myctue', name: 'Myctue游戏设计文档', path: 'project/myctue' }
-            ];
-            console.log('项目列表加载成功:', this.projects);
-        } catch (error) {
-            console.error('加载项目列表失败:', error);
-        }
-    }
+    async handleDirectorySelect(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
 
-    /**
-     * 显示项目列表
-     */
-    showProjectList() {
-        // 生成项目卡片
-        this.projectList.innerHTML = '';
-        this.projects.forEach(project => {
-            const card = document.createElement('div');
-            card.className = 'project-card';
-            card.innerHTML = `
-                <h3>${project.name}</h3>
-                <p>点击打开项目</p>
-            `;
-            card.addEventListener('click', () => this.selectProject(project));
-            this.projectList.appendChild(card);
+        console.log('选择了目录，包含文件数:', files.length);
+
+        // 构建文件映射
+        this.localProjectFiles.clear();
+        files.forEach(file => {
+            // 获取相对路径（从选中目录开始）
+            const relativePath = file.webkitRelativePath.split('/').slice(1).join('/');
+            this.localProjectFiles.set(relativePath, file);
+            console.log('文件映射:', relativePath);
         });
 
-        this.projectListModal.style.display = 'block';
-    }
-
-    /**
-     * 隐藏项目列表
-     */
-    hideProjectList() {
-        this.projectListModal.style.display = 'none';
-    }
-
-    /**
-     * 选择项目
-     */
-    async selectProject(project) {
-        this.hideProjectList();
-        this.currentProject = project;
-
-        // 检查是否已经验证过密码（SessionStorage）
-        const verified = sessionStorage.getItem(`project_${project.id}_verified`);
-        if (verified === 'true') {
-            // 已验证，直接加载项目
-            await this.loadProjectConfig(project);
-            this.showProjectDocuments();
-        } else {
-            // 需要验证密码
-            this.showPasswordModal(project);
+        // 查找config.json
+        const configFile = this.localProjectFiles.get('config.json');
+        if (!configFile) {
+            alert('未找到config.json配置文件，请确保选择了正确的项目目录');
+            return;
         }
+
+        // 读取配置文件
+        try {
+            const configText = await this.readFileAsText(configFile);
+            this.currentProjectConfig = JSON.parse(configText);
+
+            // 设置当前项目
+            this.currentProject = {
+                id: 'local_' + Date.now(),
+                name: this.currentProjectConfig.name,
+                path: '' // 本地项目没有path，使用File对象
+            };
+            this.projectSource = 'local';
+
+            console.log('本地项目配置加载成功:', this.currentProjectConfig);
+
+            // 检查是否需要密码
+            if (this.currentProjectConfig.password) {
+                this.showPasswordModal();
+            } else {
+                this.showProjectDocuments();
+            }
+        } catch (error) {
+            console.error('加载配置文件失败:', error);
+            alert('配置文件格式错误: ' + error.message);
+        }
+    }
+
+    /**
+     * 读取文件为文本
+     */
+    readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(e);
+            reader.readAsText(file);
+        });
+    }
+
+    /**
+     * 打开内置项目
+     */
+    openBuiltInProject() {
+        this.currentProject = this.builtInProject;
+        this.projectSource = 'builtin';
+        this.showPasswordModal();
     }
 
     /**
      * 显示密码输入模态框
      */
-    showPasswordModal(project) {
-        this.passwordProjectName.textContent = `正在打开项目: ${project.name}`;
+    showPasswordModal() {
         this.passwordInput.value = '';
         this.passwordError.style.display = 'none';
         this.passwordModal.style.display = 'block';
@@ -659,7 +678,19 @@ class ProjectManager {
      */
     hidePasswordModal() {
         this.passwordModal.style.display = 'none';
+        this.passwordInput.value = '';
+        this.passwordError.style.display = 'none';
+    }
+
+    /**
+     * 取消密码输入
+     */
+    cancelPasswordInput() {
+        this.hidePasswordModal();
         this.currentProject = null;
+        this.currentProjectConfig = null;
+        this.projectSource = null;
+        this.localProjectFiles.clear();
     }
 
     /**
@@ -672,14 +703,15 @@ class ProjectManager {
             return;
         }
 
-        // 加载项目配置
         try {
-            await this.loadProjectConfig(this.currentProject);
+            // 如果是内置项目，需要先加载配置
+            if (this.projectSource === 'builtin') {
+                await this.loadBuiltInProjectConfig();
+            }
 
             // 验证密码
             if (password === this.currentProjectConfig.password) {
                 // 密码正确
-                sessionStorage.setItem(`project_${this.currentProject.id}_verified`, 'true');
                 this.hidePasswordModal();
                 this.showProjectDocuments();
             } else {
@@ -711,13 +743,12 @@ class ProjectManager {
     }
 
     /**
-     * 加载项目配置
+     * 加载内置项目配置
      */
-    async loadProjectConfig(project) {
+    async loadBuiltInProjectConfig() {
         try {
-            const configUrl = `${project.path}/config.json`;
-            console.log('尝试加载配置文件:', configUrl);
-            console.log('完整URL:', new URL(configUrl, window.location.href).href);
+            const configUrl = `${this.currentProject.path}/config.json`;
+            console.log('尝试加载内置项目配置:', configUrl);
 
             const response = await fetch(configUrl);
             console.log('响应状态:', response.status, response.statusText);
@@ -727,14 +758,10 @@ class ProjectManager {
             }
 
             const configText = await response.text();
-            console.log('配置文件内容长度:', configText.length);
-
             this.currentProjectConfig = JSON.parse(configText);
-            console.log('项目配置加载成功:', this.currentProjectConfig);
+            console.log('内置项目配置加载成功:', this.currentProjectConfig);
         } catch (error) {
-            console.error('加载项目配置失败，详细错误:', error);
-            console.error('错误类型:', error.name);
-            console.error('错误信息:', error.message);
+            console.error('加载内置项目配置失败:', error);
             throw error;
         }
     }
@@ -786,7 +813,7 @@ class ProjectManager {
                 docLink.textContent = doc.title;
                 docLink.addEventListener('click', (e) => {
                     e.preventDefault();
-                    this.loadDocument(doc);
+                    this.loadDocument(doc, docLink);
                 });
                 categoryDiv.appendChild(docLink);
             });
@@ -807,14 +834,29 @@ class ProjectManager {
     /**
      * 加载文档
      */
-    async loadDocument(doc) {
+    async loadDocument(doc, clickedLink) {
         try {
-            const docPath = `${this.currentProject.path}/${doc.path}`;
-            const response = await fetch(docPath);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+            let markdown;
+
+            // 根据项目来源使用不同的加载方式
+            if (this.projectSource === 'local') {
+                // 从本地File对象读取
+                const file = this.localProjectFiles.get(doc.path);
+                if (!file) {
+                    throw new Error(`文件不存在: ${doc.path}`);
+                }
+                markdown = await this.readFileAsText(file);
+                console.log('从本地文件读取:', doc.path);
+            } else {
+                // 从服务器fetch
+                const docPath = `${this.currentProject.path}/${doc.path}`;
+                const response = await fetch(docPath);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                markdown = await response.text();
+                console.log('从服务器读取:', docPath);
             }
-            const markdown = await response.text();
 
             // 使用reader的渲染方法
             this.reader.currentMarkdown = markdown;
@@ -837,7 +879,9 @@ class ProjectManager {
             // 高亮当前文档
             const allDocLinks = this.reader.tocNav.querySelectorAll('.doc-list-item');
             allDocLinks.forEach(link => link.classList.remove('active'));
-            event.target.classList.add('active');
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
 
             // 显示文件信息
             this.reader.fileInfo.style.display = 'flex';
@@ -849,7 +893,7 @@ class ProjectManager {
             console.log('文档加载成功:', doc.title);
         } catch (error) {
             console.error('加载文档失败:', error);
-            alert(`加载文档失败: ${doc.title}`);
+            alert(`加载文档失败: ${doc.title}\n${error.message}`);
         }
     }
 
@@ -859,6 +903,8 @@ class ProjectManager {
     closeProject() {
         this.currentProject = null;
         this.currentProjectConfig = null;
+        this.projectSource = null;
+        this.localProjectFiles.clear();
 
         // 恢复上传区
         this.reader.uploadArea.style.display = 'flex';

@@ -105,6 +105,7 @@
                         <h2>拖拽Markdown文件到这里</h2>
                         <p>或者点击下方按钮选择文件</p>
                         <input type="file" id="file-input" accept=".md,.markdown" hidden>
+                        <input type="file" id="directory-input" webkitdirectory directory multiple hidden>
                         <button id="select-file-btn" class="select-file-btn">选择文件</button>
                         <p class="upload-hint">支持 .md 和 .markdown 文件，最大10MB</p>
                     </div>
@@ -124,30 +125,14 @@
         </div>
     </div>
 
-    <!-- 项目列表模态框 -->
-    <div id="project-list-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>选择项目</h2>
-                <button class="modal-close" onclick="document.getElementById('project-list-modal').style.display='none'">×</button>
-            </div>
-            <div class="modal-body">
-                <div id="project-list" class="project-list">
-                    <!-- 项目列表将通过JS动态生成 -->
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- 密码输入模态框 -->
     <div id="password-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>输入项目密码</h2>
+                <h2>输入密码</h2>
                 <button class="modal-close" onclick="document.getElementById('password-modal').style.display='none'">×</button>
             </div>
             <div class="modal-body">
-                <p id="password-project-name" class="password-hint"></p>
                 <input type="password" id="project-password-input" class="password-input" placeholder="请输入密码" />
                 <div class="modal-actions">
                     <button id="password-submit-btn" class="btn-primary">确定</button>
@@ -157,6 +142,15 @@
             </div>
         </div>
     </div>
+
+    <!-- 隐秘的项目入口按钮 -->
+    <button id="secret-project-btn" class="secret-btn" title="...">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="12" cy="5" r="1"></circle>
+            <circle cx="12" cy="19" r="1"></circle>
+        </svg>
+    </button>
 
     <!-- 加载主题系统 -->
     <script src="../../js/settings-loader.js"></script>

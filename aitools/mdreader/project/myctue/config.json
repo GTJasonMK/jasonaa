@@ -124,23 +124,8 @@
       "category": "扩展系统"
     },
     {
-      "title": "数据结构设计",
-      "path": "docs/50-技术实现/50-数据结构设计.md",
-      "category": "技术实现"
-    },
-    {
-      "title": "架构设计",
-      "path": "docs/50-技术实现/51-架构设计.md",
-      "category": "技术实现"
-    },
-    {
       "title": "AI实现方案",
       "path": "docs/50-技术实现/52-AI实现方案.md",
-      "category": "技术实现"
-    },
-    {
-      "title": "MCP集成方案",
-      "path": "docs/50-技术实现/56-MCP集成方案.md",
       "category": "技术实现"
     },
     {

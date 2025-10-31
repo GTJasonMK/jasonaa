@@ -1,5 +1,32 @@
 /* Markdown阅读器样式 */
 
+/* 自定义滚动条样式 */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-color);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-color);
+}
+
+/* Firefox滚动条样式 */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) var(--bg-color);
+}
+
 /* 全局容器 */
 .container {
     width: 100%;
@@ -578,55 +605,6 @@
     flex: 1;
 }
 
-/* 项目列表样式 */
-.project-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.project-card {
-    padding: 1.5rem;
-    border: 2px solid var(--border-color);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    background-color: var(--bg-color);
-}
-
-.project-card:hover {
-    border-color: var(--accent-color);
-    background-color: var(--hover-bg);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.project-card h3 {
-    margin: 0 0 0.5rem 0;
-    color: var(--text-color);
-    font-size: 1.125rem;
-}
-
-.project-card p {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.project-card .project-meta {
-    margin-top: 0.75rem;
-    display: flex;
-    gap: 1rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.project-card .project-meta span {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
 /* 密码输入样式 */
 .password-hint {
     margin-bottom: 1rem;
@@ -771,10 +749,6 @@
         padding: 1rem;
     }
 
-    .project-card {
-        padding: 1rem;
-    }
-
     .modal-actions {
         flex-direction: column;
     }
@@ -782,5 +756,54 @@
     .btn-primary,
     .btn-secondary {
         width: 100%;
+    }
+}
+
+/* 隐秘的项目入口按钮 */
+.secret-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.3;
+    transition: all 0.3s ease;
+    z-index: 9999;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.secret-btn:hover {
+    opacity: 0.8;
+    background-color: var(--hover-bg);
+    border-color: var(--accent-color);
+    transform: scale(1.1);
+}
+
+.secret-btn:active {
+    transform: scale(0.95);
+}
+
+.secret-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .secret-btn {
+        width: 36px;
+        height: 36px;
+        bottom: 20px;
+        right: 20px;
+        opacity: 0.4;
     }
 }
