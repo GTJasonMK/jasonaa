@@ -84,21 +84,24 @@
 .toolbar-right {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .toolbar-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border: none;
     background-color: transparent;
     color: var(--text-color);
     cursor: pointer;
     border-radius: 4px;
     transition: background-color 0.3s;
+    /* 确保触摸区域 */
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .toolbar-btn:hover {
@@ -477,11 +480,6 @@
         display: none;
     }
 
-    .toolbar-btn {
-        width: 36px;
-        height: 36px;
-    }
-
     /* 移动端TOC为抽屉式 */
     .toc-sidebar {
         position: fixed;
@@ -500,8 +498,79 @@
         display: block;
     }
 
+    .toc-nav {
+        padding: 0.5rem;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .toc-nav a {
+        padding: 0.75rem 1rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .toc-nav ul ul a {
+        padding-left: 2rem;
+    }
+
     .markdown-body {
         padding: 1.5rem 1rem;
+        font-size: 16px;
+        line-height: 1.8;
+    }
+
+    /* 移动端标题优化 */
+    .markdown-body h1 {
+        font-size: 1.75em;
+    }
+
+    .markdown-body h2 {
+        font-size: 1.5em;
+    }
+
+    .markdown-body h3 {
+        font-size: 1.25em;
+    }
+
+    .markdown-body p {
+        margin: 1em 0;
+    }
+
+    /* 代码块移动端优化 */
+    .markdown-body pre {
+        padding: 0.75rem;
+        font-size: 14px;
+        /* 确保横向滚动流畅 */
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .markdown-body code {
+        font-size: 90%;
+        word-break: break-word;
+    }
+
+    /* 表格移动端优化 - 横向滚动 */
+    .markdown-body table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    .markdown-body table th,
+    .markdown-body table td {
+        padding: 0.5rem;
+        font-size: 14px;
+    }
+
+    /* 图片移动端优化 */
+    .markdown-body img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 1rem auto;
     }
 
     .upload-box {
@@ -745,9 +814,20 @@
 
 /* 响应式 - 模态框 */
 @media (max-width: 768px) {
+    .modal {
+        align-items: flex-start;
+        overflow-y: auto;
+        padding: 20px 0;
+    }
+
     .modal-content {
+        position: relative;
+        top: auto;
+        left: auto;
+        transform: none;
+        margin: 0 auto;
         width: 95%;
-        max-height: 90vh;
+        max-height: none;
     }
 
     .modal-header,
@@ -755,13 +835,47 @@
         padding: 1rem;
     }
 
+    .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+
     .modal-actions {
         flex-direction: column;
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     .btn-primary,
     .btn-secondary {
         width: 100%;
+        min-height: 44px;
+        padding: 0.75rem 1.5rem;
+    }
+
+    .doc-list-item {
+        padding: 1rem;
+        min-height: 44px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .close-file-btn,
+    .modal-close,
+    .toc-close-btn {
+        min-width: 44px;
+        min-height: 44px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .close-project-btn {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+
+    .password-input {
+        font-size: 16px;
     }
 }
 
@@ -806,11 +920,17 @@
 /* 移动端适配 */
 @media (max-width: 768px) {
     .secret-btn {
-        width: 36px;
-        height: 36px;
+        width: 44px;
+        height: 44px;
         bottom: 20px;
-        right: 20px;
+        left: 20px;
+        right: auto;
         opacity: 0.4;
+    }
+
+    .secret-btn svg {
+        width: 18px;
+        height: 18px;
     }
 }
 
@@ -883,20 +1003,23 @@
 /* 移动端阅读进度条 */
 @media (max-width: 768px) {
     .reading-progress-bar {
-        right: 15px;
+        right: 20px;
+        opacity: 0.5;
     }
 
     .progress-track {
         height: 200px;
+        width: 8px;
     }
 
     .progress-thumb {
-        width: 20px;
-        height: 20px;
+        width: 44px;
+        height: 44px;
     }
 
     .progress-percentage {
-        right: 26px;
-        font-size: 11px;
+        right: 50px;
+        font-size: 12px;
+        padding: 4px 8px;
     }
 }
