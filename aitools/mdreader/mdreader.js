@@ -181,7 +181,12 @@ class MarkdownReader {
      * 设置进度条拖动功能
      */
     setupProgressBarDrag() {
-        if (!this.progressThumb || !this.progressTrack) return;
+        if (!this.progressThumb || !this.progressTrack) {
+            console.warn('[进度条] 进度条元素不存在');
+            return;
+        }
+
+        console.log('[进度条] 初始化拖动功能');
 
         // 点击轨道跳转
         this.progressTrack.addEventListener('click', (e) => {
@@ -189,6 +194,19 @@ class MarkdownReader {
             const rect = this.progressTrack.getBoundingClientRect();
             const clickY = e.clientY - rect.top;
             const percentage = clickY / rect.height;
+            console.log('[进度条] 点击轨道跳转:', Math.round(percentage * 100) + '%');
+            this.scrollToPercentage(percentage);
+        });
+
+        // 触摸轨道跳转（移动端）
+        this.progressTrack.addEventListener('touchend', (e) => {
+            if (this.isDraggingProgress) return; // 如果是拖动则忽略
+            if (e.target === this.progressThumb) return;
+            const rect = this.progressTrack.getBoundingClientRect();
+            const touch = e.changedTouches[0];
+            const touchY = touch.clientY - rect.top;
+            const percentage = touchY / rect.height;
+            console.log('[进度条] 触摸轨道跳转:', Math.round(percentage * 100) + '%');
             this.scrollToPercentage(percentage);
         });
 
@@ -233,6 +251,7 @@ class MarkdownReader {
 
             const handleTouchMove = (e) => {
                 if (!this.isDraggingProgress) return;
+                e.preventDefault(); // 阻止滚动
                 const rect = this.progressTrack.getBoundingClientRect();
                 const touch = e.touches[0];
                 const touchY = touch.clientY - rect.top;
@@ -240,9 +259,11 @@ class MarkdownReader {
 
                 // 直接更新滑块视觉位置
                 const trackHeight = this.progressTrack.offsetHeight;
-                const thumbY = percentage * (trackHeight - 24);
+                const thumbY = percentage * (trackHeight - 40);
                 this.progressThumb.style.top = `${thumbY}px`;
-                this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
+                if (this.progressPercentage) {
+                    this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
+                }
 
                 // 滚动内容
                 this.scrollToPercentage(percentage);
@@ -257,7 +278,7 @@ class MarkdownReader {
 
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
-        });
+        }, { passive: false });
     }
 
     /**
