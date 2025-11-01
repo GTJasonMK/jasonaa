@@ -223,12 +223,31 @@ class MarkdownReader {
      * 设置进度条拖动功能
      */
     setupProgressBarDrag() {
+        console.log('[进度条] ========== 开始初始化 ==========');
+        console.log('[进度条] progressBar:', this.progressBar);
+        console.log('[进度条] progressThumb:', this.progressThumb);
+        console.log('[进度条] progressTrack:', this.progressTrack);
+
         if (!this.progressThumb || !this.progressTrack) {
-            console.warn('[进度条] 进度条元素不存在');
+            console.error('[进度条] ❌ 进度条元素不存在！无法初始化');
             return;
         }
 
-        console.log('[进度条] ========== 初始化拖动功能 ==========');
+        console.log('[进度条] ✅ 元素存在，继续初始化');
+
+        // 强制显示进度条并添加明显的视觉标记
+        if (this.progressBar) {
+            this.progressBar.style.display = 'block';
+            this.progressBar.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'; // 红色半透明背景用于调试
+            this.progressBar.style.border = '3px solid red'; // 红色边框
+            console.log('[进度条] 已添加红色边框用于视觉定位');
+        }
+
+        // 让小球变成明显的绿色
+        this.progressThumb.style.backgroundColor = '#00ff00';
+        this.progressThumb.style.width = '50px';
+        this.progressThumb.style.height = '50px';
+        console.log('[进度条] 小球已改为绿色50px');
 
         // 输出元素位置信息进行诊断
         setTimeout(() => {
@@ -236,39 +255,55 @@ class MarkdownReader {
             const trackRect = this.progressTrack.getBoundingClientRect();
             const barRect = this.progressBar.getBoundingClientRect();
 
-            console.log('[进度条] 元素诊断信息:', {
-                进度条容器: {
-                    left: Math.round(barRect.left),
-                    top: Math.round(barRect.top),
-                    width: Math.round(barRect.width),
-                    height: Math.round(barRect.height),
-                    zIndex: window.getComputedStyle(this.progressBar).zIndex,
-                    display: window.getComputedStyle(this.progressBar).display,
-                    position: window.getComputedStyle(this.progressBar).position
-                },
-                轨道: {
-                    left: Math.round(trackRect.left),
-                    top: Math.round(trackRect.top),
-                    width: Math.round(trackRect.width),
-                    height: Math.round(trackRect.height)
-                },
-                小球: {
-                    left: Math.round(thumbRect.left),
-                    top: Math.round(thumbRect.top),
-                    width: Math.round(thumbRect.width),
-                    height: Math.round(thumbRect.height)
-                }
+            console.log('[进度条] ========== 元素诊断信息 ==========');
+            console.log('[进度条] 进度条容器:', {
+                left: Math.round(barRect.left),
+                top: Math.round(barRect.top),
+                width: Math.round(barRect.width),
+                height: Math.round(barRect.height),
+                right: Math.round(barRect.right),
+                bottom: Math.round(barRect.bottom),
+                zIndex: window.getComputedStyle(this.progressBar).zIndex,
+                display: window.getComputedStyle(this.progressBar).display,
+                position: window.getComputedStyle(this.progressBar).position,
+                visibility: window.getComputedStyle(this.progressBar).visibility,
+                opacity: window.getComputedStyle(this.progressBar).opacity
             });
+            console.log('[进度条] 轨道:', {
+                left: Math.round(trackRect.left),
+                top: Math.round(trackRect.top),
+                width: Math.round(trackRect.width),
+                height: Math.round(trackRect.height)
+            });
+            console.log('[进度条] 小球:', {
+                left: Math.round(thumbRect.left),
+                top: Math.round(thumbRect.top),
+                width: Math.round(thumbRect.width),
+                height: Math.round(thumbRect.height)
+            });
+            console.log('[进度条] 屏幕尺寸:', {
+                width: window.innerWidth,
+                height: window.innerHeight
+            });
+
+            // 检查是否在屏幕内
+            const isVisible = barRect.right > 0 && barRect.left < window.innerWidth &&
+                            barRect.bottom > 0 && barRect.top < window.innerHeight;
+            console.log('[进度条] 元素在屏幕内?', isVisible);
         }, 500);
 
         // 添加触摸测试 - 看能否触发基本触摸事件
+        console.log('[进度条] 正在绑定测试监听器...');
+
         this.progressTrack.addEventListener('touchstart', (e) => {
-            console.log('[进度条-测试] 轨道touchstart成功! touches:', e.touches.length);
-        }, { once: false, passive: true });
+            console.log('[进度条-测试] 🎉🎉🎉 轨道touchstart成功! touches:', e.touches.length);
+        }, { passive: true });
 
         this.progressThumb.addEventListener('touchstart', (e) => {
-            console.log('[进度条-测试] 小球touchstart成功! touches:', e.touches.length);
-        }, { once: false, passive: true });
+            console.log('[进度条-测试] 🎉🎉🎉 小球touchstart成功! touches:', e.touches.length);
+        }, { passive: true });
+
+        console.log('[进度条] 测试监听器已绑定');
 
         // 点击轨道跳转
         this.progressTrack.addEventListener('click', (e) => {
