@@ -289,7 +289,8 @@ class MarkdownReader {
         this.progressThumb.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.isDraggingProgress = true;
-            console.log('[进度条] 触摸开始拖动');
+            console.log('[进度条] ====== 触摸开始拖动 ======');
+            console.log('[进度条] 触摸点数:', e.touches.length);
 
             const handleTouchMove = (e) => {
                 if (!this.isDraggingProgress) return;
@@ -298,6 +299,12 @@ class MarkdownReader {
                 const touch = e.touches[0];
                 const touchY = touch.clientY - rect.top;
                 const percentage = Math.max(0, Math.min(1, touchY / rect.height));
+
+                console.log('[进度条] 触摸移动:', {
+                    touchY,
+                    trackHeight: rect.height,
+                    percentage: Math.round(percentage * 100) + '%'
+                });
 
                 // 直接更新滑块视觉位置
                 const trackHeight = this.progressTrack.offsetHeight;
@@ -308,12 +315,13 @@ class MarkdownReader {
                 }
 
                 // 滚动内容
+                console.log('[进度条] 准备跳转到:', Math.round(percentage * 100) + '%');
                 this.scrollToPercentage(percentage);
             };
 
             const handleTouchEnd = () => {
                 this.isDraggingProgress = false;
-                console.log('[进度条] 触摸拖动结束');
+                console.log('[进度条] ====== 触摸拖动结束 ======');
                 document.removeEventListener('touchmove', handleTouchMove);
                 document.removeEventListener('touchend', handleTouchEnd);
             };
@@ -366,21 +374,59 @@ class MarkdownReader {
      */
     scrollToPercentage(percentage) {
         const scrollContainer = this.getScrollContainer();
+        console.log('[进度条] >>>>>> 开始跳转 <<<<<<');
         console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', `(${scrollContainer}容器)`);
 
         if (scrollContainer === 'window') {
             const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
             const targetScroll = percentage * scrollHeight;
-            console.log('[进度条] Window跳转:', { targetScroll: Math.round(targetScroll), scrollHeight });
+            const beforeScroll = window.scrollY || window.pageYOffset;
+
+            console.log('[进度条] Window跳转详情:', {
+                当前位置: beforeScroll,
+                目标位置: Math.round(targetScroll),
+                总滚动高度: scrollHeight,
+                文档总高度: document.documentElement.scrollHeight,
+                窗口高度: window.innerHeight
+            });
+
             window.scrollTo({
                 top: targetScroll,
                 behavior: 'smooth'
             });
+
+            // 检查跳转是否生效
+            setTimeout(() => {
+                const afterScroll = window.scrollY || window.pageYOffset;
+                console.log('[进度条] 跳转结果:', {
+                    跳转前: beforeScroll,
+                    跳转后: afterScroll,
+                    变化: afterScroll - beforeScroll,
+                    成功: Math.abs(afterScroll - targetScroll) < 10
+                });
+            }, 100);
         } else {
             const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
             const targetScroll = percentage * scrollHeight;
-            console.log('[进度条] Element跳转:', { targetScroll: Math.round(targetScroll), scrollHeight });
+            const beforeScroll = this.markdownContent.scrollTop;
+
+            console.log('[进度条] Element跳转详情:', {
+                当前位置: beforeScroll,
+                目标位置: Math.round(targetScroll),
+                总滚动高度: scrollHeight
+            });
+
             this.markdownContent.scrollTop = targetScroll;
+
+            setTimeout(() => {
+                const afterScroll = this.markdownContent.scrollTop;
+                console.log('[进度条] 跳转结果:', {
+                    跳转前: beforeScroll,
+                    跳转后: afterScroll,
+                    变化: afterScroll - beforeScroll,
+                    成功: Math.abs(afterScroll - targetScroll) < 10
+                });
+            }, 100);
         }
     }
 
