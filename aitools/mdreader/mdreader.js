@@ -303,14 +303,19 @@ class MarkdownReader {
         const percentage = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
 
         const trackHeight = this.progressTrack.offsetHeight;
-        const thumbY = percentage * (trackHeight - 24);
+        const thumbY = percentage * (trackHeight - (isMobile ? 40 : 24));
 
         this.progressThumb.style.top = `${thumbY}px`;
         this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
 
         // 调试日志
-        if (isMobile && scrollTop > 0) {
-            console.log('[进度条] 移动端滚动:', { scrollTop, scrollHeight, percentage: Math.round(percentage * 100) + '%' });
+        if (scrollTop > 0) {
+            console.log(`[进度条] ${isMobile ? '移动端' : '桌面端'}滚动:`, {
+                scrollTop,
+                scrollHeight,
+                percentage: Math.round(percentage * 100) + '%',
+                windowWidth: window.innerWidth
+            });
         }
     }
 
