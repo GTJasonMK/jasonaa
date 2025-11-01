@@ -506,6 +506,30 @@ html, body {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+    /* 移动端允许整页滚动 */
+    html, body {
+        overflow: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .container {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+    }
+
+    .main-content {
+        overflow: visible;
+    }
+
+    .content-area {
+        overflow: visible;
+    }
+
+    .markdown-body {
+        overflow-y: visible;
+    }
+
     .toolbar {
         padding: 0.75rem 1rem;
     }
