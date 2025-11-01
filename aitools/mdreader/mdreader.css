@@ -555,7 +555,7 @@ html, body {
     }
 
     .markdown-body {
-        padding: 4rem 70px 1.5rem 1rem;
+        padding: 4rem 1rem 1.5rem 1rem;
         font-size: 16px;
         line-height: 1.8;
     }
@@ -1041,7 +1041,7 @@ html, body {
 /* 移动端阅读进度条 */
 @media (max-width: 768px) {
     .reading-progress-bar {
-        right: 20px;
+        right: 10px;
         opacity: 0.3;
     }
 
@@ -1056,14 +1056,12 @@ html, body {
     }
 
     .progress-thumb {
-        width: 44px;
-        height: 44px;
+        width: 32px;
+        height: 32px;
     }
 
+    /* 移动端隐藏百分比文字，避免遮挡内容 */
     .progress-percentage {
-        right: 50px;
-        font-size: 12px;
-        padding: 4px 8px;
-        opacity: 1;
+        display: none;
     }
 }
