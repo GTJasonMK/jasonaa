@@ -522,10 +522,12 @@ html, body {
 
     .main-content {
         overflow: visible;
+        display: block; /* 改为block布局，TOC完全脱离文档流 */
     }
 
     .content-area {
         overflow: visible;
+        width: 100%; /* 确保内容区占满全宽 */
     }
 
     .markdown-body {
