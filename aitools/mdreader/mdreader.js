@@ -159,22 +159,17 @@ class MarkdownReader {
         // 打开项目按钮触发目录选择，由ProjectManager处理
 
         // 滚动同步TOC高亮和进度条
-        // 移动端监听window滚动，桌面端监听markdown-content滚动
-        if (window.innerWidth <= 768) {
-            window.addEventListener('scroll', () => {
-                this.updateTocHighlight();
-                this.updateProgressBar();
-            });
-            console.log('滚动事件已绑定(移动端-window)');
-        } else if (this.markdownContent) {
-            this.markdownContent.addEventListener('scroll', () => {
-                this.updateTocHighlight();
-                this.updateProgressBar();
-            });
-            console.log('滚动事件已绑定(桌面端-markdownContent)');
-        } else {
-            console.warn('Markdown内容区域不存在');
+        // 同时监听window和markdownContent的滚动，函数内部根据设备类型判断
+        const scrollHandler = () => {
+            this.updateTocHighlight();
+            this.updateProgressBar();
+        };
+
+        window.addEventListener('scroll', scrollHandler);
+        if (this.markdownContent) {
+            this.markdownContent.addEventListener('scroll', scrollHandler);
         }
+        console.log('滚动事件已绑定(window + markdownContent)');
 
         // 进度条拖动事件
         this.setupProgressBarDrag();
@@ -234,6 +229,7 @@ class MarkdownReader {
         this.progressThumb.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this.isDraggingProgress = true;
+            console.log('[进度条] 触摸开始拖动');
 
             const handleTouchMove = (e) => {
                 if (!this.isDraggingProgress) return;
@@ -254,11 +250,12 @@ class MarkdownReader {
 
             const handleTouchEnd = () => {
                 this.isDraggingProgress = false;
+                console.log('[进度条] 触摸拖动结束');
                 document.removeEventListener('touchmove', handleTouchMove);
                 document.removeEventListener('touchend', handleTouchEnd);
             };
 
-            document.addEventListener('touchmove', handleTouchMove);
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
         });
     }
@@ -271,8 +268,10 @@ class MarkdownReader {
         if (this.isDraggingProgress) return;
 
         // 移动端使用window滚动，桌面端使用markdownContent滚动
+        const isMobile = window.innerWidth <= 768;
         let scrollTop, scrollHeight;
-        if (window.innerWidth <= 768) {
+
+        if (isMobile) {
             scrollTop = window.scrollY || window.pageYOffset;
             scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         } else {
@@ -287,16 +286,25 @@ class MarkdownReader {
 
         this.progressThumb.style.top = `${thumbY}px`;
         this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
+
+        // 调试日志
+        if (isMobile && scrollTop > 0) {
+            console.log('[进度条] 移动端滚动:', { scrollTop, scrollHeight, percentage: Math.round(percentage * 100) + '%' });
+        }
     }
 
     /**
      * 滚动到指定百分比位置
      */
     scrollToPercentage(percentage) {
+        const isMobile = window.innerWidth <= 768;
+        console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', isMobile ? '(移动端)' : '(桌面端)');
+
         // 移动端滚动window，桌面端滚动markdownContent
-        if (window.innerWidth <= 768) {
+        if (isMobile) {
             const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
             const targetScroll = percentage * scrollHeight;
+            console.log('[进度条] 移动端跳转:', { targetScroll, scrollHeight });
             window.scrollTo({
                 top: targetScroll,
                 behavior: 'smooth'
