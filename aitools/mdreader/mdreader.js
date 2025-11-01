@@ -91,7 +91,12 @@ class MarkdownReader {
         // 工具栏按钮
         this.toggleTocBtn.addEventListener('click', () => this.toggleToc());
         this.tocCloseBtn.addEventListener('click', () => this.toggleToc());
-        this.tocOverlay.addEventListener('click', () => this.toggleToc());
+
+        // TOC遮罩层点击关闭（如果存在）
+        if (this.tocOverlay) {
+            this.tocOverlay.addEventListener('click', () => this.toggleToc());
+        }
+
         this.copyAllBtn.addEventListener('click', () => this.copyAllContent());
         this.exportHtmlBtn.addEventListener('click', () => this.exportHtml());
         this.closeFileBtn.addEventListener('click', () => this.closeFile());
@@ -512,10 +517,14 @@ class MarkdownReader {
         this.tocVisible = !this.tocVisible;
         if (this.tocVisible) {
             this.tocSidebar.classList.remove('hidden');
-            this.tocOverlay.classList.add('active');
+            if (this.tocOverlay) {
+                this.tocOverlay.classList.add('active');
+            }
         } else {
             this.tocSidebar.classList.add('hidden');
-            this.tocOverlay.classList.remove('active');
+            if (this.tocOverlay) {
+                this.tocOverlay.classList.remove('active');
+            }
         }
     }
 
