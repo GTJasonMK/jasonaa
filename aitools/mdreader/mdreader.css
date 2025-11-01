@@ -1060,9 +1060,10 @@ html, body {
     right: 30px;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 1000;
+    z-index: 2000;
     opacity: 0.6;
     transition: opacity 0.3s;
+    pointer-events: auto;
 }
 
 .reading-progress-bar:hover {
@@ -1076,6 +1077,7 @@ html, body {
     border-radius: 3px;
     position: relative;
     cursor: pointer;
+    pointer-events: auto;
 }
 
 .progress-thumb {
@@ -1092,6 +1094,8 @@ html, body {
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    pointer-events: auto;
+    touch-action: none;
 }
 
 .progress-thumb:active {

@@ -228,7 +228,47 @@ class MarkdownReader {
             return;
         }
 
-        console.log('[进度条] 初始化拖动功能');
+        console.log('[进度条] ========== 初始化拖动功能 ==========');
+
+        // 输出元素位置信息进行诊断
+        setTimeout(() => {
+            const thumbRect = this.progressThumb.getBoundingClientRect();
+            const trackRect = this.progressTrack.getBoundingClientRect();
+            const barRect = this.progressBar.getBoundingClientRect();
+
+            console.log('[进度条] 元素诊断信息:', {
+                进度条容器: {
+                    left: Math.round(barRect.left),
+                    top: Math.round(barRect.top),
+                    width: Math.round(barRect.width),
+                    height: Math.round(barRect.height),
+                    zIndex: window.getComputedStyle(this.progressBar).zIndex,
+                    display: window.getComputedStyle(this.progressBar).display,
+                    position: window.getComputedStyle(this.progressBar).position
+                },
+                轨道: {
+                    left: Math.round(trackRect.left),
+                    top: Math.round(trackRect.top),
+                    width: Math.round(trackRect.width),
+                    height: Math.round(trackRect.height)
+                },
+                小球: {
+                    left: Math.round(thumbRect.left),
+                    top: Math.round(thumbRect.top),
+                    width: Math.round(thumbRect.width),
+                    height: Math.round(thumbRect.height)
+                }
+            });
+        }, 500);
+
+        // 添加触摸测试 - 看能否触发基本触摸事件
+        this.progressTrack.addEventListener('touchstart', (e) => {
+            console.log('[进度条-测试] 轨道touchstart成功! touches:', e.touches.length);
+        }, { once: false, passive: true });
+
+        this.progressThumb.addEventListener('touchstart', (e) => {
+            console.log('[进度条-测试] 小球touchstart成功! touches:', e.touches.length);
+        }, { once: false, passive: true });
 
         // 点击轨道跳转
         this.progressTrack.addEventListener('click', (e) => {
