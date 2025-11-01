@@ -70,6 +70,23 @@ class MarkdownReader {
     }
 
     /**
+     * 动态检测实际滚动容器
+     * 解决CSS @media和JS设备判断不一致的问题
+     */
+    getScrollContainer() {
+        // 检查 markdownContent 是否可以滚动
+        if (this.markdownContent) {
+            const canScroll = this.markdownContent.scrollHeight > this.markdownContent.clientHeight;
+            const hasOverflow = window.getComputedStyle(this.markdownContent).overflowY !== 'visible';
+
+            if (canScroll && hasOverflow) {
+                return 'element'; // 使用元素滚动
+            }
+        }
+        return 'window'; // 使用window滚动
+    }
+
+    /**
      * 初始化
      */
     init() {
@@ -313,10 +330,11 @@ class MarkdownReader {
         if (!this.progressBar || !this.progressThumb || !this.progressPercentage) return;
         if (this.isDraggingProgress) return;
 
-        // 触摸设备使用window滚动，桌面端使用markdownContent滚动
+        // 动态检测实际滚动容器
+        const scrollContainer = this.getScrollContainer();
         let scrollTop, scrollHeight;
 
-        if (this.isTouchDevice) {
+        if (scrollContainer === 'window') {
             scrollTop = window.scrollY || window.pageYOffset;
             scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         } else {
@@ -334,10 +352,11 @@ class MarkdownReader {
 
         // 调试日志（仅当滚动位置>0时输出，避免刷屏）
         if (scrollTop > 10) {
-            console.log(`[进度条] ${this.isTouchDevice ? '触摸设备' : '桌面端'}滚动:`, {
+            console.log(`[进度条] 滚动更新 (${scrollContainer}):`, {
                 scrollTop: Math.round(scrollTop),
                 scrollHeight,
-                percentage: Math.round(percentage * 100) + '%'
+                percentage: Math.round(percentage * 100) + '%',
+                设备: this.isTouchDevice ? '触摸设备' : '桌面端'
             });
         }
     }
@@ -346,13 +365,13 @@ class MarkdownReader {
      * 滚动到指定百分比位置
      */
     scrollToPercentage(percentage) {
-        console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', this.isTouchDevice ? '(触摸设备)' : '(桌面端)');
+        const scrollContainer = this.getScrollContainer();
+        console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', `(${scrollContainer}容器)`);
 
-        // 触摸设备滚动window，桌面端滚动markdownContent
-        if (this.isTouchDevice) {
+        if (scrollContainer === 'window') {
             const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
             const targetScroll = percentage * scrollHeight;
-            console.log('[进度条] 触摸设备跳转:', { targetScroll: Math.round(targetScroll), scrollHeight });
+            console.log('[进度条] Window跳转:', { targetScroll: Math.round(targetScroll), scrollHeight });
             window.scrollTo({
                 top: targetScroll,
                 behavior: 'smooth'
@@ -360,6 +379,7 @@ class MarkdownReader {
         } else {
             const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
             const targetScroll = percentage * scrollHeight;
+            console.log('[进度条] Element跳转:', { targetScroll: Math.round(targetScroll), scrollHeight });
             this.markdownContent.scrollTop = targetScroll;
         }
     }
@@ -509,7 +529,18 @@ class MarkdownReader {
             // 显示阅读进度条
             if (this.progressBar) {
                 this.progressBar.style.display = 'block';
-                setTimeout(() => this.updateProgressBar(), 100);
+                setTimeout(() => {
+                    this.updateProgressBar();
+                    // 输出滚动容器检测结果
+                    const container = this.getScrollContainer();
+                    console.log('[滚动容器检测]', {
+                        使用容器: container,
+                        设备类型: this.isTouchDevice ? '触摸设备' : '桌面端',
+                        markdownContent滚动高度: this.markdownContent.scrollHeight,
+                        markdownContent客户端高度: this.markdownContent.clientHeight,
+                        overflowY: window.getComputedStyle(this.markdownContent).overflowY
+                    });
+                }, 100);
             }
 
             // 滚动到顶部
@@ -632,9 +663,11 @@ class MarkdownReader {
     updateTocHighlight() {
         const headings = this.markdownContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
 
-        // 触摸设备使用window滚动，桌面端使用markdownContent滚动
+        // 动态检测实际滚动容器
+        const scrollContainer = this.getScrollContainer();
         let scrollTop;
-        if (this.isTouchDevice) {
+
+        if (scrollContainer === 'window') {
             scrollTop = window.scrollY || window.pageYOffset;
         } else {
             scrollTop = this.markdownContent.scrollTop;
@@ -642,7 +675,7 @@ class MarkdownReader {
 
         let activeHeading = null;
         headings.forEach((heading) => {
-            const headingTop = this.isTouchDevice
+            const headingTop = scrollContainer === 'window'
                 ? heading.getBoundingClientRect().top + scrollTop
                 : heading.offsetTop;
 
