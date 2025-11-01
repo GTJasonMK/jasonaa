@@ -569,14 +569,64 @@ html, body {
     /* 移动端标题优化 */
     .markdown-body h1 {
         font-size: 1.75em;
+        word-break: break-word;
     }
 
     .markdown-body h2 {
         font-size: 1.5em;
+        word-break: break-word;
     }
 
     .markdown-body h3 {
         font-size: 1.25em;
+        word-break: break-word;
+    }
+
+    /* 移动端强制所有元素自动换行 */
+    .markdown-body p,
+    .markdown-body li,
+    .markdown-body blockquote,
+    .markdown-body td,
+    .markdown-body th {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    /* 链接强制换行 */
+    .markdown-body a {
+        word-break: break-all;
+        overflow-wrap: break-word;
+    }
+
+    /* 代码块移动端自动换行 */
+    .markdown-body pre {
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .markdown-body pre code {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* 行内代码强制换行 */
+    .markdown-body code {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+
+    /* 表格单元格强制换行 */
+    .markdown-body table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    .markdown-body table th,
+    .markdown-body table td {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 300px;
     }
 
     .markdown-body p {
