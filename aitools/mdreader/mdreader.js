@@ -159,12 +159,19 @@ class MarkdownReader {
         // 打开项目按钮触发目录选择，由ProjectManager处理
 
         // 滚动同步TOC高亮和进度条
-        if (this.markdownContent) {
+        // 移动端监听window滚动，桌面端监听markdown-content滚动
+        if (window.innerWidth <= 768) {
+            window.addEventListener('scroll', () => {
+                this.updateTocHighlight();
+                this.updateProgressBar();
+            });
+            console.log('滚动事件已绑定(移动端-window)');
+        } else if (this.markdownContent) {
             this.markdownContent.addEventListener('scroll', () => {
                 this.updateTocHighlight();
                 this.updateProgressBar();
             });
-            console.log('滚动事件已绑定');
+            console.log('滚动事件已绑定(桌面端-markdownContent)');
         } else {
             console.warn('Markdown内容区域不存在');
         }
@@ -263,8 +270,16 @@ class MarkdownReader {
         if (!this.progressBar || !this.progressThumb || !this.progressPercentage) return;
         if (this.isDraggingProgress) return;
 
-        const scrollTop = this.markdownContent.scrollTop;
-        const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
+        // 移动端使用window滚动，桌面端使用markdownContent滚动
+        let scrollTop, scrollHeight;
+        if (window.innerWidth <= 768) {
+            scrollTop = window.scrollY || window.pageYOffset;
+            scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+        } else {
+            scrollTop = this.markdownContent.scrollTop;
+            scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
+        }
+
         const percentage = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
 
         const trackHeight = this.progressTrack.offsetHeight;
@@ -278,9 +293,19 @@ class MarkdownReader {
      * 滚动到指定百分比位置
      */
     scrollToPercentage(percentage) {
-        const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
-        const targetScroll = percentage * scrollHeight;
-        this.markdownContent.scrollTop = targetScroll;
+        // 移动端滚动window，桌面端滚动markdownContent
+        if (window.innerWidth <= 768) {
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const targetScroll = percentage * scrollHeight;
+            window.scrollTo({
+                top: targetScroll,
+                behavior: 'smooth'
+            });
+        } else {
+            const scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
+            const targetScroll = percentage * scrollHeight;
+            this.markdownContent.scrollTop = targetScroll;
+        }
     }
 
     /**
@@ -550,11 +575,22 @@ class MarkdownReader {
      */
     updateTocHighlight() {
         const headings = this.markdownContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
-        const scrollTop = this.markdownContent.scrollTop;
+
+        // 移动端使用window滚动，桌面端使用markdownContent滚动
+        let scrollTop;
+        if (window.innerWidth <= 768) {
+            scrollTop = window.scrollY || window.pageYOffset;
+        } else {
+            scrollTop = this.markdownContent.scrollTop;
+        }
 
         let activeHeading = null;
         headings.forEach((heading) => {
-            if (heading.offsetTop <= scrollTop + 100) {
+            const headingTop = window.innerWidth <= 768
+                ? heading.getBoundingClientRect().top + scrollTop
+                : heading.offsetTop;
+
+            if (headingTop <= scrollTop + 100) {
                 activeHeading = heading;
             }
         });
