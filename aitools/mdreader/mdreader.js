@@ -20,7 +20,6 @@ class MarkdownReader {
         this.toggleTocBtn = document.getElementById('toggle-toc-btn');
         this.copyAllBtn = document.getElementById('copy-all-btn');
         this.exportHtmlBtn = document.getElementById('export-html-btn');
-        this.fullscreenBtn = document.getElementById('fullscreen-btn');
         this.closeFileBtn = document.getElementById('close-file-btn');
         this.tocCloseBtn = document.getElementById('toc-close-btn');
         this.openProjectBtn = document.getElementById('open-project-btn');
@@ -93,7 +92,6 @@ class MarkdownReader {
         this.tocCloseBtn.addEventListener('click', () => this.toggleToc());
         this.copyAllBtn.addEventListener('click', () => this.copyAllContent());
         this.exportHtmlBtn.addEventListener('click', () => this.exportHtml());
-        this.fullscreenBtn.addEventListener('click', () => this.toggleFullscreen());
         this.closeFileBtn.addEventListener('click', () => this.closeFile());
 
         // 打开项目按钮触发目录选择，由ProjectManager处理
@@ -567,14 +565,6 @@ ${this.markdownContent.innerHTML}
         a.download = (this.currentFile ? this.currentFile.name.replace(/\.(md|markdown)$/i, '') : 'document') + '.html';
         a.click();
         URL.revokeObjectURL(url);
-    }
-
-    /**
-     * 切换全屏
-     */
-    toggleFullscreen() {
-        const container = document.querySelector('.container');
-        container.classList.toggle('fullscreen');
     }
 
     /**
