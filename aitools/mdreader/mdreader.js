@@ -40,8 +40,33 @@ class MarkdownReader {
         this.isDraggingProgress = false;
         this.fontSize = 16; // 默认字体大小
 
+        // 设备类型检测（基于触摸能力而非窗口宽度）
+        this.isTouchDevice = this.detectTouchDevice();
+
         // 初始化
         this.init();
+    }
+
+    /**
+     * 检测是否为触摸设备
+     */
+    detectTouchDevice() {
+        // 综合判断：触摸点数量 + 触摸事件支持 + 窗口宽度
+        const hasTouchPoints = navigator.maxTouchPoints > 0;
+        const hasTouchEvent = 'ontouchstart' in window;
+        const isNarrowScreen = window.innerWidth <= 768;
+
+        // 有触摸点或触摸事件支持，且屏幕较窄，判定为触摸设备
+        const isTouchDevice = (hasTouchPoints || hasTouchEvent) && isNarrowScreen;
+
+        console.log('[设备检测]', {
+            maxTouchPoints: navigator.maxTouchPoints,
+            hasTouchEvent,
+            windowWidth: window.innerWidth,
+            判定结果: isTouchDevice ? '触摸设备（移动端）' : '鼠标设备（桌面端）'
+        });
+
+        return isTouchDevice;
     }
 
     /**
@@ -54,8 +79,8 @@ class MarkdownReader {
         this.loadFontSizeFromStorage();
         this.loadFromStorage();
 
-        // 移动端默认隐藏TOC和overlay，避免灰屏
-        if (window.innerWidth <= 768) {
+        // 触摸设备默认隐藏TOC和overlay，避免灰屏
+        if (this.isTouchDevice) {
             this.tocVisible = false;
             this.tocSidebar.classList.add('hidden');
             if (this.tocOverlay) {
@@ -288,11 +313,10 @@ class MarkdownReader {
         if (!this.progressBar || !this.progressThumb || !this.progressPercentage) return;
         if (this.isDraggingProgress) return;
 
-        // 移动端使用window滚动，桌面端使用markdownContent滚动
-        const isMobile = window.innerWidth <= 768;
+        // 触摸设备使用window滚动，桌面端使用markdownContent滚动
         let scrollTop, scrollHeight;
 
-        if (isMobile) {
+        if (this.isTouchDevice) {
             scrollTop = window.scrollY || window.pageYOffset;
             scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         } else {
@@ -303,18 +327,17 @@ class MarkdownReader {
         const percentage = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
 
         const trackHeight = this.progressTrack.offsetHeight;
-        const thumbY = percentage * (trackHeight - (isMobile ? 40 : 24));
+        const thumbY = percentage * (trackHeight - (this.isTouchDevice ? 40 : 24));
 
         this.progressThumb.style.top = `${thumbY}px`;
         this.progressPercentage.textContent = `${Math.round(percentage * 100)}%`;
 
-        // 调试日志
-        if (scrollTop > 0) {
-            console.log(`[进度条] ${isMobile ? '移动端' : '桌面端'}滚动:`, {
-                scrollTop,
+        // 调试日志（仅当滚动位置>0时输出，避免刷屏）
+        if (scrollTop > 10) {
+            console.log(`[进度条] ${this.isTouchDevice ? '触摸设备' : '桌面端'}滚动:`, {
+                scrollTop: Math.round(scrollTop),
                 scrollHeight,
-                percentage: Math.round(percentage * 100) + '%',
-                windowWidth: window.innerWidth
+                percentage: Math.round(percentage * 100) + '%'
             });
         }
     }
@@ -323,14 +346,13 @@ class MarkdownReader {
      * 滚动到指定百分比位置
      */
     scrollToPercentage(percentage) {
-        const isMobile = window.innerWidth <= 768;
-        console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', isMobile ? '(移动端)' : '(桌面端)');
+        console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', this.isTouchDevice ? '(触摸设备)' : '(桌面端)');
 
-        // 移动端滚动window，桌面端滚动markdownContent
-        if (isMobile) {
+        // 触摸设备滚动window，桌面端滚动markdownContent
+        if (this.isTouchDevice) {
             const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
             const targetScroll = percentage * scrollHeight;
-            console.log('[进度条] 移动端跳转:', { targetScroll, scrollHeight });
+            console.log('[进度条] 触摸设备跳转:', { targetScroll: Math.round(targetScroll), scrollHeight });
             window.scrollTo({
                 top: targetScroll,
                 behavior: 'smooth'
@@ -610,9 +632,9 @@ class MarkdownReader {
     updateTocHighlight() {
         const headings = this.markdownContent.querySelectorAll('h1, h2, h3, h4, h5, h6');
 
-        // 移动端使用window滚动，桌面端使用markdownContent滚动
+        // 触摸设备使用window滚动，桌面端使用markdownContent滚动
         let scrollTop;
-        if (window.innerWidth <= 768) {
+        if (this.isTouchDevice) {
             scrollTop = window.scrollY || window.pageYOffset;
         } else {
             scrollTop = this.markdownContent.scrollTop;
@@ -620,7 +642,7 @@ class MarkdownReader {
 
         let activeHeading = null;
         headings.forEach((heading) => {
-            const headingTop = window.innerWidth <= 768
+            const headingTop = this.isTouchDevice
                 ? heading.getBoundingClientRect().top + scrollTop
                 : heading.offsetTop;
 
