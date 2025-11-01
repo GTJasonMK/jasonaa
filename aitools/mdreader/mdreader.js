@@ -419,7 +419,7 @@ class MarkdownReader {
 
         if (scrollContainer === 'window') {
             scrollTop = window.scrollY || window.pageYOffset;
-            scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            scrollHeight = document.body.scrollHeight - window.innerHeight;
         } else {
             scrollTop = this.markdownContent.scrollTop;
             scrollHeight = this.markdownContent.scrollHeight - this.markdownContent.clientHeight;
@@ -453,7 +453,7 @@ class MarkdownReader {
         console.log('[进度条] 跳转到', Math.round(percentage * 100) + '%', `(${scrollContainer}容器)`);
 
         if (scrollContainer === 'window') {
-            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrollHeight = document.body.scrollHeight - window.innerHeight;
             const targetScroll = percentage * scrollHeight;
             const beforeScroll = window.scrollY || window.pageYOffset;
 
@@ -461,7 +461,7 @@ class MarkdownReader {
                 当前位置: beforeScroll,
                 目标位置: Math.round(targetScroll),
                 总滚动高度: scrollHeight,
-                文档总高度: document.documentElement.scrollHeight,
+                body高度: document.body.scrollHeight,
                 窗口高度: window.innerHeight
             });
 
