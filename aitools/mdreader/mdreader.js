@@ -24,6 +24,8 @@ class MarkdownReader {
         this.closeFileBtn = document.getElementById('close-file-btn');
         this.tocCloseBtn = document.getElementById('toc-close-btn');
         this.openProjectBtn = document.getElementById('open-project-btn');
+        this.fontSizeIncreaseBtn = document.getElementById('font-size-increase-btn');
+        this.fontSizeDecreaseBtn = document.getElementById('font-size-decrease-btn');
 
         // 阅读进度条
         this.progressBar = document.getElementById('reading-progress-bar');
@@ -36,6 +38,7 @@ class MarkdownReader {
         this.currentMarkdown = '';
         this.tocVisible = true;
         this.isDraggingProgress = false;
+        this.fontSize = 16; // 默认字体大小
 
         // 初始化
         this.init();
@@ -48,6 +51,7 @@ class MarkdownReader {
         this.setupMarked();
         this.setupEventListeners();
         this.setupTheme();
+        this.loadFontSizeFromStorage();
         this.loadFromStorage();
 
         // 移动端默认隐藏TOC和overlay，避免灰屏
@@ -139,6 +143,17 @@ class MarkdownReader {
         if (this.closeFileBtn) {
             this.closeFileBtn.addEventListener('click', () => this.closeFile());
             console.log('关闭文件按钮已绑定');
+        }
+
+        // 字体大小调整按钮
+        if (this.fontSizeIncreaseBtn) {
+            this.fontSizeIncreaseBtn.addEventListener('click', () => this.increaseFontSize());
+            console.log('增大字体按钮已绑定');
+        }
+
+        if (this.fontSizeDecreaseBtn) {
+            this.fontSizeDecreaseBtn.addEventListener('click', () => this.decreaseFontSize());
+            console.log('减小字体按钮已绑定');
         }
 
         // 打开项目按钮触发目录选择，由ProjectManager处理
@@ -646,6 +661,66 @@ ${this.markdownContent.innerHTML}
         }
 
         this.clearStorage();
+    }
+
+    /**
+     * 增大字体
+     */
+    increaseFontSize() {
+        if (this.fontSize < 24) {
+            this.fontSize += 2;
+            this.applyFontSize();
+            this.saveFontSizeToStorage();
+        }
+    }
+
+    /**
+     * 减小字体
+     */
+    decreaseFontSize() {
+        if (this.fontSize > 12) {
+            this.fontSize -= 2;
+            this.applyFontSize();
+            this.saveFontSizeToStorage();
+        }
+    }
+
+    /**
+     * 应用字体大小
+     */
+    applyFontSize() {
+        if (this.markdownContent) {
+            this.markdownContent.style.fontSize = `${this.fontSize}px`;
+        }
+    }
+
+    /**
+     * 保存字体大小到LocalStorage
+     */
+    saveFontSizeToStorage() {
+        try {
+            localStorage.setItem('mdreader_font_size', this.fontSize.toString());
+        } catch (error) {
+            console.error('保存字体大小失败:', error);
+        }
+    }
+
+    /**
+     * 从LocalStorage加载字体大小
+     */
+    loadFontSizeFromStorage() {
+        try {
+            const saved = localStorage.getItem('mdreader_font_size');
+            if (saved) {
+                this.fontSize = parseInt(saved, 10);
+                if (isNaN(this.fontSize) || this.fontSize < 12 || this.fontSize > 24) {
+                    this.fontSize = 16; // 恢复默认值
+                }
+                this.applyFontSize();
+            }
+        } catch (error) {
+            console.error('加载字体大小失败:', error);
+        }
     }
 
     /**
