@@ -49,6 +49,15 @@ class MarkdownReader {
         this.setupEventListeners();
         this.setupTheme();
         this.loadFromStorage();
+
+        // 移动端默认隐藏TOC和overlay，避免灰屏
+        if (window.innerWidth <= 768) {
+            this.tocVisible = false;
+            this.tocSidebar.classList.add('hidden');
+            if (this.tocOverlay) {
+                this.tocOverlay.classList.remove('active');
+            }
+        }
     }
 
     /**
@@ -1060,6 +1069,18 @@ class ProjectManager {
         // 显示阅读进度条
         if (this.reader.progressBar) {
             this.reader.progressBar.style.display = 'block';
+        }
+
+        // 自动打开第一个文档
+        if (this.currentProjectConfig.documents && this.currentProjectConfig.documents.length > 0) {
+            const firstDoc = this.currentProjectConfig.documents[0];
+            const firstDocLink = tocNav.querySelector('.doc-list-item');
+            if (firstDocLink) {
+                // 延迟加载，确保DOM已完全渲染
+                setTimeout(() => {
+                    this.loadDocument(firstDoc, firstDocLink);
+                }, 100);
+            }
         }
     }
 
