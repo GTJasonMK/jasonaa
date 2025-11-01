@@ -1102,13 +1102,18 @@ class ProjectManager {
                 console.log('从本地文件读取:', doc.path);
             } else {
                 // 从服务器fetch
-                const docPath = `${this.currentProject.path}/${doc.path}`;
+                // 对路径的各个部分分别进行URL编码，避免中文路径问题
+                const pathParts = doc.path.split('/');
+                const encodedPath = pathParts.map(part => encodeURIComponent(part)).join('/');
+                const docPath = `${this.currentProject.path}/${encodedPath}`;
+                console.log('请求路径:', docPath);
+
                 const response = await fetch(docPath);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 markdown = await response.text();
-                console.log('从服务器读取:', docPath);
+                console.log('从服务器读取成功:', doc.title);
             }
 
             // 使用reader的渲染方法
