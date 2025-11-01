@@ -555,9 +555,15 @@ html, body {
     }
 
     .markdown-body {
-        padding: 1.5rem 100px 1.5rem 1rem;
+        padding: 4rem 70px 1.5rem 1rem;
         font-size: 16px;
         line-height: 1.8;
+    }
+
+    /* 文件信息栏移动端优化 */
+    .file-info {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
     }
 
     /* 移动端标题优化 */
@@ -1036,7 +1042,12 @@ html, body {
 @media (max-width: 768px) {
     .reading-progress-bar {
         right: 20px;
-        opacity: 0.5;
+        opacity: 0.3;
+    }
+
+    .reading-progress-bar:hover,
+    .reading-progress-bar:active {
+        opacity: 0.8;
     }
 
     .progress-track {
