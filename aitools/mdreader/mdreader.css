@@ -283,6 +283,8 @@
     margin: 0 auto;
     width: 100%;
     line-height: 1.6;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 
 /* Markdown基础样式 */
@@ -324,6 +326,7 @@
 .markdown-body a {
     color: var(--accent-color);
     text-decoration: none;
+    word-break: break-all;
 }
 
 .markdown-body a:hover {
@@ -355,6 +358,7 @@
     background-color: var(--code-bg);
     border-radius: 3px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    word-break: break-all;
 }
 
 .markdown-body pre {
@@ -371,6 +375,8 @@
     background-color: transparent;
     font-size: 0.9em;
     line-height: 1.5;
+    word-break: normal;
+    white-space: pre;
 }
 
 .markdown-body table {
@@ -383,6 +389,8 @@
 .markdown-body table td {
     padding: 0.75rem;
     border: 1px solid var(--border-color);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .markdown-body table th {
@@ -542,7 +550,6 @@
     .markdown-body pre {
         padding: 0.75rem;
         font-size: 14px;
-        /* 确保横向滚动流畅 */
         -webkit-overflow-scrolling: touch;
     }
 
@@ -551,18 +558,22 @@
         word-break: break-word;
     }
 
+    .markdown-body pre code {
+        font-size: 14px;
+    }
+
     /* 表格移动端优化 - 横向滚动 */
     .markdown-body table {
         display: block;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        white-space: nowrap;
     }
 
     .markdown-body table th,
     .markdown-body table td {
         padding: 0.5rem;
         font-size: 14px;
+        min-width: 80px;
     }
 
     /* 图片移动端优化 */
