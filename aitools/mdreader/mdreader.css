@@ -555,7 +555,7 @@ html, body {
     }
 
     .markdown-body {
-        padding: 1.5rem 1rem;
+        padding: 1.5rem 100px 1.5rem 1rem;
         font-size: 16px;
         line-height: 1.8;
     }
