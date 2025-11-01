@@ -79,38 +79,76 @@ class MarkdownReader {
      * 设置事件监听器
      */
     setupEventListeners() {
+        console.log('开始设置事件监听器...');
+
         // 文件上传相关
-        this.selectFileBtn.addEventListener('click', () => this.fileInput.click());
-        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+        if (this.selectFileBtn && this.fileInput) {
+            this.selectFileBtn.addEventListener('click', () => this.fileInput.click());
+            this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+            console.log('文件上传事件已绑定');
+        } else {
+            console.warn('文件上传按钮或输入框不存在');
+        }
 
         // 拖拽上传
-        this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
-        this.uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-        this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
+        if (this.uploadArea) {
+            this.uploadArea.addEventListener('dragover', (e) => this.handleDragOver(e));
+            this.uploadArea.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+            this.uploadArea.addEventListener('drop', (e) => this.handleDrop(e));
+            console.log('拖拽上传事件已绑定');
+        } else {
+            console.warn('上传区域不存在');
+        }
 
         // 工具栏按钮
-        this.toggleTocBtn.addEventListener('click', () => this.toggleToc());
-        this.tocCloseBtn.addEventListener('click', () => this.toggleToc());
+        if (this.toggleTocBtn) {
+            this.toggleTocBtn.addEventListener('click', () => this.toggleToc());
+            console.log('TOC切换按钮已绑定');
+        }
+
+        if (this.tocCloseBtn) {
+            this.tocCloseBtn.addEventListener('click', () => this.toggleToc());
+            console.log('TOC关闭按钮已绑定');
+        }
 
         // TOC遮罩层点击关闭（如果存在）
         if (this.tocOverlay) {
             this.tocOverlay.addEventListener('click', () => this.toggleToc());
+            console.log('TOC遮罩层已绑定');
         }
 
-        this.copyAllBtn.addEventListener('click', () => this.copyAllContent());
-        this.exportHtmlBtn.addEventListener('click', () => this.exportHtml());
-        this.closeFileBtn.addEventListener('click', () => this.closeFile());
+        if (this.copyAllBtn) {
+            this.copyAllBtn.addEventListener('click', () => this.copyAllContent());
+            console.log('复制按钮已绑定');
+        }
+
+        if (this.exportHtmlBtn) {
+            this.exportHtmlBtn.addEventListener('click', () => this.exportHtml());
+            console.log('导出按钮已绑定');
+        }
+
+        if (this.closeFileBtn) {
+            this.closeFileBtn.addEventListener('click', () => this.closeFile());
+            console.log('关闭文件按钮已绑定');
+        }
 
         // 打开项目按钮触发目录选择，由ProjectManager处理
 
         // 滚动同步TOC高亮和进度条
-        this.markdownContent.addEventListener('scroll', () => {
-            this.updateTocHighlight();
-            this.updateProgressBar();
-        });
+        if (this.markdownContent) {
+            this.markdownContent.addEventListener('scroll', () => {
+                this.updateTocHighlight();
+                this.updateProgressBar();
+            });
+            console.log('滚动事件已绑定');
+        } else {
+            console.warn('Markdown内容区域不存在');
+        }
 
         // 进度条拖动事件
         this.setupProgressBarDrag();
+
+        console.log('事件监听器设置完成');
     }
 
     /**
