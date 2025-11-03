@@ -352,8 +352,8 @@ class AIAssistant {
         }
 
         try {
-            // 动态导入LLMClient
-            const module = await import('../../aitools/aichat/llm-client.js');
+            // 动态导入LLMClient（使用ES6命名导出）
+            const { LLMClient } = await import('../../aitools/aichat/llm-client.js');
             const config = JSON.parse(configStr);
 
             // 根据配置来源适配字段名
@@ -364,7 +364,7 @@ class AIAssistant {
                 simulateBrowser: true
             };
 
-            this.llmClient = module.LLMClient.createFromConfig(clientConfig);
+            this.llmClient = LLMClient.createFromConfig(clientConfig);
             this.temperature = config.temperature || 0.7;
             this.maxTokens = config.maxTokens || 2000;
 
