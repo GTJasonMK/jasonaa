@@ -1,3 +1,6 @@
+// 导入LLMClient
+import { LLMClient } from './llm-client.js';
+
 // AI聊天室 - 核心逻辑
 class AIChatRoom {
     constructor() {
