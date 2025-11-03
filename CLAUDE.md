@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个纯前端的多功能娱乐平台,集成了经典游戏、AI对话工具、音乐练习和社区论坛功能。项目使用原生HTML5/CSS3/JavaScript开发,采用ES6模块化架构,无需后端服务器即可部署到任何静态托管服务。
+这是一个纯前端的多功能娱乐平台,集成了经典游戏、AI对话工具、多语言学习、音乐练习和社区论坛功能。项目使用原生HTML5/CSS3/JavaScript开发,采用ES6模块化架构,无需后端服务器即可部署到任何静态托管服务。
 
 ## 开发环境设置
 
@@ -46,6 +46,9 @@ npx http-server -p 8080
      - `aitools/aichat/` - 轻量级AI聊天室
      - `aitools/chattavern/` - AI角色对话系统
      - `aitools/mdreader/` - Markdown阅读器
+   - `languagelearning/` - 多语言学习平台
+     - `languagelearning/english/` - 英语学习模块
+     - `languagelearning/japanese/` - 日语学习模块（预留）
    - `music/` - 音乐练习模块
    - `forum/` - 社区论坛模块
    - `settings/` - 设置管理界面
@@ -165,6 +168,73 @@ npx http-server -p 8080
 - marked.js - Markdown解析
 - highlight.js - 代码高亮
 - DOMPurify - XSS防护
+
+### 多语言学习模块架构
+
+多语言学习平台，位于`languagelearning/`，支持扩展多种语言的词汇学习功能。
+
+**目录组织**：所有语言模块统一放在`languagelearning/`目录下，便于管理和扩展。
+
+**目录结构**：
+```
+languagelearning/
+├── index.html          (语言选择页)
+├── style.css           (语言选择页样式)
+├── english/
+│   ├── index.html      (英语学习主页)
+│   ├── style.css       (英语模块样式)
+│   ├── english.js      (英语模块逻辑)
+│   └── wordlists/      (英语词库)
+│       ├── CET4_edited.txt
+│       ├── CET6_edited.txt
+│       ├── TOEFL.txt
+│       └── GRE_8000_Words.txt
+└── japanese/
+    ├── index.html      (日语学习主页)
+    ├── style.css       (日语模块样式)
+    ├── japanese.js     (日语模块逻辑)
+    └── wordlists/      (日语词库，预留)
+        └── README.md   (词库格式说明)
+```
+
+**核心功能**：
+- 语言选择页：展示可用语言，卡片式布局
+- 词汇书选择：每种语言支持多个词库
+- 随机抽词练习：Fisher-Yates洗牌算法
+- 学习进度跟踪：LocalStorage持久化
+- "认识/不认识"判断：简单高效的记忆检验
+
+**词库格式要求**（英语）：
+```
+word [phonetic] definition
+例：hello [həˈləʊ] 你好
+```
+
+**词库格式要求**（日语）：
+```
+単語 [reading] 释义
+例：こんにちは [konnichiha] 你好
+```
+
+**LocalStorage键名规范**：
+- 英语：`english_practice_{bookId}_progress`
+- 日语：`japanese_practice_{bookId}_progress`
+- 格式：`{language}_practice_{bookId}_progress`
+
+**添加新语言模块**：
+1. 在`languagelearning/`下创建语言目录（如`french/`）
+2. 复制现有模块文件作为模板
+3. 修改标题、提示文本为目标语言
+4. 更新`VOCABULARY_BOOKS`数组
+5. 调整词库格式解析逻辑（如需要）
+6. 修改LocalStorage键名前缀
+7. 在`languagelearning/index.html`中添加语言卡片
+8. 添加词库文件到`wordlists/`目录
+
+**路径兼容性**：
+- 旧路径`englishlearning/english.html`保留重定向文件
+- 自动跳转到`languagelearning/english/index.html`
+- 用户书签和历史记录仍可用
 
 ### 设置系统架构
 

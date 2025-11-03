@@ -1,34 +1,17 @@
 /**
- * 英语词汇练习模块
+ * 日语词汇练习模块
  * 提供词汇书选择、随机抽词、练习统计等功能
  */
 
-// 词汇书配置
+// 词汇书配置（待添加词库文件）
 const VOCABULARY_BOOKS = [
-    {
-        id: 'cet4',
-        name: '大学英语四级',
-        file: 'CET4_edited.txt',
-        description: '约4600词'
-    },
-    {
-        id: 'cet6',
-        name: '大学英语六级',
-        file: 'CET6_edited.txt',
-        description: '约2000词'
-    },
-    {
-        id: 'toefl',
-        name: '托福词汇',
-        file: 'TOEFL.txt',
-        description: '约3500词'
-    },
-    {
-        id: 'gre',
-        name: 'GRE词汇',
-        file: 'GRE_8000_Words.txt',
-        description: '约8000词'
-    }
+    // 示例格式：
+    // {
+    //     id: 'n5',
+    //     name: 'JLPT N5',
+    //     file: 'N5.txt',
+    //     description: '约800词'
+    // },
 ];
 
 /**
@@ -43,7 +26,7 @@ class VocabularyLoader {
      */
     async loadBook(fileName) {
         try {
-            const response = await fetch(`english-wordlists/${fileName}`);
+            const response = await fetch(`wordlists/${fileName}`);
             if (!response.ok) {
                 throw new Error(`加载失败: ${response.status}`);
             }
@@ -200,7 +183,7 @@ class PracticeManager {
      * 保存进度到localStorage
      */
     saveProgress() {
-        const key = `english_practice_${this.bookId}_progress`;
+        const key = `japanese_practice_${this.bookId}_progress`;
         const data = {
             ...this.stats,
             lastDate: new Date().toISOString()
@@ -212,7 +195,7 @@ class PracticeManager {
      * 从localStorage加载进度
      */
     loadProgress() {
-        const key = `english_practice_${this.bookId}_progress`;
+        const key = `japanese_practice_${this.bookId}_progress`;
         const saved = localStorage.getItem(key);
 
         if (saved) {

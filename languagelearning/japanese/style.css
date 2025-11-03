@@ -1,0 +1,428 @@
+/* 英语词汇练习模块样式 */
+
+/* 视图切换 */
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+}
+
+/* 选择视图样式 */
+#select-view header {
+    text-align: center;
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+#select-view h1 {
+    color: var(--text-color);
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.back-link {
+    display: inline-block;
+    color: var(--primary-color, #4a90e2);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    transition: opacity 0.3s;
+}
+
+.back-link:hover {
+    opacity: 0.7;
+}
+
+.intro {
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.1));
+}
+
+.intro p {
+    margin: 0;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* 词汇书列表 */
+.book-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.book-card {
+    background: var(--card-bg, #fff);
+    border: 2px solid var(--border-color, #ddd);
+    border-radius: 12px;
+    padding: 1.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.1));
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    border-color: var(--primary-color, #4a90e2);
+}
+
+.book-card:active {
+    transform: translateY(-2px);
+}
+
+.book-name {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.book-count {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #666);
+    margin-bottom: 0.8rem;
+}
+
+.book-progress {
+    font-size: 0.85rem;
+    color: var(--primary-color, #4a90e2);
+    padding: 0.5rem;
+    background: var(--bg-color, #f5f5f5);
+    border-radius: 6px;
+    margin-top: 0.8rem;
+}
+
+.book-start-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #999);
+    font-style: italic;
+}
+
+/* 加载状态 */
+.loading {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary, #666);
+    font-size: 1.1rem;
+}
+
+/* 练习视图样式 */
+#practice-view {
+    position: relative;
+    padding-top: 4rem;
+}
+
+/* 退出按钮 */
+.exit-btn {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    box-shadow: var(--shadow, 0 2px 4px rgba(0,0,0,0.1));
+}
+
+.exit-btn:hover {
+    background: var(--bg-hover, #f5f5f5);
+    transform: translateX(-2px);
+}
+
+.exit-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* 统计显示 */
+.stats-display {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--card-bg, #fff);
+    border: 2px solid var(--primary-color, #4a90e2);
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+    box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.1));
+}
+
+.stats-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #666);
+    margin-right: 0.5rem;
+}
+
+.stats-text {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--primary-color, #4a90e2);
+    margin-right: 0.3rem;
+}
+
+.stats-percent {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #666);
+}
+
+/* 单词卡片容器 */
+.word-card-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    margin: 3rem auto 2rem;
+    max-width: 600px;
+}
+
+.word-card {
+    width: 100%;
+    background: var(--card-bg, #fff);
+    border: 2px solid var(--border-color, #ddd);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    box-shadow: var(--shadow, 0 4px 16px rgba(0,0,0,0.1));
+    transition: all 0.3s ease;
+}
+
+.word-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.word-text {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+    word-wrap: break-word;
+}
+
+.phonetic-text {
+    font-size: 1.3rem;
+    color: var(--text-secondary, #666);
+    margin-bottom: 1.5rem;
+    font-family: 'Arial', sans-serif;
+}
+
+.definition-text {
+    font-size: 1.1rem;
+    color: var(--text-color);
+    line-height: 1.8;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-color, #ddd);
+    text-align: left;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 控制按钮 */
+.control-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 2rem auto;
+    max-width: 500px;
+}
+
+.control-btn {
+    flex: 1;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 56px;
+}
+
+.know-btn {
+    background: #4caf50;
+    color: white;
+}
+
+.know-btn:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76,175,80,0.3);
+}
+
+.unknown-btn {
+    background: #ff9800;
+    color: white;
+}
+
+.unknown-btn:hover {
+    background: #fb8c00;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255,152,0,0.3);
+}
+
+.next-btn {
+    background: var(--primary-color, #4a90e2);
+    color: white;
+}
+
+.next-btn:hover {
+    background: #357abd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74,144,226,0.3);
+}
+
+.control-btn:active {
+    transform: translateY(0);
+}
+
+/* 练习提示 */
+.practice-hint {
+    text-align: center;
+    margin-top: 2rem;
+    color: var(--text-secondary, #999);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+/* 响应式设计 - 平板 */
+@media (max-width: 768px) {
+    #select-view h1 {
+        font-size: 1.6rem;
+    }
+
+    .book-list {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .word-card-container {
+        margin: 2rem auto 1.5rem;
+        min-height: 250px;
+    }
+
+    .word-card {
+        padding: 2rem 1.5rem;
+    }
+
+    .word-text {
+        font-size: 2.5rem;
+    }
+
+    .phonetic-text {
+        font-size: 1.1rem;
+    }
+
+    .definition-text {
+        font-size: 1rem;
+    }
+
+    .stats-display {
+        position: static;
+        margin: 1rem auto;
+        display: inline-block;
+    }
+
+    #practice-view {
+        padding-top: 2rem;
+    }
+}
+
+/* 响应式设计 - 手机 */
+@media (max-width: 480px) {
+    #select-view h1 {
+        font-size: 1.4rem;
+    }
+
+    .intro {
+        padding: 1rem;
+    }
+
+    .book-card {
+        padding: 1.2rem;
+    }
+
+    .book-name {
+        font-size: 1.1rem;
+    }
+
+    .exit-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    .exit-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .stats-display {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+    }
+
+    .stats-text {
+        font-size: 1rem;
+    }
+
+    .word-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .word-text {
+        font-size: 2rem;
+    }
+
+    .phonetic-text {
+        font-size: 1rem;
+    }
+
+    .definition-text {
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+    }
+
+    .control-buttons {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0 1rem;
+    }
+
+    .control-btn {
+        width: 100%;
+        padding: 0.9rem;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+
+    .practice-hint {
+        font-size: 0.85rem;
+        padding: 0 1rem;
+    }
+}
