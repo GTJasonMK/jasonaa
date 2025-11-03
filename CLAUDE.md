@@ -203,6 +203,49 @@ languagelearning/
 - 随机抽词练习：Fisher-Yates洗牌算法
 - 学习进度跟踪：LocalStorage持久化
 - "认识/不认识"判断：简单高效的记忆检验
+- **AI助手功能**：集成AI辅助学习，提供单词深度学习支持
+
+**AI助手架构**：
+
+练习页面集成了AI助手面板，提供三种查询功能：
+
+1. **相近释义及区别**：查询当前单词的同义词及使用场景
+2. **短语及用法**：查询常用短语搭配和例句
+3. **自定义问题**：用户可输入任何关于当前单词的问题
+
+**AI助手类（AIAssistant）**：
+- 位置：`languagelearning/english/english.js`（第243-529行）
+- 位置：`languagelearning/japanese/japanese.js`（第226-512行）
+
+核心特性：
+- **响应历史管理**：保存所有AI回复，支持前后导航
+- **智能缓存**：使用Map缓存最近50条查询结果
+- **配置兼容**：优先使用aichat配置，向后兼容chattavern配置
+- **动态导入**：运行时导入`aitools/aichat/llm-client.js`
+- **提示词模板**：针对不同查询类型优化的提示词
+
+配置要求：
+- 需要在`aitools/aichat/`中配置AI服务
+- 配置存储在LocalStorage的`aichat_config`键
+- 支持所有OpenAI兼容API（OpenAI、DeepSeek、New API等）
+
+UI布局：
+- 顶部控制区：左侧为退出按钮和统计，右侧为AI面板
+- AI面板：固定在右上角，包含3个功能按钮和自定义问题输入框
+- AI输出容器：位于页面底部，显示AI回复，支持前后导航
+- 响应式设计：移动端AI面板和输出容器垂直排列
+
+LocalStorage键名：
+- `aichat_config`：AI配置信息（优先）
+- `chattavern_ai_config`：旧版AI配置（向后兼容）
+
+API调用流程：
+1. 检查AI配置是否存在
+2. 动态导入llm-client.js模块
+3. 使用LLMClient.createFromConfig()创建客户端
+4. 调用streamAndCollect()方法发送请求
+5. 缓存响应并添加到历史记录
+6. 更新UI显示
 
 **词库格式要求**（英语）：
 ```

@@ -352,3 +352,6 @@ class LLMClient {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = LLMClient;
 }
+
+// ES6模块导出（用于浏览器动态import）
+export { LLMClient };
