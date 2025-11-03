@@ -78,48 +78,58 @@
                 </div>
             </div>
 
-            <!-- 单词卡片 -->
-            <div class="word-card-container">
-                <div id="word-card" class="word-card">
-                    <div id="word-text" class="word-text">Loading...</div>
-                    <div id="phonetic-text" class="phonetic-text"></div>
-                    <div id="definition-text" class="definition-text" style="display: none;"></div>
-                </div>
-            </div>
-
-            <!-- 控制按钮 -->
-            <div class="control-buttons">
-                <button id="know-btn" class="control-btn know-btn">认识</button>
-                <button id="unknown-btn" class="control-btn unknown-btn">不认识</button>
-                <button id="next-btn" class="control-btn next-btn" style="display: none;">下一个</button>
-            </div>
-
-            <!-- 进度提示 -->
-            <div id="practice-hint" class="practice-hint">
-                <p>看到单词后，快速判断是否认识它的意思</p>
-            </div>
-
-            <!-- AI输出容器 -->
-            <div id="ai-output-container" class="ai-output-container" style="display: none;">
-                <button id="ai-nav-prev" class="ai-nav-btn" title="上一条回复" disabled>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M15 18l-6-6 6-6"/>
-                    </svg>
-                </button>
-                <div class="ai-output-wrapper">
-                    <div class="ai-output-header">
-                        <span id="ai-output-label" class="ai-output-label"></span>
-                        <span id="ai-response-index" class="ai-response-index">0/0</span>
+            <!-- 主练习内容区：左侧单词卡片，右侧AI输出 -->
+            <div class="practice-content">
+                <!-- 左侧：单词学习区域 -->
+                <div class="word-section">
+                    <!-- 单词卡片 -->
+                    <div class="word-card-container">
+                        <div id="word-card" class="word-card">
+                            <div id="word-text" class="word-text">Loading...</div>
+                            <div id="phonetic-text" class="phonetic-text"></div>
+                            <div id="definition-text" class="definition-text" style="display: none;"></div>
+                        </div>
                     </div>
-                    <div id="ai-output-box" class="ai-output-box">
-                        <div class="ai-placeholder">点击上方按钮开始使用AI助手</div>
+
+                    <!-- 控制按钮 -->
+                    <div class="control-buttons">
+                        <button id="know-btn" class="control-btn know-btn">认识</button>
+                        <button id="unknown-btn" class="control-btn unknown-btn">不认识</button>
+                        <button id="next-btn" class="control-btn next-btn" style="display: none;">下一个</button>
+                    </div>
+
+                    <!-- 进度提示 -->
+                    <div id="practice-hint" class="practice-hint">
+                        <p>看到单词后，快速判断是否认识它的意思</p>
                     </div>
                 </div>
-                <button id="ai-nav-next" class="ai-nav-btn" title="下一条回复" disabled>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                </button>
+
+                <!-- 右侧：AI输出容器 -->
+                <div id="ai-output-container" class="ai-output-container" style="display: none;">
+                    <div class="ai-output-wrapper">
+                        <div class="ai-output-header">
+                            <div class="ai-output-title">
+                                <span id="ai-output-label" class="ai-output-label"></span>
+                            </div>
+                            <div class="ai-nav-controls">
+                                <button id="ai-nav-prev" class="ai-nav-btn" title="上一条回复" disabled>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 18l-6-6 6-6"/>
+                                    </svg>
+                                </button>
+                                <span id="ai-response-index" class="ai-response-index">0/0</span>
+                                <button id="ai-nav-next" class="ai-nav-btn" title="下一条回复" disabled>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 18l6-6-6-6"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="ai-output-box" class="ai-output-box">
+                            <div class="ai-placeholder">点击上方按钮开始使用AI助手</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
