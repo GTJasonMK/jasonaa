@@ -133,7 +133,7 @@ class AIChatRoom {
         // 输入框自动调整高度
         input.addEventListener('input', () => {
             input.style.height = 'auto';
-            input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+            input.style.height = Math.min(input.scrollHeight, 200) + 'px';
         });
     }
 
@@ -238,24 +238,10 @@ class AIChatRoom {
         }
     }
 
-    // 调用API
+    // 调用API（使用新的LLMClient）
     async callAPI(userMessage, context) {
-        // URL处理：自动补全endpoint
-        let apiUrl = this.config.apiUrl;
-
-        if (!apiUrl) {
-            throw new Error('请先配置API地址');
-        }
-
-        // 自动补全endpoint
-        if (!apiUrl.includes('/chat/completions')) {
-            const baseUrl = apiUrl.replace(/\/$/, '');
-            if (baseUrl.endsWith('/v1')) {
-                apiUrl = baseUrl + '/chat/completions';
-            } else {
-                apiUrl = baseUrl + '/v1/chat/completions';
-            }
-            console.log('[AIChatRoom] 自动补全URL:', this.config.apiUrl, '→', apiUrl);
+        if (!this.config.apiKey) {
+            throw new Error('请先配置API Key');
         }
 
         // 构建消息数组
@@ -283,63 +269,59 @@ class AIChatRoom {
             content: userMessage
         });
 
-        const requestBody = {
+        // 创建LLM客户端
+        const client = LLMClient.createFromConfig({
+            apiKey: this.config.apiKey,
+            baseUrl: this.config.apiUrl,
             model: this.config.model,
-            messages: messages,
-            temperature: this.config.temperature,
-            max_tokens: this.config.maxTokens
-        };
+            simulateBrowser: true  // 启用浏览器模拟，绕过Cloudflare
+        });
 
         console.log('[AIChatRoom] ========== API请求详情 ==========');
-        console.log('[AIChatRoom] 请求URL:', apiUrl);
-        console.log('[AIChatRoom] 请求模型:', requestBody.model);
+        console.log('[AIChatRoom] 使用LLMClient统一封装');
+        console.log('[AIChatRoom] 模型:', this.config.model);
         console.log('[AIChatRoom] 消息数量:', messages.length);
-        console.log('[AIChatRoom] Temperature:', requestBody.temperature);
-        console.log('[AIChatRoom] Max Tokens:', requestBody.max_tokens);
+        console.log('[AIChatRoom] Temperature:', this.config.temperature);
+        console.log('[AIChatRoom] Max Tokens:', this.config.maxTokens);
 
         try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                mode: 'cors',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.config.apiKey}`
-                },
-                body: JSON.stringify(requestBody)
+            // 使用流式收集方法
+            const result = await client.streamAndCollect(messages, {
+                timeout: 120,  // 超时120秒
+                temperature: this.config.temperature,
+                maxTokens: this.config.maxTokens,
+                maxRetries: 2  // 最多重试2次
             });
 
-            console.log('[AIChatRoom] 响应状态:', response.status, response.statusText);
+            console.log('[AIChatRoom] 请求成功');
+            console.log('[AIChatRoom] 返回内容长度:', result.content.length);
+            console.log('[AIChatRoom] Chunks数量:', result.chunkCount);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error?.message || errorData.message || response.statusText;
-                console.error('[AIChatRoom] API返回错误:', errorData);
-                throw new Error(`API错误 (${response.status}): ${errorMsg}`);
+            // 如果有reasoning内容（DeepSeek R1等），可以选择性显示
+            if (result.reasoning) {
+                console.log('[AIChatRoom] Reasoning长度:', result.reasoning.length);
+                // 可以在这里决定是否将reasoning也返回给用户
             }
 
-            const data = await response.json();
-            console.log('[AIChatRoom] 请求成功，返回内容长度:', data.choices?.[0]?.message?.content?.length || 0);
-
-            return data.choices[0].message.content;
+            return result.content;
 
         } catch (error) {
             console.error('[AIChatRoom] ========== 请求失败详情 ==========');
-            console.error('[AIChatRoom] 错误类型:', error.name);
             console.error('[AIChatRoom] 错误信息:', error.message);
 
-            // 检测CORS错误
-            if (error.message.includes('CORS') ||
-                error.message.includes('Failed to fetch') ||
-                error.name === 'TypeError' && error.message.includes('fetch')) {
-                throw new Error(`网络请求失败（CORS跨域问题）
+            // LLMClient已经处理了大部分错误，这里只需要添加用户友好的提示
+            if (error.message.includes('网络连接失败')) {
+                throw new Error(`网络连接失败
 
 可能的原因：
 1. API服务器未配置CORS允许跨域访问
-2. 请求的URL：${apiUrl}
+2. API地址不正确: ${this.config.apiUrl || '(未设置)'}
+3. 网络连接问题
 
 解决方案：
 - New API：添加环境变量 ALLOWED_ORIGIN="*"
 - 检查API地址是否正确
+- 检查网络连接是否正常
 - 查看浏览器Console了解详细错误
 
 详细错误: ${error.message}`);
@@ -376,21 +358,30 @@ class AIChatRoom {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${message.role}`;
 
+        // 创建头像
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = message.role === 'user' ? '👤' : '🤖';
+
+        // 创建气泡（只包含内容）
         const bubble = document.createElement('div');
         bubble.className = 'message-bubble';
+        bubble.innerHTML = this.formatContent(message.content);
 
+        // 创建时间戳
         const time = new Date(message.timestamp).toLocaleTimeString('zh-CN', {
             hour: '2-digit',
             minute: '2-digit'
         });
+        const timeEl = document.createElement('div');
+        timeEl.className = 'message-time';
+        timeEl.textContent = time;
 
-        bubble.innerHTML = `
-            <div class="message-header">${message.role === 'user' ? '👤 你' : '🤖 AI'}</div>
-            <div class="message-content">${this.formatContent(message.content)}</div>
-            <div class="message-time">${time}</div>
-        `;
-
+        // 组装
+        messageDiv.appendChild(avatar);
         messageDiv.appendChild(bubble);
+        messageDiv.appendChild(timeEl);
+
         container.appendChild(messageDiv);
     }
 
