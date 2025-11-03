@@ -319,7 +319,15 @@ class AIAssistant {
                 }
             ];
 
-            const response = await this.llmClient.chat(messages);
+            // 使用streamAndCollect方法（与aichat一致）
+            const result = await this.llmClient.streamAndCollect(messages, {
+                timeout: 120,
+                temperature: this.temperature,
+                maxTokens: this.maxTokens,
+                maxRetries: 2
+            });
+
+            const response = result.content;
 
             // 存储缓存
             this.cache.set(cacheKey, response);
@@ -346,8 +354,15 @@ class AIAssistant {
             return true;
         }
 
-        // 检查配置
-        const configStr = localStorage.getItem('chattavern_ai_config');
+        // 优先检查aichat配置，再检查chattavern配置（向后兼容）
+        let configStr = localStorage.getItem('aichat_config');
+        let configSource = 'aichat';
+
+        if (!configStr) {
+            configStr = localStorage.getItem('chattavern_ai_config');
+            configSource = 'chattavern';
+        }
+
         if (!configStr) {
             this.showConfigPrompt();
             return false;
@@ -357,8 +372,20 @@ class AIAssistant {
             // 动态导入LLMClient
             const module = await import('../../aitools/aichat/llm-client.js');
             const config = JSON.parse(configStr);
-            this.llmClient = module.LLMClient.createFromConfig(config);
-            console.log('AI客户端初始化成功');
+
+            // 根据配置来源适配字段名
+            const clientConfig = {
+                apiKey: config.apiKey,
+                baseUrl: configSource === 'aichat' ? config.apiUrl : config.baseUrl,
+                model: config.model,
+                simulateBrowser: true
+            };
+
+            this.llmClient = module.LLMClient.createFromConfig(clientConfig);
+            this.temperature = config.temperature || 0.7;
+            this.maxTokens = config.maxTokens || 2000;
+
+            console.log(`AI客户端初始化成功（使用${configSource}配置）`);
             return true;
         } catch (error) {
             console.error('初始化AI客户端失败:', error);
@@ -492,7 +519,7 @@ class AIAssistant {
             <div class="ai-error">
                 <div>未配置AI服务</div>
                 <div class="ai-error-actions">
-                    <button class="ai-error-btn" onclick="window.location.href='../../aitools/chattavern/chattavern.html'">
+                    <button class="ai-error-btn" onclick="window.location.href='../../aitools/aichat/index.html'">
                         前往配置
                     </button>
                 </div>
