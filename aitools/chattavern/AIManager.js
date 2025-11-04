@@ -13,13 +13,13 @@ class AIManager {
     loadConfig() {
         const saved = localStorage.getItem('chattavern_ai_config');
         const defaultConfig = {
-            provider: 'openai',  // 'openai' | 'claude' | 'deepseek' | 'custom'
-            apiKey: '',
-            model: 'gpt-3.5-turbo',
-            apiUrl: '',  // 自定义API地址（可选）
+            provider: 'custom',  // 使用custom provider以支持任何OpenAI兼容API
+            apiKey: 'sk-JyBLag34EOuLlYb_W5gnhR_qf9z1ZBlmg2dhq4r8jYFPxvV2Iy9vaC8ql4o',
+            model: 'deepseek/deepseek-v3.2-exp',
+            apiUrl: 'https://api.5202030.xyz/v1',
             temperature: 0.9,  // 角色扮演建议使用较高的temperature
-            maxTokens: 2000,   // 增大默认值，支持更长的回复
-            enabled: false
+            maxTokens: 4000,   // 增大默认值，支持更长的回复
+            enabled: true
         };
 
         if (saved) {

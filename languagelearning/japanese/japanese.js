@@ -559,9 +559,9 @@ class AIAssistant {
         if (!configStr) {
             console.log('[AIAssistant] 未找到用户配置，使用默认LLM配置');
             config = {
-                apiKey: 'sk-xntuFaEqLVRkwx4HVMreuCHMAZNOUQDb1BbVwbIFO2jysuoz',
-                apiUrl: 'https://new-api.koyeb.app/v1',
-                model: 'gemini-2.5-flash',
+                apiKey: 'sk-JyBLag34EOuLlYb_W5gnhR_qf9z1ZBlmg2dhq4r8jYFPxvV2Iy9vaC8ql4o',
+                apiUrl: 'https://api.5202030.xyz/v1',
+                model: 'deepseek/deepseek-v3.2-exp',
                 temperature: 0.7,
                 maxTokens: 4000
             };
