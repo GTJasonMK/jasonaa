@@ -397,13 +397,13 @@ class AIAssistant {
         // 提示词模板
         this.templates = {
             synonyms: (word, definition) =>
-                `请解释英语单词"${word}"（${definition}）的相近同义词，并详细说明它们之间的区别和使用场景。请用简洁清晰的方式回答，使用markdown格式组织内容。`,
+                `请简要列出"${word}"（${definition}）的2-3个主要同义词，并用一句话说明关键区别。用markdown列表格式，保持简洁。`,
 
             phrases: (word, definition) =>
-                `请列举英语单词"${word}"（${definition}）的常用短语搭配、固定用法和例句。请用简洁清晰的方式回答，使用markdown格式组织内容。每个例句请标注中文翻译。`,
+                `请列出"${word}"（${definition}）的3-5个最常用短语搭配和例句。每个例句附上简短中文翻译。用markdown列表格式。`,
 
             custom: (word, question) =>
-                `关于英语单词"${word}"：${question}`
+                `关于单词"${word}"：${question}。请简洁回答。`
         };
     }
 
@@ -491,7 +491,7 @@ class AIAssistant {
             const messages = [
                 {
                     role: 'system',
-                    content: '你是一个专业的语言学习助手。请用简洁、清晰的方式回答问题，使用markdown格式组织内容。'
+                    content: '你是一个专业的语言学习助手。请用简洁、清晰的方式回答，避免冗余。使用markdown格式组织内容，保持精练。'
                 },
                 {
                     role: 'user',
@@ -501,19 +501,17 @@ class AIAssistant {
 
             // 流式输出：累积内容并实时更新UI
             let accumulatedContent = '';
-            let updateScheduled = false;
+            let lastUpdateTime = 0;
 
             const onChunk = ({ type: chunkType, text }) => {
                 if (chunkType === 'content') {
                     accumulatedContent += text;
 
-                    // 使用requestAnimationFrame节流更新UI
-                    if (!updateScheduled) {
-                        updateScheduled = true;
-                        requestAnimationFrame(() => {
-                            this.updateStreamingContent(accumulatedContent);
-                            updateScheduled = false;
-                        });
+                    // 使用时间戳节流，每30ms更新一次UI（比requestAnimationFrame更快）
+                    const now = Date.now();
+                    if (now - lastUpdateTime >= 30) {
+                        lastUpdateTime = now;
+                        this.updateStreamingContentFast(accumulatedContent);
                     }
                 }
             };
@@ -528,8 +526,16 @@ class AIAssistant {
 
             const response = result.content;
 
-            // 确保最后一次更新完成
-            this.updateStreamingContent(response);
+            // 最终渲染：完整的markdown解析
+            if (result.finishReason === 'length') {
+                // 截断情况：在内容上方显示警告
+                const warningHtml = '<div class="ai-truncation-warning"><strong>提示：</strong>回复因长度限制被截断，以下是部分内容。</div>';
+                this.outputBox.innerHTML = warningHtml + this.formatResponse(response);
+                this.outputBox.scrollTop = this.outputBox.scrollHeight;
+            } else {
+                // 正常情况：直接显示格式化内容
+                this.updateStreamingContent(response);
+            }
 
             // 存储缓存
             this.cache.set(cacheKey, response);
@@ -574,7 +580,7 @@ class AIAssistant {
                 apiUrl: 'https://new-api.koyeb.app/v1',
                 model: 'gemini-2.5-flash',
                 temperature: 0.7,
-                maxTokens: 2000
+                maxTokens: 4000
             };
             configSource = 'default';
         } else {
@@ -597,7 +603,7 @@ class AIAssistant {
 
             this.llmClient = LLMClient.createFromConfig(clientConfig);
             this.temperature = config.temperature || 0.7;
-            this.maxTokens = config.maxTokens || 2000;
+            this.maxTokens = config.maxTokens || 4000;
 
             console.log(`AI客户端初始化成功（使用${configSource}配置）`);
             return true;
@@ -752,7 +758,26 @@ class AIAssistant {
     }
 
     /**
-     * 更新流式内容
+     * 快速更新流式内容（流式过程中使用，只做简单文本处理）
+     */
+    updateStreamingContentFast(content) {
+        // 流式过程中只做HTML转义和换行处理，避免重复解析markdown
+        const escaped = content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/\n/g, '<br>');
+
+        this.outputBox.innerHTML = escaped;
+
+        // 自动滚动到底部
+        this.outputBox.scrollTop = this.outputBox.scrollHeight;
+    }
+
+    /**
+     * 更新流式内容（流式结束后使用，完整markdown渲染）
      */
     updateStreamingContent(content) {
         // 渲染markdown内容

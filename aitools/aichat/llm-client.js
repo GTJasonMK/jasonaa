@@ -504,10 +504,7 @@ class LLMClient {
             throw new Error('未收到有效响应');
         }
 
-        if (finishReason === 'length') {
-            throw new Error('响应被截断，请缩短输入或增加max_tokens');
-        }
-
+        // 不再对截断抛出错误，而是返回finishReason让调用方决定如何处理
         return {
             content,
             reasoning,
