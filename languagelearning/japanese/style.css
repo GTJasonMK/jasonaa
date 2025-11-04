@@ -174,6 +174,62 @@
     white-space: nowrap;
 }
 
+/* 单词导航 */
+.word-navigation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--card-bg, #fff);
+    border: 2px solid var(--border-color, #ddd);
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,0.1));
+}
+
+.word-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0.4rem;
+    background: var(--bg-color, #f5f5f5);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.word-nav-btn:hover:not(:disabled) {
+    background: var(--primary-color, #4a90e2);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.word-nav-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.word-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.word-nav-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.word-position {
+    font-size: 0.85rem;
+    color: var(--text-color);
+    min-width: 50px;
+    text-align: center;
+    white-space: nowrap;
+}
+
 /* AI助手面板 */
 .ai-panel {
     display: flex;
@@ -189,12 +245,42 @@
 }
 
 .ai-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     font-size: 1rem;
     font-weight: bold;
     color: var(--primary-color, #4a90e2);
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--border-color, #ddd);
-    text-align: center;
+}
+
+/* AI配置按钮 */
+.ai-config-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    background: var(--bg-color, #f5f5f5);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s;
+    flex-shrink: 0;
+}
+
+.ai-config-btn:hover {
+    background: var(--primary-color, #4a90e2);
+    color: white;
+    transform: scale(1.1);
+}
+
+.ai-config-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* AI按钮 */
@@ -629,6 +715,161 @@
     height: 20px;
 }
 
+/* Markdown内容样式 - AI输出框 */
+/* 标题样式 */
+.ai-output-box h1,
+.ai-output-box h2,
+.ai-output-box h3,
+.ai-output-box h4,
+.ai-output-box h5,
+.ai-output-box h6 {
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-color);
+}
+
+.ai-output-box h1 {
+    font-size: 1.5em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.ai-output-box h2 {
+    font-size: 1.3em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.3em;
+}
+
+.ai-output-box h3 { font-size: 1.15em; }
+.ai-output-box h4 { font-size: 1em; }
+.ai-output-box h5 { font-size: 0.9em; }
+.ai-output-box h6 { font-size: 0.85em; color: var(--text-secondary); }
+
+/* 段落样式 */
+.ai-output-box p {
+    margin-top: 0;
+    margin-bottom: 1em;
+}
+
+/* 链接样式 */
+.ai-output-box a {
+    color: var(--primary-color, #4a90e2);
+    text-decoration: none;
+    word-break: break-all;
+}
+
+.ai-output-box a:hover {
+    text-decoration: underline;
+}
+
+/* 列表样式 */
+.ai-output-box ul,
+.ai-output-box ol {
+    margin-top: 0;
+    margin-bottom: 1em;
+    padding-left: 2em;
+}
+
+.ai-output-box li {
+    margin: 0.25em 0;
+}
+
+/* 引用块样式 */
+.ai-output-box blockquote {
+    margin: 1em 0;
+    padding: 0 1em;
+    border-left: 4px solid var(--primary-color, #4a90e2);
+    color: var(--text-secondary, #666);
+    background: var(--bg-color, #f9f9f9);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+}
+
+/* 行内代码样式 */
+.ai-output-box code {
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    background-color: var(--bg-color, #f5f5f5);
+    border-radius: 3px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    word-break: break-all;
+}
+
+/* 代码块样式 */
+.ai-output-box pre {
+    margin: 1em 0;
+    padding: 1rem;
+    background-color: var(--bg-color, #f5f5f5);
+    border: 1px solid var(--border-color, #ddd);
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.ai-output-box pre code {
+    padding: 0;
+    background-color: transparent;
+    font-size: 0.9em;
+    line-height: 1.5;
+    word-break: normal;
+    white-space: pre;
+}
+
+/* 表格样式 */
+.ai-output-box table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+    display: block;
+    overflow-x: auto;
+}
+
+.ai-output-box table th,
+.ai-output-box table td {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color, #ddd);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-align: left;
+}
+
+.ai-output-box table th {
+    background-color: var(--bg-color, #f5f5f5);
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.ai-output-box table tbody tr:nth-child(even) {
+    background-color: var(--bg-color, #fafafa);
+}
+
+/* 分隔线样式 */
+.ai-output-box hr {
+    height: 0;
+    margin: 1.5em 0;
+    border: 0;
+    border-top: 1px solid var(--border-color, #ddd);
+}
+
+/* 图片样式 */
+.ai-output-box img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 0.5em 0;
+}
+
+/* 强调样式 */
+.ai-output-box strong {
+    font-weight: 600;
+}
+
+.ai-output-box em {
+    font-style: italic;
+}
+
 /* 响应式设计 - 平板 */
 @media (max-width: 768px) {
     #select-view h1 {
@@ -831,5 +1072,25 @@
     .ai-nav-btn svg {
         width: 16px;
         height: 16px;
+    }
+
+    /* Markdown移动端优化 */
+    .ai-output-box table {
+        font-size: 0.8rem;
+    }
+
+    .ai-output-box table th,
+    .ai-output-box table td {
+        padding: 0.5rem;
+        min-width: 80px;
+    }
+
+    .ai-output-box pre {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .ai-output-box code {
+        font-size: 0.8rem;
     }
 }

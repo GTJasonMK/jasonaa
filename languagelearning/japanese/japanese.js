@@ -15,6 +15,141 @@ const VOCABULARY_BOOKS = [
 ];
 
 /**
+ * 单词历史管理器
+ * 维护最近50个单词的历史记录及其AI对话
+ */
+class WordHistoryManager {
+    /**
+     * @param {number} maxSize - 最大历史记录数量
+     */
+    constructor(maxSize = 50) {
+        this.history = [];
+        this.currentIndex = -1;
+        this.maxSize = maxSize;
+    }
+
+    /**
+     * 添加单词到历史
+     * @param {Object} wordData - 单词数据
+     * @param {Array} aiResponses - AI回复列表
+     */
+    addWord(wordData, aiResponses = []) {
+        const historyItem = {
+            word: { ...wordData },
+            aiResponses: aiResponses.map(r => ({ ...r })),
+            timestamp: Date.now()
+        };
+
+        // 如果不在历史末尾，截断后续历史（类似浏览器历史）
+        if (this.currentIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.currentIndex + 1);
+        }
+
+        // 添加新单词
+        this.history.push(historyItem);
+        this.currentIndex = this.history.length - 1;
+
+        // 维护最大大小限制
+        if (this.history.length > this.maxSize) {
+            this.history.shift();
+            this.currentIndex--;
+        }
+    }
+
+    /**
+     * 导航到指定方向
+     * @param {number} direction - 方向 (1: 下一个, -1: 上一个)
+     * @returns {Object|null} {success, wordData, aiResponses, position, total}
+     */
+    navigate(direction) {
+        const newIndex = this.currentIndex + direction;
+
+        if (newIndex < 0 || newIndex >= this.history.length) {
+            return {
+                success: false,
+                position: this.currentIndex + 1,
+                total: this.history.length
+            };
+        }
+
+        this.currentIndex = newIndex;
+        const item = this.history[this.currentIndex];
+
+        return {
+            success: true,
+            wordData: item.word,
+            aiResponses: item.aiResponses,
+            position: this.currentIndex + 1,
+            total: this.history.length
+        };
+    }
+
+    /**
+     * 获取当前单词
+     * @returns {Object|null}
+     */
+    getCurrentWord() {
+        if (this.currentIndex < 0 || this.currentIndex >= this.history.length) {
+            return null;
+        }
+        const item = this.history[this.currentIndex];
+        return {
+            wordData: item.word,
+            aiResponses: item.aiResponses,
+            position: this.currentIndex + 1,
+            total: this.history.length
+        };
+    }
+
+    /**
+     * 更新当前单词的AI回复
+     * @param {Array} aiResponses - 新的AI回复列表
+     */
+    updateCurrentAIResponses(aiResponses) {
+        if (this.currentIndex >= 0 && this.currentIndex < this.history.length) {
+            this.history[this.currentIndex].aiResponses = aiResponses.map(r => ({ ...r }));
+        }
+    }
+
+    /**
+     * 是否在历史末尾
+     * @returns {boolean}
+     */
+    isAtEnd() {
+        return this.currentIndex === this.history.length - 1;
+    }
+
+    /**
+     * 是否在历史开始
+     * @returns {boolean}
+     */
+    isAtStart() {
+        return this.currentIndex === 0;
+    }
+
+    /**
+     * 获取历史信息
+     * @returns {Object}
+     */
+    getInfo() {
+        return {
+            position: this.currentIndex + 1,
+            total: this.history.length,
+            isAtStart: this.isAtStart(),
+            isAtEnd: this.isAtEnd()
+        };
+    }
+
+    /**
+     * 重置历史
+     */
+    reset() {
+        this.history = [];
+        this.currentIndex = -1;
+    }
+}
+
+/**
  * 词汇加载器
  * 负责从txt文件加载和解析词汇数据
  */
@@ -231,6 +366,9 @@ class AIAssistant {
         this.cache = new Map();
         this.llmClient = null;
 
+        // 配置marked.js用于markdown渲染
+        this.setupMarked();
+
         // DOM元素
         this.container = document.getElementById('ai-output-container');
         this.outputBox = document.getElementById('ai-output-box');
@@ -253,10 +391,52 @@ class AIAssistant {
     }
 
     /**
+     * 配置marked.js
+     */
+    setupMarked() {
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                gfm: true,
+                breaks: true,
+                pedantic: false,
+                sanitize: false,
+                smartLists: true,
+                smartypants: true,
+                highlight: (code, lang) => {
+                    if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
+                        try {
+                            return hljs.highlight(code, { language: lang }).value;
+                        } catch (err) {
+                            console.error('代码高亮失败:', err);
+                        }
+                    }
+                    return typeof hljs !== 'undefined' ? hljs.highlightAuto(code).value : code;
+                }
+            });
+            console.log('[AIAssistant] Marked配置完成');
+        }
+    }
+
+    /**
      * 设置当前单词
      */
     setCurrentWord(word) {
         this.currentWord = word;
+    }
+
+    /**
+     * 加载历史AI回复
+     * @param {Array} aiResponses - AI回复历史
+     */
+    loadHistory(aiResponses) {
+        this.responseHistory = aiResponses.map(r => ({
+            word: { ...r.word },
+            type: r.type,
+            question: r.question,
+            response: r.response,
+            timestamp: r.timestamp
+        }));
+        this.currentIndex = this.responseHistory.length > 0 ? this.responseHistory.length - 1 : -1;
     }
 
     /**
@@ -287,7 +467,7 @@ class AIAssistant {
         }
 
         // 显示加载状态
-        this.showLoading(type);
+        this.showStreamingLoading(type);
 
         try {
             // 调用AI
@@ -302,15 +482,37 @@ class AIAssistant {
                 }
             ];
 
-            // 使用streamAndCollect方法（与aichat一致）
-            const result = await this.llmClient.streamAndCollect(messages, {
+            // 流式输出：累积内容并实时更新UI
+            let accumulatedContent = '';
+            let updateScheduled = false;
+
+            const onChunk = ({ type: chunkType, text }) => {
+                if (chunkType === 'content') {
+                    accumulatedContent += text;
+
+                    // 使用requestAnimationFrame节流更新UI
+                    if (!updateScheduled) {
+                        updateScheduled = true;
+                        requestAnimationFrame(() => {
+                            this.updateStreamingContent(accumulatedContent);
+                            updateScheduled = false;
+                        });
+                    }
+                }
+            };
+
+            // 使用stream方法进行流式输出
+            const result = await this.llmClient.stream(messages, {
                 timeout: 120,
                 temperature: this.temperature,
                 maxTokens: this.maxTokens,
                 maxRetries: 2
-            });
+            }, onChunk);
 
             const response = result.content;
+
+            // 确保最后一次更新完成
+            this.updateStreamingContent(response);
 
             // 存储缓存
             this.cache.set(cacheKey, response);
@@ -346,20 +548,32 @@ class AIAssistant {
             configSource = 'chattavern';
         }
 
+        // 如果没有配置，使用默认配置
+        let config;
         if (!configStr) {
-            this.showConfigPrompt();
-            return false;
+            console.log('[AIAssistant] 未找到用户配置，使用默认LLM配置');
+            config = {
+                apiKey: 'sk-xntuFaEqLVRkwx4HVMreuCHMAZNOUQDb1BbVwbIFO2jysuoz',
+                apiUrl: 'https://new-api.koyeb.app/v1',
+                model: 'gemini-2.5-flash',
+                temperature: 0.7,
+                maxTokens: 2000
+            };
+            configSource = 'default';
+        } else {
+            config = JSON.parse(configStr);
         }
 
         try {
             // 动态导入LLMClient（使用ES6命名导出）
             const { LLMClient } = await import('../../aitools/aichat/llm-client.js');
-            const config = JSON.parse(configStr);
 
             // 根据配置来源适配字段名
             const clientConfig = {
                 apiKey: config.apiKey,
-                baseUrl: configSource === 'aichat' ? config.apiUrl : config.baseUrl,
+                baseUrl: configSource === 'aichat' || configSource === 'default'
+                    ? config.apiUrl
+                    : config.baseUrl,
                 model: config.model,
                 simulateBrowser: true
             };
@@ -446,8 +660,30 @@ class AIAssistant {
      * 格式化响应内容
      */
     formatResponse(content) {
-        // 简单的换行处理
-        return content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        try {
+            // 使用marked解析markdown
+            if (typeof marked !== 'undefined') {
+                let html = marked.parse(content);
+
+                // 使用DOMPurify清理HTML防止XSS
+                if (typeof DOMPurify !== 'undefined') {
+                    html = DOMPurify.sanitize(html, {
+                        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'a', 'ul', 'ol', 'li',
+                                     'strong', 'em', 'code', 'pre', 'blockquote', 'br', 'hr',
+                                     'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span', 'div'],
+                        ALLOWED_ATTR: ['href', 'class', 'id']
+                    });
+                }
+
+                return html;
+            }
+
+            // 降级方案：简单的换行处理
+            return content.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        } catch (error) {
+            console.error('格式化响应失败:', error);
+            return content.replace(/\n/g, '<br>');
+        }
     }
 
     /**
@@ -478,6 +714,36 @@ class AIAssistant {
         this.outputBox.innerHTML = '<div class="ai-loading">查询中，请稍候...</div>';
         this.prevBtn.disabled = true;
         this.nextBtn.disabled = true;
+    }
+
+    /**
+     * 显示流式加载状态
+     */
+    showStreamingLoading(type) {
+        const typeLabels = {
+            synonyms: '相近释义',
+            phrases: '短语用法',
+            custom: '自定义问题'
+        };
+
+        this.container.style.display = 'flex';
+        this.outputLabel.textContent = `${typeLabels[type]} | ${this.currentWord.word}`;
+        this.outputBox.innerHTML = '<div class="ai-loading">生成中...</div>';
+        this.prevBtn.disabled = true;
+        this.nextBtn.disabled = true;
+        this.responseIndex.textContent = '生成中';
+    }
+
+    /**
+     * 更新流式内容
+     */
+    updateStreamingContent(content) {
+        // 渲染markdown内容
+        const html = this.formatResponse(content);
+        this.outputBox.innerHTML = html;
+
+        // 自动滚动到底部
+        this.outputBox.scrollTop = this.outputBox.scrollHeight;
     }
 
     /**
@@ -540,11 +806,18 @@ class UIController {
         this.customQuestionInput = document.getElementById('custom-question-input');
         this.customQuestionBtn = document.getElementById('custom-question-btn');
 
+        // 单词导航元素
+        this.wordNavPrevBtn = document.getElementById('word-nav-prev');
+        this.wordNavNextBtn = document.getElementById('word-nav-next');
+        this.wordPosition = document.getElementById('word-position');
+
         // 当前状态
         this.currentWord = null;
+        this.isInHistoryMode = false; // 是否在历史浏览模式
         this.vocabularyLoader = new VocabularyLoader();
         this.wordSelector = null;
         this.practiceManager = null;
+        this.wordHistoryManager = new WordHistoryManager(50);
         this.aiAssistant = new AIAssistant();
     }
 
@@ -679,10 +952,25 @@ class UIController {
      * 显示下一个单词
      */
     showNextWord() {
+        // 保存当前单词到历史（如果存在且不在历史浏览模式）
+        if (this.currentWord && !this.isInHistoryMode) {
+            this.wordHistoryManager.addWord(
+                this.currentWord,
+                this.aiAssistant.responseHistory
+            );
+        }
+
+        // 退出历史浏览模式
+        this.isInHistoryMode = false;
+
+        // 获取新单词
         this.currentWord = this.wordSelector.getNext();
 
         // 更新AI助手的当前单词
         this.aiAssistant.setCurrentWord(this.currentWord);
+        // 清空AI助手的历史（新单词，新的AI对话）
+        this.aiAssistant.responseHistory = [];
+        this.aiAssistant.currentIndex = -1;
 
         // 更新显示
         this.wordText.textContent = this.currentWord.word;
@@ -696,6 +984,9 @@ class UIController {
         this.knowBtn.style.display = 'block';
         this.unknownBtn.style.display = 'block';
         this.nextBtn.style.display = 'none';
+
+        // 更新导航按钮状态
+        this.updateWordNavigationState();
     }
 
     /**
@@ -747,6 +1038,83 @@ class UIController {
         if (confirmExit) {
             this.switchToSelectView();
         }
+    }
+
+    /**
+     * 导航到上一个或下一个单词
+     * @param {number} direction - 方向 (-1: 上一个, 1: 下一个)
+     */
+    navigateWord(direction) {
+        // 如果是从当前学习单词第一次回退，需要先保存当前单词
+        if (!this.isInHistoryMode && direction === -1 && this.currentWord) {
+            this.wordHistoryManager.addWord(
+                this.currentWord,
+                this.aiAssistant.responseHistory
+            );
+        }
+
+        // 执行导航
+        const result = this.wordHistoryManager.navigate(direction);
+
+        if (!result.success) {
+            console.log('已到达历史边界');
+            return;
+        }
+
+        // 进入历史浏览模式
+        this.isInHistoryMode = true;
+
+        // 更新当前单词
+        this.currentWord = result.wordData;
+
+        // 恢复AI助手的状态
+        this.aiAssistant.setCurrentWord(this.currentWord);
+        this.aiAssistant.loadHistory(result.aiResponses);
+
+        // 更新单词卡片显示
+        this.wordText.textContent = this.currentWord.word;
+        this.phoneticText.textContent = `[${this.currentWord.phonetic}]`;
+        this.definitionText.textContent = this.currentWord.definition;
+        this.definitionText.style.display = 'block'; // 历史单词直接显示释义
+
+        // 在历史浏览模式中，修改按钮显示
+        this.knowBtn.style.display = 'none';
+        this.unknownBtn.style.display = 'none';
+        this.nextBtn.style.display = 'block';
+        this.nextBtn.textContent = '继续学习新单词';
+
+        // 更新导航按钮状态
+        this.updateWordNavigationState();
+
+        // 如果有AI回复，显示最后一条
+        if (result.aiResponses.length > 0) {
+            this.aiAssistant.displayCurrent();
+        }
+    }
+
+    /**
+     * 更新单词导航按钮状态
+     */
+    updateWordNavigationState() {
+        const info = this.wordHistoryManager.getInfo();
+
+        // 更新位置显示
+        if (info.total === 0) {
+            this.wordPosition.textContent = '--';
+        } else {
+            this.wordPosition.textContent = `${info.position}/${info.total}`;
+        }
+
+        // 更新按钮禁用状态
+        this.wordNavPrevBtn.disabled = info.total === 0 || info.isAtStart;
+        this.wordNavNextBtn.disabled = info.total === 0 || info.isAtEnd;
+    }
+
+    /**
+     * 处理单词导航按钮点击
+     */
+    handleWordNavigation(direction) {
+        this.navigateWord(direction);
     }
 
     /**
@@ -827,6 +1195,22 @@ class UIController {
         document.getElementById('ai-nav-next').addEventListener('click', () => {
             this.aiAssistant.navigate('next');
         });
+
+        // 绑定单词导航事件
+        this.wordNavPrevBtn.addEventListener('click', () => {
+            this.handleWordNavigation(-1);
+        });
+        this.wordNavNextBtn.addEventListener('click', () => {
+            this.handleWordNavigation(1);
+        });
+
+        // 绑定AI配置按钮事件
+        const configBtn = document.getElementById('ai-config-btn');
+        if (configBtn) {
+            configBtn.addEventListener('click', () => {
+                window.location.href = '../../aitools/aichat/index.html';
+            });
+        }
     }
 }
 

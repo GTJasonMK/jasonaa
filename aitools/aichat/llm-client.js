@@ -146,6 +146,58 @@ class LLMClient {
     }
 
     /**
+     * 流式请求并通过回调实时返回内容
+     * @param {Array} messages - 消息数组 [{role, content}]
+     * @param {Object} options - 请求选项
+     * @param {Function} onChunk - 回调函数 ({type, text}) => void
+     * @returns {Promise<Object>} 收集结果 {content, reasoning, finishReason}
+     */
+    async stream(messages, options = {}, onChunk = null) {
+        const {
+            timeout = 120,
+            temperature = 0.7,
+            maxTokens = null,
+            responseFormat = null,
+            maxRetries = 2
+        } = options;
+
+        let lastError = null;
+
+        // 重试循环
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                if (attempt > 0) {
+                    console.log(`[LLMClient] 重试第 ${attempt} 次...`);
+                    const waitTime = Math.pow(2, attempt) * 1000;
+                    await this._sleep(waitTime);
+                }
+
+                const result = await this._doStreamRequestWithCallback(messages, {
+                    timeout,
+                    temperature,
+                    maxTokens,
+                    responseFormat
+                }, onChunk);
+
+                console.log(`[LLMClient] 流式请求成功: chunks=${result.chunkCount}, content=${result.content.length}字符`);
+                return result;
+
+            } catch (error) {
+                lastError = error;
+
+                if (this._shouldRetry(error) && attempt < maxRetries) {
+                    console.warn(`[LLMClient] 流式请求失败，准备重试: ${error.message}`);
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+        throw lastError || new Error('未知错误');
+    }
+
+    /**
      * 执行流式请求（内部方法）
      * @private
      */
@@ -299,6 +351,159 @@ class LLMClient {
         }
 
         // 检查是否被截断
+        if (finishReason === 'length') {
+            throw new Error('响应被截断，请缩短输入或增加max_tokens');
+        }
+
+        return {
+            content,
+            reasoning,
+            finishReason,
+            chunkCount
+        };
+    }
+
+    /**
+     * 执行流式请求并通过回调实时返回（内部方法）
+     * @private
+     */
+    async _doStreamRequestWithCallback(messages, options, onChunk) {
+        const { timeout, temperature, maxTokens, responseFormat } = options;
+
+        const requestBody = {
+            model: this.model,
+            messages: messages,
+            temperature: temperature,
+            stream: true
+        };
+
+        if (maxTokens) {
+            requestBody.max_tokens = maxTokens;
+        }
+
+        if (responseFormat) {
+            requestBody.response_format = { type: responseFormat };
+        }
+
+        const apiUrl = this._buildApiUrl(this.baseUrl);
+        console.log(`[LLMClient] 流式请求URL: ${apiUrl}`);
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            controller.abort();
+        }, timeout * 1000);
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: this._getHeaders(),
+                body: JSON.stringify(requestBody),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error?.message || errorData.message || response.statusText;
+                throw new Error(`API错误 (${response.status}): ${errorMsg}`);
+            }
+
+            return await this._parseStreamResponseWithCallback(response, onChunk);
+
+        } catch (error) {
+            clearTimeout(timeoutId);
+
+            if (error.name === 'AbortError') {
+                throw new Error('请求超时');
+            }
+
+            if (error.message.includes('Failed to fetch') ||
+                error.message.includes('NetworkError')) {
+                throw new Error('网络连接失败，请检查API地址和网络连接');
+            }
+
+            throw error;
+        }
+    }
+
+    /**
+     * 解析SSE流式响应并通过回调实时返回
+     * @private
+     */
+    async _parseStreamResponseWithCallback(response, onChunk) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+
+        let content = '';
+        let reasoning = '';
+        let finishReason = null;
+        let chunkCount = 0;
+        let buffer = '';
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+                    if (!trimmed || trimmed === 'data: [DONE]') {
+                        continue;
+                    }
+
+                    if (trimmed.startsWith('data: ')) {
+                        try {
+                            const jsonStr = trimmed.slice(6);
+                            const data = JSON.parse(jsonStr);
+
+                            if (!data.choices || data.choices.length === 0) {
+                                continue;
+                            }
+
+                            const choice = data.choices[0];
+                            const delta = choice.delta;
+
+                            chunkCount++;
+
+                            // 收集content并触发回调
+                            if (delta.content) {
+                                content += delta.content;
+                                if (onChunk) {
+                                    onChunk({ type: 'content', text: delta.content });
+                                }
+                            }
+
+                            // 收集reasoning_content并触发回调
+                            if (delta.reasoning_content) {
+                                reasoning += delta.reasoning_content;
+                                if (onChunk) {
+                                    onChunk({ type: 'reasoning', text: delta.reasoning_content });
+                                }
+                            }
+
+                            if (choice.finish_reason) {
+                                finishReason = choice.finish_reason;
+                            }
+
+                        } catch (parseError) {
+                            console.warn('[LLMClient] 解析chunk失败:', parseError.message);
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+
+        if (chunkCount === 0 || (!content && !reasoning)) {
+            throw new Error('未收到有效响应');
+        }
+
         if (finishReason === 'length') {
             throw new Error('响应被截断，请缩短输入或增加max_tokens');
         }
