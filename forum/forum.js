@@ -1,6 +1,7 @@
 /**
  * Forum主入口 - 模块化架构
  * 协调所有功能模块
+ * 支持论坛和博客双模式切换
  */
 
 import { getRepoConfig, initAdminUsers } from './modules/config.js';
@@ -10,6 +11,7 @@ import issues from './modules/issues.js';
 import comments from './modules/comments.js';
 import reactions from './modules/reactions.js';
 import profile from './modules/profile.js';
+import blog from './modules/blog.js';
 import { getRateLimitStatus } from './modules/github-api.js';
 
 // 应用状态
@@ -17,7 +19,8 @@ const appState = {
     repoOwner: '',
     repoName: '',
     adminUsers: [],
-    currentIssueNumber: null
+    currentIssueNumber: null,
+    currentMode: 'forum' // 'forum' 或 'blog'
 };
 
 /**
@@ -34,6 +37,17 @@ async function init() {
 
     // 初始化UI
     ui.initUI();
+
+    // 检查URL hash决定初始模式
+    const hash = window.location.hash.substring(1);
+    if (hash === 'blog') {
+        appState.currentMode = 'blog';
+    } else {
+        appState.currentMode = localStorage.getItem('forum_mode') || 'forum';
+    }
+
+    // 更新标题显示
+    updateModeTitle();
 
     // 加载认证数据
     const hasAuth = auth.loadAuthData();
@@ -55,12 +69,8 @@ async function init() {
             console.error('加载用户资料失败:', error);
         }
 
-        // 加载Issues列表
-        try {
-            await issues.loadIssuesList();
-        } catch (error) {
-            console.error('加载Issues失败:', error);
-        }
+        // 根据模式加载对应内容
+        await loadContentByMode();
 
         // 显示权限警告（如果没有gist权限）
         if (!auth.hasGistPermission()) {
@@ -109,9 +119,78 @@ function displayRepoInfo() {
 }
 
 /**
+ * 更新模式标题显示
+ */
+function updateModeTitle() {
+    const titleElement = document.getElementById('pageTitle');
+    const iconElement = document.getElementById('modeIcon');
+
+    if (appState.currentMode === 'blog') {
+        if (titleElement) titleElement.textContent = '作者博客';
+        if (iconElement) iconElement.textContent = '📝';
+        document.title = '多功能娱乐平台 - 作者博客';
+    } else {
+        if (titleElement) titleElement.textContent = '社区论坛';
+        if (iconElement) iconElement.textContent = '💬';
+        document.title = '多功能娱乐平台 - 论坛';
+    }
+}
+
+/**
+ * 切换模式
+ */
+async function switchMode(newMode) {
+    if (appState.currentMode === newMode) return;
+
+    appState.currentMode = newMode;
+    localStorage.setItem('forum_mode', newMode);
+    window.location.hash = newMode;
+
+    // 更新标题
+    updateModeTitle();
+
+    // 加载对应内容
+    if (auth.isAuthenticated()) {
+        await loadContentByMode();
+    }
+}
+
+/**
+ * 根据当前模式加载内容
+ */
+async function loadContentByMode() {
+    try {
+        if (appState.currentMode === 'blog') {
+            await blog.loadBlogPosts();
+        } else {
+            await issues.loadIssuesList();
+        }
+    } catch (error) {
+        console.error(`加载${appState.currentMode}内容失败:`, error);
+    }
+}
+
+/**
  * 设置事件监听器
  */
 function setupEventListeners() {
+    // 标题点击切换模式
+    const pageTitle = document.getElementById('pageTitle');
+    if (pageTitle) {
+        pageTitle.style.cursor = 'pointer';
+        pageTitle.addEventListener('click', () => {
+            const newMode = appState.currentMode === 'forum' ? 'blog' : 'forum';
+            switchMode(newMode);
+        });
+    }
+
+    // hash变化监听
+    window.addEventListener('hashchange', () => {
+        const hash = window.location.hash.substring(1);
+        if (hash === 'blog' || hash === 'forum') {
+            switchMode(hash);
+        }
+    });
     // 登录表单提交
     const loginForm = document.getElementById('login-form');
     if (loginForm) {

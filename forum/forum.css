@@ -1007,3 +1007,197 @@ button:disabled:hover {
 .permission-warning .close-warning:hover {
     background-color: #654d03;
 } 
+/* ========== 博客模式样式 ========== */
+
+/* 页面标题可点击样式 */
+.page-title {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.page-title:hover {
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.mode-icon {
+    margin-left: 8px;
+    font-size: 0.9em;
+    transition: transform 0.3s ease;
+}
+
+.page-title:hover + .mode-icon {
+    transform: scale(1.2) rotate(10deg);
+}
+
+/* 博客文章网格布局 */
+.blog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+    margin-top: 20px;
+}
+
+/* 博客卡片 */
+.blog-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px var(--box-shadow-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    border: 2px solid transparent;
+}
+
+.blog-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px var(--box-shadow-color);
+    border-color: var(--primary-color);
+}
+
+.blog-card-header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.blog-title {
+    margin: 0;
+    font-size: 1.4rem;
+    color: var(--header-color);
+    line-height: 1.4;
+    font-weight: 600;
+}
+
+.blog-categories {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.blog-category {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    border-radius: 12px;
+    color: white;
+    font-weight: 500;
+}
+
+.blog-excerpt {
+    color: var(--text-color);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+.blog-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    opacity: 0.7;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+.blog-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 无文章状态 */
+.blog-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-color);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.blog-empty h3 {
+    color: var(--header-color);
+    margin-bottom: 16px;
+    font-size: 1.5rem;
+}
+
+.blog-empty p {
+    color: var(--text-color);
+    opacity: 0.8;
+    margin-bottom: 24px;
+}
+
+.empty-tips {
+    max-width: 600px;
+    margin: 0 auto;
+    text-align: left;
+    background: var(--container-bg);
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+}
+
+.empty-tips h4 {
+    color: var(--primary-color);
+    margin-bottom: 12px;
+}
+
+.empty-tips ol {
+    padding-left: 24px;
+    line-height: 1.8;
+}
+
+.empty-tips code {
+    background: var(--code-bg);
+    color: var(--link-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .blog-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .blog-card {
+        padding: 20px;
+    }
+
+    .blog-title {
+        font-size: 1.2rem;
+    }
+
+    .page-title {
+        font-size: 1.2rem;
+    }
+
+    .mode-icon {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .blog-card {
+        padding: 16px;
+    }
+
+    .blog-title {
+        font-size: 1.1rem;
+    }
+
+    .blog-meta {
+        font-size: 0.8rem;
+    }
+}
