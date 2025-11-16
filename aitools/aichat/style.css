@@ -738,6 +738,25 @@ body {
     box-shadow: 0 2px 8px var(--box-shadow-color);
 }
 
+/* 菜单按钮（移动端显示） */
+.btn-menu {
+    display: none;
+    padding: 8px 12px;
+    background: transparent;
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-menu:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
 /* 移动端遮罩层 */
 .sidebar-overlay {
     display: none;
@@ -786,6 +805,17 @@ body {
 
     .btn-close-sidebar {
         display: flex;
+    }
+
+    /* 移动端隐藏tab切换，显示菜单按钮 */
+    .sidebar-tabs {
+        display: none;
+    }
+
+    .btn-menu {
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 }
 

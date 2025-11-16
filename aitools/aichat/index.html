@@ -12,6 +12,7 @@
         <!-- 顶部导航栏 -->
         <header class="chat-header">
             <div class="header-left">
+                <button class="btn-menu" id="menuButton" title="菜单">☰</button>
                 <button class="btn-back" onclick="location.href='../../index.html'">← 返回</button>
                 <button class="btn-new-chat" id="newChatButton" title="新对话">+ 新对话</button>
                 <h1>🤖 AI聊天室</h1>
@@ -22,8 +23,12 @@
             </div>
         </header>
 
-        <!-- 统一侧边栏（对话历史 + 设置） -->
-        <aside class="sidebar" id="sidebar">
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <div class="chat-main">
+            <!-- 统一侧边栏（对话历史 + 设置） -->
+            <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="sidebar-tabs">
                     <button class="tab-btn active" data-tab="history">对话历史</button>
@@ -105,10 +110,6 @@
             </div>
         </aside>
 
-        <!-- 移动端遮罩层 -->
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <div class="chat-main">
             <!-- 右侧聊天区域 -->
             <main class="chat-area">
                 <!-- 消息列表 -->

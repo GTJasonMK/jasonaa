@@ -78,6 +78,11 @@ class AIChatRoom {
 
     // 绑定事件
     bindEvents() {
+        // 菜单按钮（移动端）- 打开侧边栏显示对话历史
+        document.getElementById('menuButton').addEventListener('click', () => {
+            this.openSidebar('history');
+        });
+
         // 设置按钮 - 打开侧边栏并切换到设置tab
         document.getElementById('toggleSettings').addEventListener('click', () => {
             this.openSidebar('settings');
