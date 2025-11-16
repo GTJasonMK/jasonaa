@@ -14,6 +14,7 @@
     box-shadow: 0 8px 16px var(--box-shadow-color);
     margin: 0 auto;
     display: block;
+    touch-action: none; /* 防止触摸滑动触发页面滚动 */
 }
 
 /* 分数样式 */

@@ -65,6 +65,7 @@ class TouchGestureHandler {
      * 处理触摸开始
      */
     handleTouchStart(e) {
+        e.preventDefault(); // 阻止默认行为（如页面滚动、长按菜单等）
         const touch = e.touches[0];
         this.touchStartX = touch.clientX;
         this.touchStartY = touch.clientY;
@@ -76,6 +77,7 @@ class TouchGestureHandler {
      * 处理触摸移动
      */
     handleTouchMove(e) {
+        e.preventDefault(); // 阻止页面滚动（最关键！）
         const touch = e.touches[0];
         const diffX = Math.abs(touch.clientX - this.touchStartX);
         const diffY = Math.abs(touch.clientY - this.touchStartY);

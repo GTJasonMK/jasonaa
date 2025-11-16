@@ -33,6 +33,7 @@
     margin: 0 auto;
     box-shadow: 0 8px 15px var(--box-shadow-color);
     transition: all 0.3s ease;
+    touch-action: none; /* 防止触摸滑动触发页面滚动 */
 }
 
 /* 移动端优化 */
