@@ -568,6 +568,8 @@ body.dragging .import-card {
 }
 
 /* ========== 响应式设计 ========== */
+
+/* 平板及以下 (< 768px) */
 @media (max-width: 768px) {
     .character-grid {
         grid-template-columns: 1fr;
@@ -583,6 +585,237 @@ body.dragging .import-card {
 
     .chat-header h2 {
         font-size: 1rem;
+    }
+
+    .ct-header {
+        padding: 30px 15px;
+    }
+
+    .import-card {
+        padding: 30px 20px;
+    }
+
+    .modal-content {
+        width: 95%;
+        max-height: 95vh;
+    }
+}
+
+/* 手机设备 (< 480px) */
+@media (max-width: 480px) {
+    /* 容器和间距优化 */
+    .ct-header {
+        padding: 20px 12px;
+        margin-bottom: 20px;
+    }
+
+    .ct-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .subtitle {
+        font-size: 0.9rem;
+    }
+
+    /* 按钮最小尺寸 - 符合44x44px触摸目标 */
+    .back-btn,
+    .btn,
+    .btn-primary,
+    .btn-secondary,
+    .btn-chat,
+    .btn-edit,
+    .btn-delete,
+    .btn-send {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 12px 16px;
+    }
+
+    .btn-menu,
+    .modal-close {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 导入卡片 */
+    .import-card {
+        padding: 20px 15px;
+    }
+
+    .import-icon {
+        font-size: 36px;
+        margin-bottom: 15px;
+    }
+
+    .import-card h3 {
+        font-size: 1.1rem;
+    }
+
+    .import-card p,
+    .import-card small {
+        font-size: 0.85rem;
+    }
+
+    /* 角色卡片优化 */
+    .character-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .character-avatar {
+        height: 180px;
+    }
+
+    .character-info {
+        padding: 12px;
+    }
+
+    .character-name {
+        font-size: 1.1rem;
+    }
+
+    .character-desc {
+        font-size: 0.85rem;
+    }
+
+    .character-actions {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .btn-edit,
+    .btn-delete {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+    }
+
+    /* 指南网格 */
+    .guide-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .guide-card {
+        padding: 15px;
+    }
+
+    .guide-card h3 {
+        font-size: 1rem;
+    }
+
+    /* 聊天界面优化 */
+    .chat-header {
+        padding: 12px 15px;
+    }
+
+    .chat-header h2 {
+        font-size: 0.95rem;
+    }
+
+    .chat-main {
+        padding: 15px 12px;
+    }
+
+    .message {
+        gap: 8px;
+        margin-bottom: 15px;
+    }
+
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+
+    .message-bubble {
+        max-width: 90%;
+        padding: 10px 14px;
+        font-size: 0.95rem;
+        border-radius: 16px;
+    }
+
+    /* 输入区域优化 */
+    .chat-footer {
+        padding: 12px 15px;
+    }
+
+    .input-wrapper {
+        gap: 8px;
+    }
+
+    #messageInput {
+        padding: 10px 14px;
+        font-size: 16px; /* 防止iOS自动缩放 */
+        border-radius: 18px;
+    }
+
+    .btn-send {
+        padding: 10px 20px;
+        border-radius: 18px;
+        font-size: 0.95rem;
+    }
+
+    /* 模态窗口优化 */
+    .modal-content {
+        width: 96%;
+        max-height: 96vh;
+        border-radius: 8px;
+    }
+
+    .modal-header {
+        padding: 15px;
+    }
+
+    .modal-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .modal-body {
+        padding: 15px;
+    }
+
+    .config-section h4 {
+        font-size: 1rem;
+        margin: 20px 0 12px 0;
+    }
+
+    /* 配置输入框 - 防止iOS缩放 */
+    .config-input,
+    .config-select,
+    .config-textarea {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .modal-footer {
+        padding: 15px;
+        flex-direction: column;
+    }
+
+    .modal-footer .btn {
+        width: 100%;
+    }
+
+    /* 空状态 */
+    .empty-state {
+        padding: 40px 15px;
+    }
+
+    .empty-icon {
+        font-size: 48px;
+    }
+
+    .empty-state h3 {
+        font-size: 1.1rem;
+    }
+
+    /* 指南区域 */
+    .guide-section {
+        margin-top: 40px;
+        padding: 30px 0;
     }
 }
 

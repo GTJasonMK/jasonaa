@@ -416,15 +416,88 @@ word [phonetic] definition
 
 ### 响应式设计
 
-断点设置:
-- `768px` - 平板和小屏设备
-- `480px` - 手机设备
+项目采用统一的断点规范和移动优先设计策略，所有断点定义集中在`css/breakpoints.css`中。
 
-移动端优化策略:
-- 最小可点击区域: 44px × 44px
-- 触摸反馈效果(`:active`状态)
-- 滚动优化(`-webkit-overflow-scrolling: touch`)
-- 双重事件绑定(touch + click)处理兼容性
+**统一断点系统**（`css/breakpoints.css`）：
+
+断点设置（使用CSS自定义属性）:
+- `--breakpoint-xs: 320px` - 极小屏手机（iPhone SE等）
+- `--breakpoint-sm: 480px` - 小屏手机
+- `--breakpoint-md: 768px` - 平板竖屏
+- `--breakpoint-lg: 1024px` - 平板横屏/小笔记本
+- `--breakpoint-xl: 1280px` - 桌面
+- `--breakpoint-xxl: 1920px` - 大屏桌面
+
+**移动端优化策略**（已实施）:
+
+1. **触摸目标尺寸**（`css/theme.css`）:
+   - 所有按钮最小尺寸: 44px × 44px（Apple标准）
+   - 复选框/单选框: 24px × 24px
+   - 触摸目标间距: 至少8px
+   - 应用范围: button, .btn, input[type="button/submit"], select等
+
+2. **输入框字体大小**（防止iOS自动缩放）:
+   - 所有文本输入框: 16px最小字体
+   - 应用位置: `theme.css`, `chattavern.css`
+   - 影响元素: input[type="text/email/password等"], textarea, select
+
+3. **响应式布局断点**:
+   - **< 480px**（手机）: 单列布局，减小间距，简化动画
+   - **481-768px**（大屏手机/小平板）: 2列布局
+   - **> 768px**（平板/桌面）: auto-fill或多列布局
+
+4. **性能优化**（`css/style.css`性能优化section）:
+   - GPU加速: `will-change: transform`, `translateZ(0)`
+   - 图片懒加载: `loading="lazy"` + shimmer占位动画
+   - 内容可见性: `content-visibility: auto`（现代浏览器）
+   - 移动端动画简化: 减少位移量和阴影复杂度
+   - iOS平滑滚动: `-webkit-overflow-scrolling: touch`
+
+5. **触摸设备专用优化**（`css/theme.css`）:
+   - 触摸反馈: `:active`状态scale(0.98) + opacity(0.9)
+   - 移除hover残留: 触摸设备禁用hover transform
+   - 媒体查询: `@media (hover: none) and (pointer: coarse)`
+
+6. **无障碍支持**:
+   - Reduced motion: `@media (prefers-reduced-motion: reduce)`
+   - 禁用所有动画和过渡（仅0.01ms）
+   - 应用范围: 全局通配符选择器
+
+**网络自适应加载**（`languagelearning/english/pregenerated-loader.js`）:
+
+预生成数据加载器支持网络检测和自适应策略:
+- **Network Information API**: 检测2g/3g/4g/slow-2g
+- **加载策略**:
+  - `lazy`: 按需加载（2g及以下推荐）
+  - `eager`: 立即全量加载（4g推荐）
+  - `auto`: 根据网络自动选择
+- **并发控制**:
+  - slow-2g: 并发数1
+  - 2g: 并发数2
+  - 3g: 并发数3
+  - 4g: 并发数10
+- **使用方法**:
+  ```javascript
+  const loader = new PregeneratedDataLoader('cet4', 'english', {
+      loadStrategy: 'auto',  // 或 'eager', 'lazy'
+      maxConcurrency: null   // null表示自动根据网络决定
+  });
+  ```
+
+**模块适配状态**:
+- ✅ `aitools/chattavern/` - 新增480px断点，完整移动端优化
+- ✅ `languagelearning/english/` - 已有480px，新增性能优化
+- ✅ `css/style.css` - 游戏网格2列/1列控制，性能优化section
+- ✅ `css/theme.css` - 全局触摸优化，输入框16px
+- ✅ `aitools/aichat/` - 已有完善的移动端支持（参考实现）
+
+**开发建议**:
+1. 新模块应导入`css/breakpoints.css`并使用定义的断点
+2. 优先使用CSS自定义属性而非硬编码像素值
+3. 遵循移动优先原则（默认样式适配移动端）
+4. 所有交互元素确保44x44px最小尺寸
+5. 输入框使用16px字体防止iOS缩放
+6. 使用`content-visibility`优化屏幕外内容渲染
 
 ## 开发规范
 

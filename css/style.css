@@ -413,27 +413,91 @@ button:active {
 }
 
 /* 响应式调整 */
-@media (max-width: 600px) {
-    .game-grid, .music-options {
-        grid-template-columns: 1fr;
+
+/* 平板及以下 (< 768px) - 明确的2列布局 */
+@media (max-width: 768px) {
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
     }
-    
+
+    .music-options {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
     .module-section {
-        padding: 15px;
-        margin-bottom: 30px;
-    }
-    
-    .platform-intro {
         padding: 20px 15px;
     }
-    
-    .platform-intro h2 {
-        font-size: 24px;
+
+    .platform-intro {
+        padding: 25px 15px;
     }
-    
+
+    .platform-intro h2 {
+        font-size: 28px;
+    }
+
     .platform-intro p,
     .module-intro {
         font-size: 16px;
+    }
+}
+
+/* 手机设备 (< 480px) - 单列布局 */
+@media (max-width: 480px) {
+    .game-grid,
+    .music-options {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .module-section {
+        padding: 15px 12px;
+        margin-bottom: 25px;
+    }
+
+    .platform-intro {
+        padding: 20px 12px;
+    }
+
+    .platform-intro h2 {
+        font-size: 24px;
+    }
+
+    .platform-intro p,
+    .module-intro {
+        font-size: 15px;
+        line-height: 1.5;
+    }
+
+    /* 游戏卡片优化 */
+    .game-card h3 {
+        margin: 12px;
+        font-size: 1.1rem;
+    }
+
+    .game-card p {
+        margin: 0 12px 12px;
+        font-size: 13px;
+    }
+
+    .game-icon {
+        height: 140px;
+    }
+
+    .game-icon img {
+        max-width: 100px;
+        max-height: 100px;
+    }
+
+    /* 音乐卡片优化 */
+    .music-card {
+        padding: 15px;
+    }
+
+    .music-card h3 {
+        font-size: 1.1rem;
     }
 }
 
@@ -452,4 +516,128 @@ button:active {
 .back-link:hover {
     background-color: var(--button-hover);
     transform: translateY(-2px);
+}
+
+/* ========== 性能优化 ========== */
+
+/* 图片懒加载支持 */
+img[loading="lazy"] {
+    /* 占位背景，防止布局抖动 */
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* 图片加载完成后移除动画 */
+img[loading="lazy"].loaded {
+    background: none;
+    animation: none;
+}
+
+/* GPU加速提示 - 用于经常变换的元素 */
+.game-card,
+.music-card,
+.character-card,
+.animated-element {
+    will-change: transform;
+    /* 使用GPU加速的transform而非top/left */
+    transform: translateZ(0);
+}
+
+/* 移动端动画优化 */
+@media (max-width: 768px) {
+    /* 简化动画，减少GPU负担 */
+    .game-card:hover,
+    .music-card:hover,
+    .character-card:hover {
+        transform: translateZ(0) translateY(-3px); /* 减少位移量 */
+    }
+
+    /* 禁用复杂动画 */
+    .platform-intro::before {
+        animation-duration: 60s; /* 减慢旋转速度 */
+    }
+
+    /* 减少阴影复杂度 */
+    .game-card,
+    .music-card,
+    .character-card {
+        box-shadow: 0 2px 4px var(--box-shadow-color);
+    }
+
+    .game-card:hover,
+    .music-card:hover,
+    .character-card:hover {
+        box-shadow: 0 4px 8px var(--box-shadow-color);
+    }
+}
+
+/* 低性能设备优化（通过reduced motion检测） */
+@media (prefers-reduced-motion: reduce) {
+    /* 禁用所有动画和过渡 */
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    /* 禁用滚动行为 */
+    * {
+        scroll-behavior: auto !important;
+    }
+
+    /* 禁用transform动画 */
+    .game-card:hover,
+    .music-card:hover,
+    .character-card:hover,
+    .back-link:hover {
+        transform: none !important;
+    }
+}
+
+/* 内容可见性优化（仅现代浏览器） */
+.game-grid > .game-card,
+.music-options > .music-card,
+.character-grid > .character-card {
+    /* 浏览器可以跳过屏幕外元素的渲染 */
+    content-visibility: auto;
+    /* 预留高度，防止滚动跳动 */
+    contain-intrinsic-size: 0 300px;
+}
+
+/* 滚动性能优化 */
+.chat-main,
+.message-list,
+#ai-output-box {
+    /* iOS平滑滚动 */
+    -webkit-overflow-scrolling: touch;
+    /* 启用硬件加速滚动 */
+    transform: translateZ(0);
+}
+
+/* 字体渲染优化 */
+body {
+    /* 启用字体平滑（仅webkit） */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* 优化文本渲染性能 */
+    text-rendering: optimizeSpeed;
+}
+
+/* 关键内容优先渲染 */
+.platform-intro,
+.module-section {
+    /* 告诉浏览器这些内容很重要 */
+    content-visibility: auto;
 } 

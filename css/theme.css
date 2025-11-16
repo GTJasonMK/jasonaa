@@ -140,10 +140,110 @@
 /* 媒体查询适配移动设备 */
 @media (max-width: 768px) {
     .theme-toggle {
-        width: 40px;
-        height: 40px;
+        /* 保持44x44px最小触摸目标 */
+        width: 44px;
+        height: 44px;
         bottom: 10px;
         right: 10px;
-        font-size: 16px;
+        font-size: 18px;
+    }
+}
+
+/* ========== 移动端触摸优化 ========== */
+/* 确保所有可交互元素符合最小触摸区域标准 */
+@media (max-width: 768px) {
+    /* 全局按钮最小尺寸 - Apple和Google推荐标准 */
+    button,
+    .btn,
+    .button,
+    a.button,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* 链接最小点击区域（如果显示为按钮样式） */
+    a.btn,
+    a.button,
+    .btn-link {
+        min-height: 44px;
+        min-width: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 表单控件最小尺寸 */
+    input[type="checkbox"],
+    input[type="radio"] {
+        min-width: 24px;
+        min-height: 24px;
+    }
+
+    /* Select下拉框 */
+    select {
+        min-height: 44px;
+        padding: 8px 12px;
+    }
+
+    /* 文本输入框 */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="number"],
+    textarea {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 16px; /* 防止iOS自动缩放 */
+    }
+
+    /* 触摸目标间距 - 至少8px */
+    .btn-group > button,
+    .btn-group > .btn,
+    .button-group > button,
+    .button-group > .btn {
+        margin: 4px;
+    }
+
+    /* 确保图标按钮有足够的点击区域 */
+    .icon-btn,
+    .icon-button,
+    button.icon {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 10px;
+    }
+}
+
+/* 触摸设备专用优化 */
+@media (hover: none) and (pointer: coarse) {
+    /* 触摸设备上所有可点击元素增加点击区域 */
+    button,
+    .btn,
+    a.button,
+    [role="button"] {
+        padding: 12px 16px;
+    }
+
+    /* 增强触摸反馈 */
+    button:active,
+    .btn:active,
+    a.button:active {
+        transform: scale(0.98);
+        opacity: 0.9;
+    }
+
+    /* 移除hover效果，避免点击后残留 */
+    button:hover,
+    .btn:hover,
+    a:hover {
+        /* 触摸设备不应用hover样式 */
+        transform: none;
     }
 } 
