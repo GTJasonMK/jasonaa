@@ -678,3 +678,319 @@ body {
         min-width: 60px;
     }
 }
+
+/* ========== 会话管理侧边栏 ========== */
+
+/* 会话侧边栏 - 桌面端固定在左侧 */
+.sessions-sidebar {
+    width: 280px;
+    background: var(--container-bg);
+    border-right: 2px solid var(--primary-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 150;
+    box-shadow: 2px 0 8px var(--box-shadow-color);
+    position: relative;
+}
+
+.sessions-header {
+    padding: 16px;
+    border-bottom: 2px solid var(--primary-color);
+    background: var(--card-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sessions-header h3 {
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.btn-close-sidebar {
+    display: none;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    transition: all 0.3s ease;
+}
+
+.btn-close-sidebar:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sessions-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+/* 会话项 */
+.session-item {
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: var(--card-bg);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-item:hover {
+    border-color: var(--primary-color);
+    background: var(--primary-color-transparent);
+    transform: translateX(4px);
+}
+
+.session-item.active {
+    border-color: var(--primary-color);
+    background: var(--primary-color);
+    color: white;
+}
+
+.session-item.active .session-title,
+.session-item.active .session-time {
+    color: white;
+}
+
+.session-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.session-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.session-time {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    color: var(--text-color);
+}
+
+.session-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.session-item:hover .session-actions {
+    opacity: 1;
+}
+
+.session-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--card-bg);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.session-btn:hover {
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.1);
+}
+
+.session-item.active .session-btn {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.session-item.active .session-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* 新对话按钮 */
+.btn-new-chat {
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-new-chat:hover {
+    background: var(--button-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px var(--box-shadow-color);
+}
+
+/* 移动端遮罩层 */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 140;
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+}
+
+/* 设置面板默认隐藏 */
+.settings-panel.hidden {
+    transform: translateX(-100%);
+    position: absolute;
+    height: 100%;
+    z-index: 160;
+    box-shadow: 4px 0 16px var(--box-shadow-color);
+}
+
+/* 底部安全区域适配 */
+.input-area {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+/* 滚动条美化 - 会话列表 */
+.sessions-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sessions-list::-webkit-scrollbar-track {
+    background: var(--bg-color);
+    border-radius: 4px;
+}
+
+.sessions-list::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.sessions-list::-webkit-scrollbar-thumb:hover {
+    background: var(--link-hover);
+}
+
+/* ========== 响应式设计 - 移动端侧边栏 ========== */
+
+@media (max-width: 968px) {
+    /* 桌面端固定侧边栏在中等屏幕也改为滑出式 */
+    .sessions-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100vh;
+        z-index: 150;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    .sessions-sidebar.active {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        display: block;
+    }
+
+    .btn-close-sidebar {
+        display: flex;
+    }
+}
+
+@media (max-width: 768px) {
+    /* 移动端调整会话侧边栏宽度 */
+    .sessions-sidebar {
+        width: 260px;
+    }
+
+    .header-left {
+        gap: 8px;
+    }
+
+    .btn-new-chat {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+    }
+
+    .session-item {
+        padding: 10px 12px;
+    }
+
+    .session-title {
+        font-size: 0.9rem;
+    }
+
+    .session-time {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    /* 小屏手机进一步优化 */
+    .sessions-sidebar {
+        width: 240px;
+    }
+
+    .btn-new-chat {
+        font-size: 0.8rem;
+        padding: 6px 10px;
+        gap: 4px;
+    }
+
+    .session-item {
+        padding: 8px 10px;
+        margin-bottom: 6px;
+    }
+
+    .session-title {
+        font-size: 0.85rem;
+    }
+
+    .session-btn {
+        width: 24px;
+        height: 24px;
+        font-size: 0.8rem;
+    }
+
+    /* 确保所有触摸目标符合44x44px最小标准 */
+    .btn-new-chat,
+    .btn-icon,
+    .btn-back {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* 输入框底部安全区域增强 */
+    .input-area {
+        padding-bottom: calc(15px + env(safe-area-inset-bottom));
+    }
+}

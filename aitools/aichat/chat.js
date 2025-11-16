@@ -1,15 +1,22 @@
-// 导入LLMClient
+// 导入LLMClient和SessionManager
 import { LLMClient } from './llm-client.js';
+import { SessionManager } from './session-manager.js';
 
-// AI聊天室 - 核心逻辑
+// AI聊天室 - 核心逻辑（支持多会话管理）
 class AIChatRoom {
     constructor() {
-        this.messages = [];
+        this.sessionManager = new SessionManager();
         this.config = this.loadConfig();
         this.isProcessing = false;
+
+        // 触摸手势相关
+        this.touchStartX = 0;
+        this.touchStartY = 0;
+        this.touchMoveX = 0;
+
         this.initUI();
         this.bindEvents();
-        this.loadHistory();
+        this.loadCurrentSession();
     }
 
     // 加载配置
@@ -34,20 +41,13 @@ class AIChatRoom {
         console.log('[AIChatRoom] 配置已保存:', this.config);
     }
 
-    // 加载历史对话
-    loadHistory() {
-        const saved = localStorage.getItem('aichat_history');
-        if (saved) {
-            this.messages = JSON.parse(saved);
-            this.renderMessages();
+    // 加载当前会话
+    loadCurrentSession() {
+        const session = this.sessionManager.getCurrentSession();
+        if (session) {
+            this.renderMessages(session.messages);
         }
-    }
-
-    // 保存历史对话
-    saveHistory() {
-        // 只保存最近50条消息
-        const toSave = this.messages.slice(-50);
-        localStorage.setItem('aichat_history', JSON.stringify(toSave));
+        this.renderSessionsList();
     }
 
     // 初始化UI
@@ -74,19 +74,67 @@ class AIChatRoom {
         // 更新滑块显示
         document.getElementById('tempValue').textContent = this.config.temperature;
         document.getElementById('tokensValue').textContent = this.config.maxTokens;
+
+        // 默认隐藏设置面板
+        document.getElementById('settingsPanel').classList.add('hidden');
     }
 
     // 绑定事件
     bindEvents() {
         // 设置面板切换
         document.getElementById('toggleSettings').addEventListener('click', () => {
-            document.getElementById('settingsPanel').classList.toggle('hidden');
+            const panel = document.getElementById('settingsPanel');
+            const sidebar = document.getElementById('sessionsSidebar');
+
+            // 切换设置面板
+            panel.classList.toggle('hidden');
+
+            // 如果设置面板显示，关闭会话侧边栏（避免重叠）
+            if (!panel.classList.contains('hidden')) {
+                this.closeSidebar();
+            }
         });
 
-        // 清空对话
+        // 新对话按钮
+        document.getElementById('newChatButton').addEventListener('click', () => {
+            this.createNewChat();
+        });
+
+        // 清空当前会话
         document.getElementById('clearChat').addEventListener('click', () => {
-            if (confirm('确定要清空所有对话记录吗？')) {
-                this.clearChat();
+            if (confirm('确定要清空当前对话记录吗？')) {
+                this.clearCurrentChat();
+            }
+        });
+
+        // 关闭侧边栏按钮（移动端）
+        document.getElementById('closeSidebar').addEventListener('click', () => {
+            this.closeSidebar();
+        });
+
+        // 遮罩层点击关闭侧边栏
+        document.getElementById('sidebarOverlay').addEventListener('click', () => {
+            this.closeSidebar();
+        });
+
+        // 触摸手势 - 左滑显示侧边栏（仅移动端）
+        const chatArea = document.querySelector('.chat-area');
+        chatArea.addEventListener('touchstart', (e) => {
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        chatArea.addEventListener('touchmove', (e) => {
+            this.touchMoveX = e.touches[0].clientX;
+        }, { passive: true });
+
+        chatArea.addEventListener('touchend', (e) => {
+            const deltaX = this.touchMoveX - this.touchStartX;
+            const deltaY = Math.abs(this.touchMoveX - this.touchStartY);
+
+            // 如果是向右滑动且滑动距离>50px，且垂直滑动距离<30px（排除滚动）
+            if (deltaX > 50 && deltaY < 30 && this.touchStartX < 50) {
+                this.openSidebar();
             }
         });
 
@@ -138,6 +186,155 @@ class AIChatRoom {
             input.style.height = 'auto';
             input.style.height = Math.min(input.scrollHeight, 200) + 'px';
         });
+    }
+
+    // 侧边栏控制
+    openSidebar() {
+        const sidebar = document.getElementById('sessionsSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const settingsPanel = document.getElementById('settingsPanel');
+
+        // 关闭设置面板
+        settingsPanel.classList.add('hidden');
+
+        // 显示侧边栏
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+    }
+
+    closeSidebar() {
+        const sidebar = document.getElementById('sessionsSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+
+    // 创建新对话
+    createNewChat() {
+        this.sessionManager.createSession();
+        this.renderSessionsList();
+        this.loadCurrentSession();
+        this.closeSidebar();
+    }
+
+    // 切换会话
+    switchSession(sessionId) {
+        const session = this.sessionManager.switchSession(sessionId);
+        if (session) {
+            this.renderMessages(session.messages);
+            this.renderSessionsList();
+            this.closeSidebar();
+        }
+    }
+
+    // 删除会话
+    deleteSession(sessionId) {
+        if (confirm('确定要删除这个对话吗？')) {
+            this.sessionManager.deleteSession(sessionId);
+            this.renderSessionsList();
+            this.loadCurrentSession();
+        }
+    }
+
+    // 清空当前会话
+    clearCurrentChat() {
+        this.sessionManager.clearCurrentSession();
+        this.loadCurrentSession();
+    }
+
+    // 渲染会话列表
+    renderSessionsList() {
+        const container = document.getElementById('sessionsList');
+        const sessions = this.sessionManager.getSessionsSummary();
+
+        if (sessions.length === 0) {
+            container.innerHTML = '<div style="text-align: center; padding: 20px; opacity: 0.5;">暂无对话历史</div>';
+            return;
+        }
+
+        container.innerHTML = sessions.map(session => {
+            const date = new Date(session.lastUpdated);
+            const timeStr = this.formatTime(date);
+            const activeClass = session.isCurrent ? 'active' : '';
+
+            return `
+                <div class="session-item ${activeClass}" data-session-id="${session.id}">
+                    <div class="session-content">
+                        <div class="session-title">${this.escapeHtml(session.title)}</div>
+                        <div class="session-time">${timeStr} · ${session.messageCount}条消息</div>
+                    </div>
+                    <div class="session-actions">
+                        <button class="session-btn btn-delete" data-session-id="${session.id}" title="删除">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // 绑定会话项点击事件
+        container.querySelectorAll('.session-item').forEach(item => {
+            const sessionId = item.dataset.sessionId;
+
+            item.addEventListener('click', (e) => {
+                // 如果点击的是删除按钮，不触发切换
+                if (!e.target.classList.contains('btn-delete') && !e.target.closest('.btn-delete')) {
+                    this.switchSession(sessionId);
+                }
+            });
+        });
+
+        // 绑定删除按钮事件
+        container.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sessionId = btn.dataset.sessionId;
+                this.deleteSession(sessionId);
+            });
+        });
+    }
+
+    // 格式化时间
+    formatTime(date) {
+        const now = new Date();
+        const diff = now - date;
+
+        // 1分钟内
+        if (diff < 60000) {
+            return '刚刚';
+        }
+
+        // 1小时内
+        if (diff < 3600000) {
+            return Math.floor(diff / 60000) + '分钟前';
+        }
+
+        // 今天
+        if (date.toDateString() === now.toDateString()) {
+            return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // 昨天
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return '昨天';
+        }
+
+        // 一周内
+        if (diff < 7 * 24 * 3600000) {
+            const days = ['日', '一', '二', '三', '四', '五', '六'];
+            return '周' + days[date.getDay()];
+        }
+
+        // 更早
+        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+    }
+
+    // HTML转义
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // 从表单保存配置
@@ -200,10 +397,20 @@ class AIChatRoom {
             return;
         }
 
-        // 添加用户消息
-        this.addMessage('user', message);
+        // 添加用户消息到当前会话
+        this.sessionManager.addMessageToCurrentSession({
+            role: 'user',
+            content: message,
+            timestamp: Date.now()
+        });
+
         input.value = '';
         input.style.height = 'auto';
+
+        // 重新渲染消息和会话列表
+        const currentSession = this.sessionManager.getCurrentSession();
+        this.renderMessages(currentSession.messages);
+        this.renderSessionsList();
 
         // 显示输入状态
         this.setStatus('AI正在思考...');
@@ -215,7 +422,7 @@ class AIChatRoom {
 
         try {
             // 获取上下文（最近10条消息）
-            const context = this.messages.slice(-10);
+            const context = currentSession.messages.slice(-10);
 
             // 调用API
             const response = await this.callAPI(message, context);
@@ -223,15 +430,33 @@ class AIChatRoom {
             // 移除打字动画
             this.removeTypingIndicator();
 
-            // 添加AI回复
-            this.addMessage('ai', response);
+            // 添加AI回复到当前会话
+            this.sessionManager.addMessageToCurrentSession({
+                role: 'ai',
+                content: response,
+                timestamp: Date.now()
+            });
+
+            // 重新渲染
+            const updatedSession = this.sessionManager.getCurrentSession();
+            this.renderMessages(updatedSession.messages);
+            this.renderSessionsList();
+
             this.setStatus('');
         } catch (error) {
             this.removeTypingIndicator();
             this.setStatus('');
 
             const errorMsg = `抱歉，发生错误：\n${error.message}`;
-            this.addMessage('ai', errorMsg);
+
+            this.sessionManager.addMessageToCurrentSession({
+                role: 'ai',
+                content: errorMsg,
+                timestamp: Date.now()
+            });
+
+            const updatedSession = this.sessionManager.getCurrentSession();
+            this.renderMessages(updatedSession.messages);
 
             console.error('[AIChatRoom] 发送消息失败:', error);
         } finally {
@@ -334,20 +559,6 @@ class AIChatRoom {
         }
     }
 
-    // 添加消息
-    addMessage(role, content) {
-        const message = {
-            role: role,
-            content: content,
-            timestamp: Date.now()
-        };
-
-        this.messages.push(message);
-        this.saveHistory();
-        this.renderMessage(message);
-        this.scrollToBottom();
-    }
-
     // 渲染消息
     renderMessage(message) {
         const container = document.getElementById('messagesContainer');
@@ -389,11 +600,11 @@ class AIChatRoom {
     }
 
     // 渲染所有消息
-    renderMessages() {
+    renderMessages(messages) {
         const container = document.getElementById('messagesContainer');
         container.innerHTML = '';
 
-        if (this.messages.length === 0) {
+        if (messages.length === 0) {
             container.innerHTML = `
                 <div class="welcome-message">
                     <h2>👋 欢迎使用AI聊天室</h2>
@@ -401,17 +612,18 @@ class AIChatRoom {
                     <div class="quick-tips">
                         <h4>💡 快速开始：</h4>
                         <ul>
-                            <li>点击左上角⚙️配置您的API信息</li>
+                            <li>点击右上角⚙️配置您的API信息</li>
                             <li>支持New API、OpenAI、DeepSeek等服务</li>
                             <li>只需填写base URL，系统会自动补全</li>
                             <li>对话历史自动保存到本地</li>
                             <li>支持多轮上下文对话</li>
+                            <li>支持多会话管理，左侧查看历史对话</li>
                         </ul>
                     </div>
                 </div>
             `;
         } else {
-            this.messages.forEach(msg => this.renderMessage(msg));
+            messages.forEach(msg => this.renderMessage(msg));
         }
 
         this.scrollToBottom();
@@ -465,13 +677,6 @@ class AIChatRoom {
             container.scrollTop = container.scrollHeight;
         }, 100);
     }
-
-    // 清空对话
-    clearChat() {
-        this.messages = [];
-        localStorage.removeItem('aichat_history');
-        this.renderMessages();
-    }
 }
 
 // 初始化
@@ -479,5 +684,5 @@ let chatRoom;
 
 document.addEventListener('DOMContentLoaded', () => {
     chatRoom = new AIChatRoom();
-    console.log('[AIChatRoom] 初始化完成');
+    console.log('[AIChatRoom] 初始化完成 - 支持多会话管理');
 });

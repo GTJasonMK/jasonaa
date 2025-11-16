@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>AI聊天室 - 智能对话助手</title>
     <link rel="stylesheet" href="../../css/theme.css">
     <link rel="stylesheet" href="style.css">
@@ -13,6 +13,7 @@
         <header class="chat-header">
             <div class="header-left">
                 <button class="btn-back" onclick="location.href='../../index.html'">← 返回</button>
+                <button class="btn-new-chat" id="newChatButton" title="新对话">+ 新对话</button>
                 <h1>🤖 AI聊天室</h1>
             </div>
             <div class="header-right">
@@ -20,6 +21,20 @@
                 <button class="btn-icon" id="clearChat" title="清空对话">🗑️</button>
             </div>
         </header>
+
+        <!-- 会话历史侧边栏 -->
+        <aside class="sessions-sidebar" id="sessionsSidebar">
+            <div class="sessions-header">
+                <h3>对话历史</h3>
+                <button class="btn-icon btn-close-sidebar" id="closeSidebar" title="关闭">✕</button>
+            </div>
+            <div class="sessions-list" id="sessionsList">
+                <!-- 会话列表将通过JavaScript动态填充 -->
+            </div>
+        </aside>
+
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
         <div class="chat-main">
             <!-- 左侧配置面板 -->
@@ -128,6 +143,7 @@
 
     <!-- 加载脚本 -->
     <script src="../../js/settings-loader.js"></script>
+    <script type="module" src="session-manager.js"></script>
     <script type="module" src="chat.js"></script>
 </body>
 </html>
