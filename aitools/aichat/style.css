@@ -768,11 +768,11 @@ body {
     background: rgba(0, 0, 0, 0.5);
     z-index: 140;
     backdrop-filter: blur(2px);
-    opacity: 0;
     transition: opacity 0.3s ease;
 }
 
 .sidebar-overlay.active {
+    display: block;
     opacity: 1;
 }
 
@@ -797,10 +797,6 @@ body {
 
     .sidebar.active {
         transform: translateX(0);
-    }
-
-    .sidebar-overlay {
-        display: block;
     }
 
     .btn-close-sidebar {
