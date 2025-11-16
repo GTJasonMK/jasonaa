@@ -22,28 +22,27 @@
             </div>
         </header>
 
-        <!-- 会话历史侧边栏 -->
-        <aside class="sessions-sidebar" id="sessionsSidebar">
-            <div class="sessions-header">
-                <h3>对话历史</h3>
+        <!-- 统一侧边栏（对话历史 + 设置） -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" data-tab="history">对话历史</button>
+                    <button class="tab-btn" data-tab="settings">设置</button>
+                </div>
                 <button class="btn-icon btn-close-sidebar" id="closeSidebar" title="关闭">✕</button>
             </div>
-            <div class="sessions-list" id="sessionsList">
-                <!-- 会话列表将通过JavaScript动态填充 -->
-            </div>
-        </aside>
 
-        <!-- 移动端遮罩层 -->
-        <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <div class="chat-main">
-            <!-- 左侧配置面板 -->
-            <aside class="settings-panel" id="settingsPanel">
-                <div class="settings-header">
-                    <h3>⚙️ API配置</h3>
+            <div class="sidebar-content">
+                <!-- 对话历史面板 -->
+                <div class="tab-panel active" id="historyPanel">
+                    <div class="sessions-list" id="sessionsList">
+                        <!-- 会话列表将通过JavaScript动态填充 -->
+                    </div>
                 </div>
 
-                <div class="settings-body">
+                <!-- 设置面板 -->
+                <div class="tab-panel" id="settingsPanel">
+                    <div class="settings-body">
                     <div class="setting-group">
                         <label>
                             <input type="checkbox" id="enableAI" checked>
@@ -102,8 +101,14 @@
                         <button class="btn btn-secondary" id="testConnection">🔗 测试连接</button>
                     </div>
                 </div>
-            </aside>
+                </div>
+            </div>
+        </aside>
 
+        <!-- 移动端遮罩层 -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <div class="chat-main">
             <!-- 右侧聊天区域 -->
             <main class="chat-area">
                 <!-- 消息列表 -->

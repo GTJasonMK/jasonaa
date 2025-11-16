@@ -74,25 +74,13 @@ class AIChatRoom {
         // 更新滑块显示
         document.getElementById('tempValue').textContent = this.config.temperature;
         document.getElementById('tokensValue').textContent = this.config.maxTokens;
-
-        // 默认隐藏设置面板
-        document.getElementById('settingsPanel').classList.add('hidden');
     }
 
     // 绑定事件
     bindEvents() {
-        // 设置面板切换
+        // 设置按钮 - 打开侧边栏并切换到设置tab
         document.getElementById('toggleSettings').addEventListener('click', () => {
-            const panel = document.getElementById('settingsPanel');
-            const sidebar = document.getElementById('sessionsSidebar');
-
-            // 切换设置面板
-            panel.classList.toggle('hidden');
-
-            // 如果设置面板显示，关闭会话侧边栏（避免重叠）
-            if (!panel.classList.contains('hidden')) {
-                this.closeSidebar();
-            }
+            this.openSidebar('settings');
         });
 
         // 新对话按钮
@@ -115,6 +103,14 @@ class AIChatRoom {
         // 遮罩层点击关闭侧边栏
         document.getElementById('sidebarOverlay').addEventListener('click', () => {
             this.closeSidebar();
+        });
+
+        // Tab切换按钮
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                this.switchTab(tabName);
+            });
         });
 
         // 触摸手势 - 左滑显示侧边栏（仅移动端）
@@ -189,13 +185,12 @@ class AIChatRoom {
     }
 
     // 侧边栏控制
-    openSidebar() {
-        const sidebar = document.getElementById('sessionsSidebar');
+    openSidebar(tab = 'history') {
+        const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
-        const settingsPanel = document.getElementById('settingsPanel');
 
-        // 关闭设置面板
-        settingsPanel.classList.add('hidden');
+        // 切换到指定tab
+        this.switchTab(tab);
 
         // 显示侧边栏
         sidebar.classList.add('active');
@@ -203,11 +198,32 @@ class AIChatRoom {
     }
 
     closeSidebar() {
-        const sidebar = document.getElementById('sessionsSidebar');
+        const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
 
         sidebar.classList.remove('active');
         overlay.classList.remove('active');
+    }
+
+    // Tab切换
+    switchTab(tabName) {
+        // 切换tab按钮状态
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            if (btn.dataset.tab === tabName) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        // 切换面板显示
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            if (panel.id === `${tabName}Panel`) {
+                panel.classList.add('active');
+            } else {
+                panel.classList.remove('active');
+            }
+        });
     }
 
     // 创建新对话
