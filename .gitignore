@@ -74,3 +74,13 @@ venv/
 env/
 __pycache__/
 *.pyc
+
+# 脚本配置文件（包含API密钥）
+scripts/config.json
+
+# 预生成数据进度文件
+*.progress.json
+
+# 测试文件
+**/test.html
+**/test*.html

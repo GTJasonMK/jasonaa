@@ -1,0 +1,25 @@
+{
+  "name": "pregenerated-dataset-generator",
+  "version": "1.0.0",
+  "description": "批量生成单词预生成数据集，支持完善的中断恢复机制",
+  "main": "generate-pregenerated.js",
+  "type": "commonjs",
+  "scripts": {
+    "generate": "node generate-pregenerated.js",
+    "test": "node generate-pregenerated.js --test-mode 5",
+    "validate": "node generate-pregenerated.js --validate"
+  },
+  "keywords": [
+    "vocabulary",
+    "dataset",
+    "generator",
+    "ai",
+    "llm",
+    "language-learning"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

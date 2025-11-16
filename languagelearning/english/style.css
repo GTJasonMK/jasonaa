@@ -600,6 +600,40 @@
     text-overflow: ellipsis;
 }
 
+/* 内容来源标签样式 */
+.ai-output-label[data-source="pregenerated"]::after {
+    content: " [预生成]";
+    font-size: 0.75rem;
+    font-weight: normal;
+    padding: 0.15rem 0.4rem;
+    background: var(--success-color, #28a745);
+    color: white;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+.ai-output-label[data-source="latest"]::after {
+    content: " [最新]";
+    font-size: 0.75rem;
+    font-weight: normal;
+    padding: 0.15rem 0.4rem;
+    background: var(--warning-color, #ffa500);
+    color: white;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+.ai-output-label[data-source="custom"]::after {
+    content: " [实时]";
+    font-size: 0.75rem;
+    font-weight: normal;
+    padding: 0.15rem 0.4rem;
+    background: var(--info-color, #17a2b8);
+    color: white;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
 .ai-response-index {
     font-size: 0.75rem;
     color: var(--text-secondary, #666);

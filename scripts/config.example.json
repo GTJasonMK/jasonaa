@@ -1,0 +1,35 @@
+{
+  "apiKey": "your-api-key-here",
+  "apiUrl": "https://api.5202030.xyz/v1",
+  "model": "deepseek/deepseek-v3.2-exp",
+  "temperature": 0.7,
+  "maxTokens": 2000,
+  "rpm": 60,
+  "description": "AI配置示例文件。将此文件复制为 config.json 并填入你的API信息。",
+  "notes": {
+    "apiKey": "你的API密钥",
+    "apiUrl": "API基础地址",
+    "model": "使用的模型名称",
+    "temperature": "生成温度 (0-1，越高越随机)",
+    "maxTokens": "单次请求最大token数",
+    "rpm": "每分钟请求数限制（根据你的API配额调整）"
+  },
+  "presets": {
+    "openai": {
+      "apiUrl": "https://api.openai.com/v1",
+      "model": "gpt-3.5-turbo",
+      "rpm": 3
+    },
+    "deepseek": {
+      "apiUrl": "https://api.deepseek.com/v1",
+      "model": "deepseek-chat",
+      "rpm": 60
+    },
+    "local": {
+      "apiUrl": "http://localhost:1234/v1",
+      "model": "local-model",
+      "rpm": 120,
+      "note": "本地模型（Ollama、LM Studio等）通常没有速率限制"
+    }
+  }
+}

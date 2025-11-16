@@ -6,28 +6,28 @@
 // 词汇书配置
 const VOCABULARY_BOOKS = [
     {
-        id: 'cet4',
-        name: '大学英语四级',
+        id: 'cet4_edited',
+        name: '大学英语四级（AI增强版）',
         file: 'CET4_edited.txt',
-        description: '约4600词'
+        description: '约4544词，含AI生成的同义词辨析和短语搭配'
     },
     {
-        id: 'cet6',
-        name: '大学英语六级',
+        id: 'cet6_edited',
+        name: '大学英语六级（AI增强版）',
         file: 'CET6_edited.txt',
-        description: '约2000词'
+        description: '约2000词，含AI生成的同义词辨析和短语搭配'
     },
     {
         id: 'toefl',
-        name: '托福词汇',
+        name: '托福词汇（AI增强版）',
         file: 'TOEFL.txt',
-        description: '约3500词'
+        description: '约4516词，含AI生成的同义词辨析和短语搭配'
     },
     {
-        id: 'gre',
-        name: 'GRE词汇',
+        id: 'gre_8000_words',
+        name: 'GRE词汇（AI增强版）',
         file: 'GRE_8000_Words.txt',
-        description: '约8000词'
+        description: '约7732词，含AI生成的同义词辨析和短语搭配'
     }
 ];
 
@@ -375,13 +375,33 @@ class PracticeManager {
  * AI助手类
  * 负责AI查询、历史管理和UI更新
  */
+// 查询状态枚举
+const QueryState = {
+    UNQUERIED: 'unqueried',        // 从未查询
+    PREGENERATED: 'pregenerated',  // 显示预生成内容
+    LOADING_LATEST: 'loading',     // 正在查询最新内容
+    LATEST: 'latest',              // 显示最新内容
+    ERROR: 'error'                 // 查询失败
+};
+
 class AIAssistant {
-    constructor() {
+    constructor(bookId = null) {
         this.responseHistory = [];
         this.currentIndex = -1;
         this.currentWord = null;
         this.cache = new Map();
         this.llmClient = null;
+
+        // 状态管理
+        this.queryStates = new Map();  // 跟踪每个单词+类型的查询状态
+        this.latestCache = new Map();  // Tier 2最新查询的缓存
+        this.pregeneratedLoader = null; // 预生成数据加载器
+
+        // 初始化预生成加载器
+        if (bookId && typeof PregeneratedDataLoader !== 'undefined') {
+            this.pregeneratedLoader = new PregeneratedDataLoader(bookId, 'english');
+            console.log(`[AIAssistant] 预生成加载器已初始化: ${bookId}`);
+        }
 
         // 配置marked.js用于markdown渲染
         this.setupMarked();
@@ -393,14 +413,73 @@ class AIAssistant {
         this.responseIndex = document.getElementById('ai-response-index');
         this.prevBtn = document.getElementById('ai-nav-prev');
         this.nextBtn = document.getElementById('ai-nav-next');
+        this.aiButtons = document.querySelectorAll('.ai-btn[data-type]');
+
+        // 按钮文本配置
+        this.buttonTexts = {
+            synonyms: {
+                default: '相近释义及区别',
+                hasPregenerated: '查询最新释义变化',
+                hasLatest: '查看预生成内容'
+            },
+            phrases: {
+                default: '短语及用法',
+                hasPregenerated: '查询最新短语搭配',
+                hasLatest: '查看预生成内容'
+            }
+        };
 
         // 提示词模板
         this.templates = {
+            // Tier 1: 详细预生成版本
             synonyms: (word, definition) =>
-                `请简要列出"${word}"（${definition}）的2-3个主要同义词，并用一句话说明关键区别。用markdown列表格式，保持简洁。`,
+                `请详细分析"${word}"（${definition}）的同义词及其区别。
+
+要求：
+1. 列出3-5个主要同义词，每个包含：
+   - 音标
+   - 与"${word}"的核心区别（使用场景、语气、正式程度）
+   - 例句对比（用${word}和同义词分别造句）
+2. 用表格形式对比关键差异
+3. 总结使用建议
+
+使用markdown格式，确保内容详尽。`,
 
             phrases: (word, definition) =>
-                `请列出"${word}"（${definition}）的3-5个最常用短语搭配和例句。每个例句附上简短中文翻译。用markdown列表格式。`,
+                `请详细列出"${word}"（${definition}）的常用短语搭配和用法。
+
+要求：
+1. 列出5-8个最常用的短语搭配
+2. 每个短语包含：
+   - 完整的短语表达
+   - 详细的中文翻译
+   - 至少一个地道的例句（附中文翻译）
+   - 使用场景说明（口语/书面语、正式/非正式）
+3. 如有固定搭配的介词或冠词，需特别标注
+
+使用markdown列表格式，确保内容详尽。`,
+
+            // Tier 2: 时效性查询版本
+            synonyms_latest: (word, definition) =>
+                `关于单词"${word}"（${definition}），用户已有详细的同义词分析。
+
+请只补充最新的用法变化（2023-2024年）：
+1. 是否在网络流行语中有新含义？
+2. 社交媒体上是否出现新的使用场景？
+3. 是否因文化事件产生新的引申义？
+4. 与同义词的使用偏好是否有变化趋势？
+
+如果该词用法稳定，没有明显新变化，请直接说明。保持简洁。`,
+
+            phrases_latest: (word, definition) =>
+                `关于单词"${word}"（${definition}），用户已有详细的短语搭配说明。
+
+请只补充最新出现的搭配和用法（2023-2024年）：
+1. 新的流行搭配
+2. 最近媒体/社交平台上的热门用法
+3. 新兴语境中的特殊用法
+
+如果没有明显的新搭配出现，请直接说明。保持简洁。`,
 
             custom: (word, question) =>
                 `关于单词"${word}"：${question}。请简洁回答。`
@@ -439,6 +518,227 @@ class AIAssistant {
      */
     setCurrentWord(word) {
         this.currentWord = word;
+        this.updateButtonStates(); // 更新按钮显示状态
+    }
+
+    /**
+     * 获取状态键
+     */
+    getStateKey(type) {
+        if (!this.currentWord) return null;
+        return `${this.currentWord.word}_${type}`;
+    }
+
+    /**
+     * 获取当前查询状态
+     */
+    getQueryState(type) {
+        const key = this.getStateKey(type);
+        return this.queryStates.get(key) || QueryState.UNQUERIED;
+    }
+
+    /**
+     * 设置查询状态
+     */
+    setQueryState(type, state) {
+        const key = this.getStateKey(type);
+        if (key) {
+            this.queryStates.set(key, state);
+            this.updateButtonStates();
+        }
+    }
+
+    /**
+     * 更新所有AI按钮的显示状态
+     */
+    updateButtonStates() {
+        this.aiButtons.forEach(btn => {
+            const type = btn.dataset.type;
+            if (!type || !this.buttonTexts[type]) return;
+
+            const state = this.getQueryState(type);
+            const textSpan = btn.querySelector('.ai-btn-text');
+            if (!textSpan) return;
+
+            const config = this.buttonTexts[type];
+            let newText = config.default;
+            let title = btn.getAttribute('title').split('\n')[0]; // 保留原始title的第一行
+
+            switch (state) {
+                case QueryState.UNQUERIED:
+                    newText = config.default;
+                    break;
+
+                case QueryState.PREGENERATED:
+                    newText = config.hasPregenerated;
+                    title = title + '\n(将调用AI生成最新内容)';
+                    break;
+
+                case QueryState.LATEST:
+                    newText = config.hasLatest;
+                    break;
+
+                case QueryState.LOADING_LATEST:
+                    newText = '生成中...';
+                    break;
+
+                case QueryState.ERROR:
+                    newText = '重试';
+                    break;
+            }
+
+            textSpan.textContent = newText;
+            btn.setAttribute('title', title);
+        });
+    }
+
+    /**
+     * 加载预生成内容
+     * @param {string} type - 查询类型
+     * @returns {Promise<boolean>} 是否成功加载
+     */
+    async loadPregenerated(type) {
+        if (!this.pregeneratedLoader) {
+            console.log('[AIAssistant] 预生成加载器未初始化，降级到实时查询');
+            return false;
+        }
+
+        try {
+            const wordData = await this.pregeneratedLoader.getWord(this.currentWord.word);
+
+            if (!wordData || !wordData[type]) {
+                console.log(`[AIAssistant] 未找到单词"${this.currentWord.word}"的预生成${type}数据`);
+                return false;
+            }
+
+            const content = wordData[type].content;
+
+            // 添加到历史
+            this.addToHistory(type, '', content, 'pregenerated');
+
+            // 更新状态
+            this.setQueryState(type, QueryState.PREGENERATED);
+
+            // 显示内容
+            this.displayCurrent();
+
+            console.log(`[AIAssistant] 成功加载预生成内容: ${type}`);
+            return true;
+        } catch (error) {
+            console.error('[AIAssistant] 加载预生成内容失败:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 加载最新内容
+     * @param {string} type - 查询类型
+     * @param {string} customQuestion - 自定义问题（可选）
+     */
+    async loadLatest(type, customQuestion = '') {
+        // 检查缓存
+        const cacheKey = this.getCacheKey(type + '_latest', customQuestion);
+        if (this.latestCache.has(cacheKey)) {
+            console.log('[AIAssistant] 使用缓存的最新内容');
+            const cached = this.latestCache.get(cacheKey);
+            this.addToHistory(type, customQuestion, cached, 'latest');
+            this.setQueryState(type, QueryState.LATEST);
+            this.displayCurrent();
+            return;
+        }
+
+        // 显示加载状态
+        this.setQueryState(type, QueryState.LOADING_LATEST);
+        this.showStreamingLoading(type, '查询最新内容中...');
+
+        try {
+            // 调用API获取最新内容
+            const prompt = this.buildPrompt(type + '_latest', customQuestion);
+            const response = await this.queryFromAPI(prompt);
+
+            // 缓存响应
+            this.latestCache.set(cacheKey, response);
+
+            // 限制缓存大小
+            if (this.latestCache.size > 50) {
+                const firstKey = this.latestCache.keys().next().value;
+                this.latestCache.delete(firstKey);
+            }
+
+            // 添加到历史
+            this.addToHistory(type, customQuestion, response, 'latest');
+
+            // 更新状态
+            this.setQueryState(type, QueryState.LATEST);
+
+            // 显示内容
+            this.displayCurrent();
+
+            console.log(`[AIAssistant] 成功获取最新内容: ${type}`);
+        } catch (error) {
+            console.error('[AIAssistant] 加载最新内容失败:', error);
+            this.setQueryState(type, QueryState.ERROR);
+            this.showError(`查询失败: ${error.message}`);
+        }
+    }
+
+    /**
+     * 从API查询
+     * @param {string} prompt - 提示词
+     * @returns {Promise<string>} 响应内容
+     */
+    async queryFromAPI(prompt) {
+        // 检查AI配置
+        if (!await this.ensureAIClient()) {
+            throw new Error('AI客户端未初始化');
+        }
+
+        const messages = [
+            {
+                role: 'system',
+                content: '你是一个专业的语言学习助手。请用简洁、清晰的方式回答，避免冗余。使用markdown格式组织内容，保持精练。'
+            },
+            {
+                role: 'user',
+                content: prompt
+            }
+        ];
+
+        // 流式输出
+        let accumulatedContent = '';
+        let lastUpdateTime = 0;
+
+        const onChunk = ({ type: chunkType, text }) => {
+            if (chunkType === 'content') {
+                accumulatedContent += text;
+
+                const now = Date.now();
+                if (now - lastUpdateTime >= 30) {
+                    lastUpdateTime = now;
+                    this.updateStreamingContentFast(accumulatedContent);
+                }
+            }
+        };
+
+        const result = await this.llmClient.stream(messages, {
+            timeout: 120,
+            temperature: this.temperature,
+            maxTokens: this.maxTokens,
+            maxRetries: 2
+        }, onChunk);
+
+        const response = result.content;
+
+        // 最终渲染
+        if (result.finishReason === 'length') {
+            const warningHtml = '<div class="ai-truncation-warning"><strong>提示：</strong>回复因长度限制被截断，以下是部分内容。</div>';
+            this.outputBox.innerHTML = warningHtml + this.formatResponse(response);
+            this.outputBox.scrollTop = this.outputBox.scrollHeight;
+        } else {
+            this.updateStreamingContent(response);
+        }
+
+        return response;
     }
 
     /**
@@ -457,7 +757,9 @@ class AIAssistant {
     }
 
     /**
-     * 查询AI
+     * 查询AI（重构版：两层查询+状态机）
+     * @param {string} type - 查询类型
+     * @param {string} customQuestion - 自定义问题（可选）
      */
     async query(type, customQuestion = '') {
         if (!this.currentWord) {
@@ -465,91 +767,85 @@ class AIAssistant {
             return;
         }
 
+        // 自定义问题：直接调用API，不使用预生成
+        if (type === 'custom') {
+            await this.handleCustomQuery(customQuestion);
+            return;
+        }
+
+        // 获取当前状态
+        const currentState = this.getQueryState(type);
+        console.log(`[AIAssistant] 当前状态: ${currentState}, 类型: ${type}`);
+
+        // 状态机逻辑
+        switch (currentState) {
+            case QueryState.UNQUERIED:
+                // 第一次点击：尝试加载预生成内容
+                const pregeneratedLoaded = await this.loadPregenerated(type);
+                if (!pregeneratedLoaded) {
+                    // 预生成失败，降级到实时查询
+                    console.log('[AIAssistant] 预生成内容不可用，降级到实时查询');
+                    await this.loadLatest(type);
+                }
+                break;
+
+            case QueryState.PREGENERATED:
+                // 第二次点击：查询最新内容
+                await this.loadLatest(type);
+                break;
+
+            case QueryState.LATEST:
+                // 第三次点击：切换回预生成内容
+                if (this.pregeneratedLoader) {
+                    await this.loadPregenerated(type);
+                } else {
+                    console.log('[AIAssistant] 无预生成内容，保持最新状态');
+                }
+                break;
+
+            case QueryState.ERROR:
+                // 错误状态：重试加载预生成或最新
+                const retryLoaded = await this.loadPregenerated(type);
+                if (!retryLoaded) {
+                    await this.loadLatest(type);
+                }
+                break;
+
+            case QueryState.LOADING_LATEST:
+                // 正在加载中，忽略重复点击
+                console.log('[AIAssistant] 正在加载中，请稍候...');
+                break;
+        }
+    }
+
+    /**
+     * 处理自定义问题查询
+     * @param {string} question - 用户问题
+     */
+    async handleCustomQuery(question) {
         // 检查AI配置
         if (!await this.ensureAIClient()) {
             return;
         }
 
         // 构建提示词
-        const prompt = this.buildPrompt(type, customQuestion);
-        const cacheKey = this.getCacheKey(type, customQuestion);
-
-        // 检查缓存
-        if (this.cache.has(cacheKey)) {
-            console.log('使用缓存的回复');
-            const cached = this.cache.get(cacheKey);
-            this.addToHistory(type, customQuestion, cached);
-            this.displayCurrent();
-            return;
-        }
+        const prompt = this.templates.custom(this.currentWord.word, question);
 
         // 显示加载状态
-        this.showStreamingLoading(type);
+        this.showStreamingLoading('custom', '查询中...');
 
         try {
-            // 调用AI
-            const messages = [
-                {
-                    role: 'system',
-                    content: '你是一个专业的语言学习助手。请用简洁、清晰的方式回答，避免冗余。使用markdown格式组织内容，保持精练。'
-                },
-                {
-                    role: 'user',
-                    content: prompt
-                }
-            ];
-
-            // 流式输出：累积内容并实时更新UI
-            let accumulatedContent = '';
-            let lastUpdateTime = 0;
-
-            const onChunk = ({ type: chunkType, text }) => {
-                if (chunkType === 'content') {
-                    accumulatedContent += text;
-
-                    // 使用时间戳节流，每30ms更新一次UI（比requestAnimationFrame更快）
-                    const now = Date.now();
-                    if (now - lastUpdateTime >= 30) {
-                        lastUpdateTime = now;
-                        this.updateStreamingContentFast(accumulatedContent);
-                    }
-                }
-            };
-
-            // 使用stream方法进行流式输出
-            const result = await this.llmClient.stream(messages, {
-                timeout: 120,
-                temperature: this.temperature,
-                maxTokens: this.maxTokens,
-                maxRetries: 2
-            }, onChunk);
-
-            const response = result.content;
-
-            // 最终渲染：完整的markdown解析
-            if (result.finishReason === 'length') {
-                // 截断情况：在内容上方显示警告
-                const warningHtml = '<div class="ai-truncation-warning"><strong>提示：</strong>回复因长度限制被截断，以下是部分内容。</div>';
-                this.outputBox.innerHTML = warningHtml + this.formatResponse(response);
-                this.outputBox.scrollTop = this.outputBox.scrollHeight;
-            } else {
-                // 正常情况：直接显示格式化内容
-                this.updateStreamingContent(response);
-            }
-
-            // 存储缓存
-            this.cache.set(cacheKey, response);
-            if (this.cache.size > 50) {
-                const firstKey = this.cache.keys().next().value;
-                this.cache.delete(firstKey);
-            }
+            // 调用API
+            const response = await this.queryFromAPI(prompt);
 
             // 添加到历史
-            this.addToHistory(type, customQuestion, response);
+            this.addToHistory('custom', question, response, 'custom');
+
+            // 显示内容
             this.displayCurrent();
 
         } catch (error) {
-            console.error('AI查询失败:', error);
+            console.error('[AIAssistant] 自定义问题查询失败:', error);
             this.showError(`查询失败: ${error.message}`);
         }
     }
@@ -621,6 +917,11 @@ class AIAssistant {
         if (type === 'custom') {
             return this.templates.custom(this.currentWord.word, customQuestion);
         } else {
+            // 支持 _latest 后缀
+            const templateName = type.replace('_latest', '_latest');
+            if (this.templates[templateName]) {
+                return this.templates[templateName](this.currentWord.word, this.currentWord.definition);
+            }
             return this.templates[type](this.currentWord.word, this.currentWord.definition);
         }
     }
@@ -634,13 +935,18 @@ class AIAssistant {
 
     /**
      * 添加到历史
+     * @param {string} type - 查询类型
+     * @param {string} question - 问题
+     * @param {string} response - 响应内容
+     * @param {string} source - 内容来源（pregenerated/latest/custom）
      */
-    addToHistory(type, question, response) {
+    addToHistory(type, question, response, source = 'unknown') {
         this.responseHistory.push({
             word: { ...this.currentWord },
             type: type,
             question: question,
             response: response,
+            source: source,
             timestamp: Date.now()
         });
 
@@ -660,13 +966,22 @@ class AIAssistant {
         // 显示容器
         this.container.style.display = 'flex';
 
-        // 更新标签
+        // 更新标签（使用data-source属性）
         const typeLabels = {
             synonyms: '相近释义',
             phrases: '短语用法',
             custom: '自定义问题'
         };
-        this.outputLabel.textContent = `${typeLabels[current.type]} | ${current.word.word}`;
+
+        const typeLabel = typeLabels[current.type] || current.type;
+        this.outputLabel.textContent = `${typeLabel} | ${current.word.word}`;
+
+        // 设置data-source属性用于CSS样式
+        if (current.source) {
+            this.outputLabel.setAttribute('data-source', current.source);
+        } else {
+            this.outputLabel.removeAttribute('data-source');
+        }
 
         // 更新索引
         this.responseIndex.textContent = `${this.currentIndex + 1}/${this.responseHistory.length}`;
@@ -684,6 +999,14 @@ class AIAssistant {
      */
     formatResponse(content) {
         try {
+            // 移除外层的markdown代码块标记（如果存在）
+            content = content.trim();
+            if (content.startsWith('```markdown\n') && content.endsWith('```')) {
+                content = content.slice(12, -3).trim();
+            } else if (content.startsWith('```\n') && content.endsWith('```')) {
+                content = content.slice(4, -3).trim();
+            }
+
             // 使用marked解析markdown
             if (typeof marked !== 'undefined') {
                 let html = marked.parse(content);
@@ -740,9 +1063,11 @@ class AIAssistant {
     }
 
     /**
-     * 显示流式加载状态
+     * 显示流式加��状态
+     * @param {string} type - 查询类型
+     * @param {string} message - 自定义加载信息（可选）
      */
-    showStreamingLoading(type) {
+    showStreamingLoading(type, message = '生成中...') {
         const typeLabels = {
             synonyms: '相近释义',
             phrases: '短语用法',
@@ -750,11 +1075,11 @@ class AIAssistant {
         };
 
         this.container.style.display = 'flex';
-        this.outputLabel.textContent = `${typeLabels[type]} | ${this.currentWord.word}`;
-        this.outputBox.innerHTML = '<div class="ai-loading">生成中...</div>';
+        this.outputLabel.textContent = `${typeLabels[type] || type} | ${this.currentWord.word}`;
+        this.outputBox.innerHTML = `<div class="ai-loading">${message}</div>`;
         this.prevBtn.disabled = true;
         this.nextBtn.disabled = true;
-        this.responseIndex.textContent = '生成中';
+        this.responseIndex.textContent = '加载中';
     }
 
     /**
@@ -860,15 +1185,43 @@ class UIController {
         this.wordSelector = null;
         this.practiceManager = null;
         this.wordHistoryManager = new WordHistoryManager(50);
-        this.aiAssistant = new AIAssistant();
+        this.aiAssistant = null; // 将在startPractice中初始化
     }
 
     /**
      * 初始化界面
      */
     init() {
+        this.migrateOldProgressData();
         this.renderBookList();
         this.bindEvents();
+    }
+
+    /**
+     * 迁移旧的进度数据
+     * 将旧ID的进度数据迁移到新ID
+     */
+    migrateOldProgressData() {
+        const migrations = [
+            { oldId: 'cet6', newId: 'cet6_edited' }
+            // 未来如果有其他需要迁移的，可以在这里添加
+        ];
+
+        migrations.forEach(({ oldId, newId }) => {
+            const oldKey = `english_practice_${oldId}_progress`;
+            const newKey = `english_practice_${newId}_progress`;
+
+            const oldData = localStorage.getItem(oldKey);
+            const newData = localStorage.getItem(newKey);
+
+            // 只有当旧数据存在且新数据不存在时才迁移
+            if (oldData && !newData) {
+                console.log(`[迁移] 将进度数据从 ${oldId} 迁移到 ${newId}`);
+                localStorage.setItem(newKey, oldData);
+                // 不删除旧数据，以防万一需要回滚
+                console.log(`[迁移] 迁移完成，旧数据已保留`);
+            }
+        });
     }
 
     /**
@@ -941,6 +1294,9 @@ class UIController {
             // 初始化选择器和管理器
             this.wordSelector = new WordSelector(words);
             this.practiceManager = new PracticeManager(book.id);
+
+            // 初始化AI助手（传入bookId）
+            this.aiAssistant = new AIAssistant(book.id);
 
             // 切换到练习视图
             this.switchToPracticeView();

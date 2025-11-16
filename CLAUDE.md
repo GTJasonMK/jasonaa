@@ -22,6 +22,40 @@ npx http-server -p 8080
 
 访问地址: `http://localhost:8080`
 
+### 常用开发命令
+
+**本地开发服务器**:
+```bash
+# Python方式（推荐）
+python -m http.server 8080
+
+# Node.js方式
+npx http-server -p 8080
+```
+
+**更新版本信息**（提交前必须执行）:
+```bash
+bash update-version.sh
+```
+
+**生成预生成词汇数据**:
+```bash
+cd scripts
+npm run generate -- --input ../languagelearning/english/wordlists/CET4_edited.txt --output ../languagelearning/english/data/cet4_pregenerated.json --bookId cet4
+```
+
+**测试模式生成（仅处理前5个单词）**:
+```bash
+cd scripts
+npm test
+```
+
+**验证词库格式**:
+```bash
+cd scripts
+npm run validate -- --input ../languagelearning/english/wordlists/CET4_edited.txt
+```
+
 ### 浏览器要求
 - Chrome 60+、Firefox 55+、Safari 11+、Edge 79+
 - 不支持IE浏览器
@@ -279,6 +313,45 @@ word [phonetic] definition
 - 自动跳转到`languagelearning/english/index.html`
 - 用户书签和历史记录仍可用
 
+**预生成数据系统**：
+
+为提升AI助手响应速度和降低API成本,项目使用预生成数据系统:
+
+- **数据生成工具**: `scripts/generate-pregenerated.js`
+- **存储格式**: JSON分片存储（每片约3.1MB,符合GitHub 25MB限制）
+- **数据目录**: `languagelearning/english/data/{bookId}/`
+- **加载器**: `languagelearning/english/pregenerated-loader.js`
+
+数据结构:
+```json
+{
+  "word": {
+    "synonyms": {
+      "content": "Markdown格式的同义词分析",
+      "generated": "2025-11-05T12:00:00.000Z"
+    },
+    "phrases": {
+      "content": "Markdown格式的短语搭配",
+      "generated": "2025-11-05T12:01:00.000Z"
+    }
+  }
+}
+```
+
+生成流程:
+1. 配置AI服务（在`scripts/config.json`中）
+2. 运行生成脚本（支持中断恢复）
+3. 自动分片保存到data目录
+4. 前端自动并发加载所有分片并合并
+
+**重要特性**:
+- **中断恢复**: 使用`.progress.json`文件记录进度,任何时候中断都可恢复
+- **速率控制**: 自适应速率限制,避免触发API限制
+- **部分完成**: synonyms和phrases独立处理,一个失败不影响另一个
+- **实时进度**: 显示进度、预估时间、token使用量、成本估算
+
+详细文档见: `scripts/README.md`
+
 ### 设置系统架构
 
 **核心原则**: 所有配置统一由`settingsManager`管理,避免数据不一致。
@@ -370,7 +443,23 @@ word [phonetic] definition
 - 注意GitHub API速率限制(认证用户5000请求/小时)
 - 测试时使用非生产仓库避免污染数据
 
+### 预生成数据开发规范
+生成新的词汇预生成数据时:
+1. 确保词库格式正确（使用`--validate`参数验证）
+2. 先使用`--test-mode 5`测试少量单词
+3. 检查`scripts/config.json`中的AI配置
+4. 使用中断恢复机制,无需一次性完成
+5. 生成的JSON文件必须分片（单文件不超过10MB）
+6. 更新对应的`{bookId}_index.json`索引文件
+7. 在前端`VOCABULARY_BOOKS`中添加预生成数据配置
+
 ## 常见任务
+
+### 提交代码前的检查清单
+1. 运行`bash update-version.sh`更新版本信息
+2. 添加版本文件: `git add js/version.js`
+3. 提交所有更改并推送
+4. 部署后打开网站F12查看控制台,确认版本号
 
 ### 添加新的设置项
 1. 在`js/settings-loader.js`的`DEFAULT_SETTINGS`中添加
@@ -393,6 +482,28 @@ word [phonetic] definition
    - 429错误: API速率限制,降低请求频率
    - 网络错误: 检查API URL和网络连接
 
+### 生成新的词汇预生成数据
+1. 准备词库文件（格式: `word [phonetic] definition`）
+2. 配置AI服务（编辑`scripts/config.json`）
+3. 验证词库格式:
+   ```bash
+   cd scripts
+   node generate-pregenerated.js --input ../path/to/wordlist.txt --validate
+   ```
+4. 测试生成（前5个单词）:
+   ```bash
+   npm run test -- --input ../path/to/wordlist.txt --output test.json --bookId test
+   ```
+5. 正式生成（支持中断恢复）:
+   ```bash
+   npm run generate -- --input ../path/to/wordlist.txt --output ../languagelearning/english/data/bookId_pregenerated.json --bookId bookId
+   ```
+6. 如需中断,直接Ctrl+C,下次重新运行相同命令会自动恢复
+7. 生成完成后,检查`.progress.json`中的失败单词
+8. 将生成的JSON文件分片（如需要）并移动到对应目录
+9. 更新索引文件`{bookId}_index.json`
+10. 在前端`english.js`的`VOCABULARY_BOOKS`中添加配置
+
 ### 部署到GitHub Pages
 1. 推送代码到GitHub仓库
 2. 进入仓库Settings → Pages
@@ -413,13 +524,23 @@ word [phonetic] definition
 - `appSettings` - 全局设置(由settingsManager管理)
 - `game_*_highScore` - 各游戏最高分
 - `forum_repo_owner`, `forum_repo_name` - 论坛仓库配置
-- `chattavern_ai_config` - ChatTavern AI配置
+- `aichat_config` - AI聊天配置（优先）
+- `chattavern_ai_config` - ChatTavern AI配置（向后兼容）
 - `github_token`, `github_username` - 论坛认证信息
+- `{language}_practice_{bookId}_progress` - 语言学习进度
+- `mdreader_current` - Markdown阅读器当前文档
 
 **注意**: LocalStorage并非完全安全,不应存储高度敏感信息。公共设备使用后应清除数据。
 
 ### 音频资源
 钢琴音频文件位于`music/piano/`,共17个MP3文件,对应不同音符。使用Web Audio API加载和播放。
+
+### 预生成数据
+词汇预生成数据位于`languagelearning/english/data/`:
+- 每个词库分成10个分片,每片约3.1MB
+- 使用索引文件`{bookId}_index.json`记录分片信息
+- 前端使用`pregenerated-loader.js`并发加载并合并
+- 支持按需加载或全量加载策略
 
 ## 架构演进历史
 
@@ -428,6 +549,17 @@ word [phonetic] definition
 - 游戏基类(GameBase)引入
 - 论坛模块化重构(8+1架构)
 - 触摸手势统一处理
+
+### 语言学习模块扩展
+- 从单一英语学习模块重构为多语言学习平台
+- 目录从`englishlearning/`迁移到`languagelearning/`
+- 添加AI助手集成（同义词、短语、自定义查询）
+- 引入预生成数据系统提升性能
+
+### 版本管理系统
+- 添加`js/version.js`自动生成脚本
+- 在主页控制台显示部署版本信息
+- 便于确认GitHub Pages部署状态
 
 ### 遗留问题
 - `musicAppConfig`旧配置键(已废弃,但暂未删除以防回滚需要)
@@ -440,6 +572,38 @@ word [phonetic] definition
 3. **GitHub API限制**: 论坛功能依赖GitHub API,注意速率限制
 4. **浏览器兼容性**: 不支持IE,ES6+语法不做降级处理
 5. **音频自动播放**: 移动端浏览器限制音频自动播放,需用户交互触发
+6. **预生成数据大小**: 单个JSON分片不应超过10MB,避免GitHub仓库体积过大
+7. **AI配置向后兼容**: 优先读取`aichat_config`,其次`chattavern_ai_config`
+
+## 项目文件结构补充
+
+### scripts目录（数据生成工具）
+```
+scripts/
+├── package.json                    # npm配置和脚本
+├── config.json                     # AI服务配置（需自行创建）
+├── config.example.json            # 配置示例
+├── generate-pregenerated.js       # 主生成脚本
+├── generate-parallel.js           # 并行生成脚本
+├── split-wordlist.js             # 词库分割工具
+├── fix-wordlist-format.js        # 词库格式修复工具
+├── test-loader.js                # 加载器测试脚本
+├── README.md                     # 详细使用文档
+├── README_PARALLEL_GENERATION.md # 并行生成文档
+└── lib/                          # 工具库
+    ├── generator.js              # AI内容生成器
+    ├── progress-manager.js       # 进度管理器
+    ├── rate-limiter.js           # 速率限制器
+    └── vocabulary-parser.js      # 词库解析器
+```
+
+### 版本管理文件
+- `js/version.js` - 自动生成的版本信息（不要手动编辑）
+- `update-version.sh` - 版本更新脚本（每次提交前运行）
+
+### AI工具配置文件
+- `ai-config-examples.json` - AI配置示例（根目录）
+- `scripts/config.json` - 数据生成脚本的AI配置（需自行创建）
 
 ## Git工作流
 
