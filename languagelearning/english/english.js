@@ -858,41 +858,28 @@ class AIAssistant {
             return true;
         }
 
-        // 优先检查aichat配置，再检查chattavern配置（向后兼容）
-        let configStr = localStorage.getItem('aichat_config');
-        let configSource = 'aichat';
+        // 使用统一配置管理器
+        const { AIConfigManager } = await import('../../aitools/shared/config-manager.js');
 
-        if (!configStr) {
-            configStr = localStorage.getItem('chattavern_ai_config');
-            configSource = 'chattavern';
-        }
+        // 获取配置（自动处理迁移和兼容性）
+        const config = AIConfigManager.getConfigWithDefaults();
 
-        // 如果没有配置，使用默认配置
-        let config;
-        if (!configStr) {
-            console.log('[AIAssistant] 未找到用户配置，使用默认LLM配置');
-            config = {
-                apiKey: 'sk-JyBLag34EOuLlYb_W5gnhR_qf9z1ZBlmg2dhq4r8jYFPxvV2Iy9vaC8ql4o',
-                apiUrl: 'https://api.5202030.xyz/v1',
-                model: 'deepseek/deepseek-v3.2-exp',
-                temperature: 0.7,
-                maxTokens: 4000
-            };
-            configSource = 'default';
-        } else {
-            config = JSON.parse(configStr);
+        // 验证配置
+        const validation = AIConfigManager.validateConfig(config);
+        if (!validation.valid) {
+            console.error('[AIAssistant] 配置验证失败:', validation.message);
+            this.showConfigPrompt();
+            return false;
         }
 
         try {
-            // 动态导入LLMClient（使用ES6命名导出）
+            // 动态导入LLMClient
             const { LLMClient } = await import('../../aitools/aichat/llm-client.js');
 
-            // 根据配置来源适配字段名
+            // 创建客户端配置
             const clientConfig = {
                 apiKey: config.apiKey,
-                baseUrl: configSource === 'aichat' || configSource === 'default'
-                    ? config.apiUrl
-                    : config.baseUrl,
+                baseUrl: config.apiUrl,
                 model: config.model,
                 simulateBrowser: true
             };
@@ -901,10 +888,10 @@ class AIAssistant {
             this.temperature = config.temperature || 0.7;
             this.maxTokens = config.maxTokens || 4000;
 
-            console.log(`AI客户端初始化成功（使用${configSource}配置）`);
+            console.log('[AIAssistant] AI客户端初始化成功（使用统一配置管理器）');
             return true;
         } catch (error) {
-            console.error('初始化AI客户端失败:', error);
+            console.error('[AIAssistant] 初始化AI客户端失败:', error);
             this.showError(`初始化失败: ${error.message}`);
             return false;
         }

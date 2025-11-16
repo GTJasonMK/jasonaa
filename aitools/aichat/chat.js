@@ -17,12 +17,12 @@ class AIChatRoom {
         const saved = localStorage.getItem('aichat_config');
         const defaultConfig = {
             enabled: true,
-            apiUrl: 'https://api.5202030.xyz/v1',
-            apiKey: 'sk-JyBLag34EOuLlYb_W5gnhR_qf9z1ZBlmg2dhq4r8jYFPxvV2Iy9vaC8ql4o',
-            model: 'deepseek/deepseek-v3.2-exp',
+            apiUrl: '',
+            apiKey: '',  // 空字符串，强制用户配置
+            model: 'gpt-3.5-turbo',
             systemPrompt: '',
             temperature: 0.7,
-            maxTokens: 4000
+            maxTokens: 2000
         };
         return saved ? { ...defaultConfig, ...JSON.parse(saved) } : defaultConfig;
     }

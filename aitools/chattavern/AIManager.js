@@ -1,10 +1,12 @@
 /**
  * AI管理器 - 负责调用各种LLM API
  * 支持OpenAI、Claude等主流AI服务
+ * 重构版：使用LLMClient统一封装，消除代码重复
  */
 class AIManager {
     constructor() {
         this.config = this.loadConfig();
+        this.llmClient = null;  // LLM客户端实例
     }
 
     /**
@@ -14,9 +16,9 @@ class AIManager {
         const saved = localStorage.getItem('chattavern_ai_config');
         const defaultConfig = {
             provider: 'custom',  // 使用custom provider以支持任何OpenAI兼容API
-            apiKey: 'sk-JyBLag34EOuLlYb_W5gnhR_qf9z1ZBlmg2dhq4r8jYFPxvV2Iy9vaC8ql4o',
-            model: 'deepseek/deepseek-v3.2-exp',
-            apiUrl: 'https://api.5202030.xyz/v1',
+            apiKey: '',  // 空字符串，强制用户配置
+            model: 'gpt-3.5-turbo',
+            apiUrl: '',
             temperature: 0.9,  // 角色扮演建议使用较高的temperature
             maxTokens: 4000,   // 增大默认值，支持更长的回复
             enabled: true
@@ -41,6 +43,9 @@ class AIManager {
         this.config = { ...this.config, ...newConfig };
         localStorage.setItem('chattavern_ai_config', JSON.stringify(this.config));
         console.log('[AIManager] 配置已保存:', this.config);
+
+        // 清空LLM客户端实例，下次调用时会重新创建
+        this.llmClient = null;
     }
 
     /**
@@ -48,6 +53,28 @@ class AIManager {
      */
     async isAvailable() {
         return this.config.enabled && this.config.apiKey && this.config.apiKey.length > 0;
+    }
+
+    /**
+     * 初始化LLM客户端
+     */
+    async initializeLLMClient() {
+        if (this.llmClient) {
+            return this.llmClient;
+        }
+
+        // 动态导入LLMClient
+        const { LLMClient } = await import('../aichat/llm-client.js');
+
+        this.llmClient = LLMClient.createFromConfig({
+            apiKey: this.config.apiKey,
+            baseUrl: this.config.apiUrl,
+            model: this.config.model,
+            simulateBrowser: true  // 启用浏览器模拟，绕过Cloudflare
+        });
+
+        console.log('[AIManager] LLMClient已初始化');
+        return this.llmClient;
     }
 
     /**
@@ -71,16 +98,14 @@ class AIManager {
 
             switch (this.config.provider) {
                 case 'openai':
+                case 'deepseek':
+                case 'custom':
+                    // OpenAI兼容API统一使用LLMClient
                     response = await this.callOpenAI(userMessage, context, character);
                     break;
                 case 'claude':
+                    // Claude API格式不同，保留独立实现
                     response = await this.callClaude(userMessage, context, character);
-                    break;
-                case 'deepseek':
-                    response = await this.callDeepSeek(userMessage, context, character);
-                    break;
-                case 'custom':
-                    response = await this.callCustomAPI(userMessage, context, character);
                     break;
                 default:
                     throw new Error('不支持的AI提供商: ' + this.config.provider);
@@ -96,25 +121,12 @@ class AIManager {
     }
 
     /**
-     * 调用OpenAI API
+     * 调用OpenAI API（使用LLMClient统一封装）
+     * 重构版：删除约150行重复代码，使用LLMClient.stream()
      */
     async callOpenAI(userMessage, context, character) {
-        // URL处理：自动补全endpoint
-        let apiUrl = this.config.apiUrl || 'https://api.openai.com/v1/chat/completions';
-
-        // 如果URL不包含/chat/completions，自动补全（用于New API等服务）
-        if (this.config.apiUrl && !this.config.apiUrl.includes('/chat/completions')) {
-            // 移除末尾的斜杠
-            const baseUrl = this.config.apiUrl.replace(/\/$/, '');
-            // 如果URL已经包含/v1，直接加/chat/completions
-            if (baseUrl.endsWith('/v1')) {
-                apiUrl = baseUrl + '/chat/completions';
-            } else {
-                // 否则加/v1/chat/completions
-                apiUrl = baseUrl + '/v1/chat/completions';
-            }
-            console.log('[AIManager] 自动补全URL:', this.config.apiUrl, '→', apiUrl);
-        }
+        // 确保LLM客户端已初始化
+        await this.initializeLLMClient();
 
         // 构建消息数组
         const messages = [];
@@ -144,59 +156,44 @@ class AIManager {
             content: userMessage
         });
 
-        const requestBody = {
-            model: this.config.model,
-            messages: messages,
-            temperature: character?.temperature || this.config.temperature,
-            max_tokens: character?.max_tokens || this.config.maxTokens
-        };
-
         console.log('[AIManager] ========== API请求详情 ==========');
-        console.log('[AIManager] 请求URL:', apiUrl);
-        console.log('[AIManager] 请求模型:', requestBody.model);
+        console.log('[AIManager] 使用LLMClient统一封装');
+        console.log('[AIManager] 模型:', this.config.model);
         console.log('[AIManager] 消息数量:', messages.length);
-        console.log('[AIManager] Temperature:', requestBody.temperature);
-        console.log('[AIManager] Max Tokens:', requestBody.max_tokens);
-        console.log('[AIManager] API Key前缀:', this.config.apiKey.substring(0, 15) + '...');
+        console.log('[AIManager] Temperature:', character?.temperature || this.config.temperature);
+        console.log('[AIManager] Max Tokens:', character?.max_tokens || this.config.maxTokens);
 
         try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                mode: 'cors', // 明确指定CORS模式
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.config.apiKey}`
-                },
-                body: JSON.stringify(requestBody)
+            // 使用LLMClient的流式收集方法
+            const result = await this.llmClient.streamAndCollect(messages, {
+                timeout: 120,  // 超时120秒
+                temperature: character?.temperature || this.config.temperature,
+                maxTokens: character?.max_tokens || this.config.maxTokens,
+                maxRetries: 2  // 最多重试2次
             });
 
-            console.log('[AIManager] 响应状态:', response.status, response.statusText);
+            console.log('[AIManager] 请求成功');
+            console.log('[AIManager] 返回内容长度:', result.content.length);
+            console.log('[AIManager] Chunks数量:', result.chunkCount);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMsg = errorData.error?.message || errorData.message || response.statusText;
-                console.error('[AIManager] API返回错误:', errorData);
-                throw new Error(`API错误 (${response.status}): ${errorMsg}`);
+            // 如果有reasoning内容（DeepSeek R1等），记录到日志
+            if (result.reasoning) {
+                console.log('[AIManager] Reasoning长度:', result.reasoning.length);
             }
 
-            const data = await response.json();
-            console.log('[AIManager] 请求成功，返回内容长度:', data.choices?.[0]?.message?.content?.length || 0);
-            return data.choices[0].message.content;
+            return result.content;
 
         } catch (error) {
             console.error('[AIManager] ========== 请求失败详情 ==========');
-            console.error('[AIManager] 错误类型:', error.name);
             console.error('[AIManager] 错误信息:', error.message);
 
-            // 检测CORS错误
-            if (error.message.includes('CORS') ||
-                error.message.includes('Failed to fetch') ||
-                error.name === 'TypeError' && error.message.includes('fetch')) {
+            // LLMClient已经处理了大部分错误，这里只需要添加特定的提示
+            if (error.message.includes('网络连接失败')) {
                 throw new Error(`❌ 网络请求失败（CORS跨域问题）
 
 可能的原因：
 1. API服务器未配置CORS允许跨域访问
-2. 请求的URL：${apiUrl}
+2. 请求的URL：${this.config.apiUrl || '(未设置)'}
 
 🔧 New API解决方案：
 在docker run命令中添加环境变量：
@@ -214,6 +211,7 @@ ALLOWED_ORIGIN=*
 
     /**
      * 调用Claude API
+     * 保留独立实现，因为Claude API格式与OpenAI不同
      */
     async callClaude(userMessage, context, character) {
         const apiUrl = this.config.apiUrl || 'https://api.anthropic.com/v1/messages';
@@ -274,79 +272,6 @@ ALLOWED_ORIGIN=*
 
         const data = await response.json();
         return data.content[0].text;
-    }
-
-    /**
-     * 调用DeepSeek API
-     */
-    async callDeepSeek(userMessage, context, character) {
-        const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
-
-        // 构建消息数组（与OpenAI格式相同）
-        const messages = [];
-
-        // 系统提示词（角色设定）
-        if (character) {
-            const systemPrompt = character.getSystemPrompt();
-            messages.push({
-                role: 'system',
-                content: systemPrompt
-            });
-        }
-
-        // 对话历史（最近的几条）
-        if (context && context.length > 0) {
-            context.forEach(msg => {
-                messages.push({
-                    role: msg.role === 'user' ? 'user' : 'assistant',
-                    content: msg.content
-                });
-            });
-        }
-
-        // 当前用户消息
-        messages.push({
-            role: 'user',
-            content: userMessage
-        });
-
-        console.log('[AIManager] DeepSeek请求消息数:', messages.length);
-
-        const requestBody = {
-            model: this.config.model || 'deepseek-chat',
-            messages: messages,
-            temperature: character?.temperature || this.config.temperature,
-            max_tokens: character?.max_tokens || this.config.maxTokens
-        };
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.apiKey}`
-            },
-            body: JSON.stringify(requestBody)
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`DeepSeek API错误: ${response.status} - ${errorData.error?.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-        return data.choices[0].message.content;
-    }
-
-    /**
-     * 调用自定义API（兼容OpenAI格式）
-     */
-    async callCustomAPI(userMessage, context, character) {
-        if (!this.config.apiUrl) {
-            throw new Error('未配置自定义API地址');
-        }
-
-        // 使用OpenAI格式，但发送到自定义URL
-        return this.callOpenAI(userMessage, context, character);
     }
 
     /**

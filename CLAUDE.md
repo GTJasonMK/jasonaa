@@ -140,6 +140,30 @@ npm run validate -- --input ../languagelearning/english/wordlists/CET4_edited.tx
 
 **目录组织**: 所有AI工具统一放在`aitools/`目录下,便于管理和扩展。
 
+**架构重构（2025-11）**：
+- 创建统一配置管理器 `aitools/shared/config-manager.js`
+- 所有AI工具使用统一的配置键名 `ai_config`
+- AIManager重构使用LLMClient，消除约150行代码重复
+- 移除所有硬编码API密钥，提升安全性
+- 详见：`aitools/REFACTORING_TEST_GUIDE.md`
+
+**共享模块**：
+
+1. **aitools/shared/config-manager.js** - 统一配置管理器
+   - 管理所有AI工具的配置
+   - 自动迁移旧配置（aichat_config、chattavern_ai_config → ai_config）
+   - 配置验证和默认值管理
+   - 向后兼容性保证
+
+2. **aitools/aichat/llm-client.js** - LLM客户端统一封装
+   - 支持所有OpenAI兼容API
+   - SSE流式解析
+   - 自动重试机制（最多3次）
+   - 超时控制（可配置）
+   - 浏览器header模拟
+
+**AI工具列表**：
+
 项目包含三个AI工具:
 
 1. **aitools/aichat/** - 轻量级AI聊天室
@@ -149,12 +173,11 @@ npm run validate -- --input ../languagelearning/english/wordlists/CET4_edited.tx
 
 2. **aitools/chattavern/** - AI角色对话系统
    - 兼容SillyTavern角色卡格式
-   - `AIManager.js` - AI接口管理器
+   - `AIManager.js` - AI接口管理器（重构版：使用LLMClient统一封装）
    - 支持多种LLM提供商:
-     - OpenAI (gpt-3.5-turbo, gpt-4)
-     - Claude (通过CORS代理)
-     - DeepSeek
-     - 自定义API (Ollama、LM Studio等本地模型)
+     - OpenAI、DeepSeek、自定义API（通过LLMClient）
+     - Claude（独立实现，API格式不同）
+   - 自动初始化LLMClient，享有重试、超时等高级特性
    - `ai-config-examples.json` - 配置示例文件(位于根目录)
    - `NEW_API_GUIDE.md` - New API配置指南
    - 位置: `aitools/chattavern/chattavern.html`
@@ -550,11 +573,21 @@ word [phonetic] definition
 - 论坛模块化重构(8+1架构)
 - 触摸手势统一处理
 
+### AI工具模块重构（2025-11）
+- **统一配置管理**: 创建`aitools/shared/config-manager.js`，统一管理所有AI配置
+- **配置键名统一**: 从`aichat_config`和`chattavern_ai_config`迁移到`ai_config`
+- **消除代码重复**: AIManager重构使用LLMClient，删除约150行重复代码
+- **安全性提升**: 移除所有硬编码API密钥
+- **架构优化**: 建立清晰的依赖关系，所有OpenAI兼容API统一通过LLMClient
+- **向后兼容**: 自动迁移旧配置，用户无感知升级
+- **性能提升**: AIManager获得LLMClient的重试、超时等高级特性
+
 ### 语言学习模块扩展
 - 从单一英语学习模块重构为多语言学习平台
 - 目录从`englishlearning/`迁移到`languagelearning/`
 - 添加AI助手集成（同义词、短语、自定义查询）
 - 引入预生成数据系统提升性能
+- 统一使用AIConfigManager管理AI配置
 
 ### 版本管理系统
 - 添加`js/version.js`自动生成脚本
@@ -573,7 +606,7 @@ word [phonetic] definition
 4. **浏览器兼容性**: 不支持IE,ES6+语法不做降级处理
 5. **音频自动播放**: 移动端浏览器限制音频自动播放,需用户交互触发
 6. **预生成数据大小**: 单个JSON分片不应超过10MB,避免GitHub仓库体积过大
-7. **AI配置向后兼容**: 优先读取`aichat_config`,其次`chattavern_ai_config`
+7. **AI配置统一**: 所有AI工具统一使用`ai_config`键名，由AIConfigManager管理，自动兼容旧配置
 
 ## 项目文件结构补充
 
