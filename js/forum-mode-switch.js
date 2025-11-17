@@ -40,11 +40,9 @@
      * 初始化
      */
     function init() {
-        // 从LocalStorage加载上次的模式选择
-        const savedMode = localStorage.getItem('homepage_forum_mode');
-        if (savedMode && MODES[savedMode]) {
-            currentMode = savedMode;
-        }
+        // 默认始终为论坛模式（不从LocalStorage读取）
+        // 博客是私密功能，不应该被轻易发现
+        currentMode = 'forum';
 
         // 更新UI
         updateUI();
@@ -69,7 +67,7 @@
      */
     function toggleMode() {
         currentMode = currentMode === 'forum' ? 'blog' : 'forum';
-        localStorage.setItem('homepage_forum_mode', currentMode);
+        // 不保存到localStorage，保持博客的私密性
         updateUI();
     }
 

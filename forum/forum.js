@@ -180,33 +180,25 @@ async function switchMode(newMode) {
  */
 async function loadContentByMode() {
     try {
-        // 获取标签按钮
-        const tabButtons = document.querySelectorAll('.tab-button');
+        // 获取UI元素
+        const forumTabs = document.querySelector('.forum-tabs');
+        const forumFilters = document.querySelector('.forum-filters');
         const createTab = document.getElementById('create-tab');
         const profileTab = document.getElementById('profile-tab');
 
         if (appState.currentMode === 'blog') {
-            // 博客模式：隐藏发表新贴和个人主页标签
-            tabButtons.forEach(button => {
-                const tabId = button.getAttribute('data-tab');
-                if (tabId === 'create' || tabId === 'profile') {
-                    button.style.display = 'none';
-                } else {
-                    button.style.display = 'inline-block';
-                }
-            });
-
-            // 隐藏对应的标签内容
+            // 博客模式：隐藏所有论坛UI元素
+            if (forumTabs) forumTabs.style.display = 'none';
+            if (forumFilters) forumFilters.style.display = 'none';
             if (createTab) createTab.style.display = 'none';
             if (profileTab) profileTab.style.display = 'none';
 
             // 加载博客内容
             await blog.loadBlogPosts();
         } else {
-            // 论坛模式：显示所有标签
-            tabButtons.forEach(button => {
-                button.style.display = 'inline-block';
-            });
+            // 论坛模式：显示所有UI元素
+            if (forumTabs) forumTabs.style.display = 'flex';
+            if (forumFilters) forumFilters.style.display = 'flex';
 
             // 加载论坛内容
             await issues.loadIssuesList();

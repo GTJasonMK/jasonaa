@@ -116,14 +116,11 @@ export function showAnonymousBlogContent() {
         adminBadge.style.display = 'none';
     }
 
-    // 隐藏不需要的tab（发表新贴、个人主页）
-    const tabButtons = document.querySelectorAll('.tab-button');
-    tabButtons.forEach(button => {
-        const tabId = button.getAttribute('data-tab');
-        if (tabId === 'create' || tabId === 'profile') {
-            button.style.display = 'none';
-        }
-    });
+    // 隐藏所有论坛UI元素（tab系统、搜索过滤器）
+    const forumTabs = document.querySelector('.forum-tabs');
+    const forumFilters = document.querySelector('.forum-filters');
+    if (forumTabs) forumTabs.style.display = 'none';
+    if (forumFilters) forumFilters.style.display = 'none';
 
     console.log('UI: 博客模式UI已设置完成');
 }
