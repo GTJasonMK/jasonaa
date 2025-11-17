@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>AI聊天室 - 智能对话助手</title>
+    <title>思绪对谈 - 智慧的问答</title>
     <link rel="stylesheet" href="../../css/theme.css">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,8 +14,8 @@
             <div class="header-left">
                 <button class="btn-menu" id="menuButton" title="菜单">☰</button>
                 <button class="btn-back" onclick="location.href='../../index.html'">← 返回</button>
-                <button class="btn-new-chat" id="newChatButton" title="新对话">+ 新对话</button>
-                <h1>🤖 AI聊天室</h1>
+                <button class="btn-new-chat" id="newChatButton" title="新对话">+ 新的对话</button>
+                <h1>🤖 思绪对谈</h1>
             </div>
             <div class="header-right">
                 <button class="btn-icon" id="toggleSettings" title="设置">⚙️</button>
@@ -115,16 +115,16 @@
                 <!-- 消息列表 -->
                 <div class="messages-container" id="messagesContainer">
                     <div class="welcome-message">
-                        <h2>👋 欢迎使用AI聊天室</h2>
-                        <p>这是一个轻量级的AI对话工具，支持各种OpenAI兼容的API</p>
+                        <h2>👋 欢迎进入思绪的空间</h2>
+                        <p>在这里，每个问题都值得被倾听，每份困惑都能得到解答</p>
                         <div class="quick-tips">
-                            <h4>💡 快速开始：</h4>
+                            <h4>💡 开始对话：</h4>
                             <ul>
-                                <li>点击左上角⚙️配置您的API信息</li>
+                                <li>点击左上角⚙️配置您的AI服务</li>
                                 <li>支持New API、OpenAI、DeepSeek等服务</li>
                                 <li>只需填写base URL，系统会自动补全</li>
-                                <li>对话历史自动保存到本地</li>
-                                <li>支持多轮上下文对话</li>
+                                <li>对话会被妥善保存在本地</li>
+                                <li>支持连贯的多轮对话</li>
                             </ul>
                         </div>
                     </div>
@@ -134,7 +134,7 @@
                 <div class="input-area">
                     <div class="input-wrapper">
                         <textarea id="messageInput" class="message-input"
-                                  placeholder="输入消息...（Shift+Enter换行，Enter发送）"
+                                  placeholder="说出你的想法...（Shift+Enter换行，Enter发送）"
                                   rows="1"></textarea>
                         <button class="btn-send" id="sendButton">
                             <span class="send-icon">📤</span>

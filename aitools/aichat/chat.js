@@ -377,27 +377,27 @@ class AIChatRoom {
         };
 
         this.saveConfig(config);
-        alert('✅ 配置已保存！');
+        alert('✅ 配置已妥善保存！');
     }
 
     // 测试连接
     async testConnection() {
         if (!this.config.apiKey) {
-            alert('⚠️ 请先输入API Key');
+            alert('⚠️ 请先填写API Key');
             return;
         }
 
         const button = document.getElementById('testConnection');
         button.disabled = true;
-        button.textContent = '⏳ 测试中...';
+        button.textContent = '⏳ 尝试连接中...';
 
         try {
             const testMessage = '你好，请简短回复';
             const response = await this.callAPI(testMessage, []);
 
-            alert('✅ API连接成功！\n\n回复：' + response.substring(0, 50) + '...');
+            alert('✅ API连接顺畅！\n\n回应：' + response.substring(0, 50) + '...');
         } catch (error) {
-            alert('❌ 连接失败：\n\n' + error.message);
+            alert('❌ 连接遇到了问题：\n\n' + error.message);
         } finally {
             button.disabled = false;
             button.textContent = '🔗 测试连接';
@@ -414,7 +414,7 @@ class AIChatRoom {
         }
 
         if (!this.config.enabled || !this.config.apiKey) {
-            alert('⚠️ 请先配置API信息');
+            alert('⚠️ 请先配置AI服务信息');
             return;
         }
 
@@ -434,7 +434,7 @@ class AIChatRoom {
         this.renderSessionsList();
 
         // 显示输入状态
-        this.setStatus('AI正在思考...');
+        this.setStatus('AI正在聆听并思索...');
         this.isProcessing = true;
         document.getElementById('sendButton').disabled = true;
 
@@ -468,7 +468,7 @@ class AIChatRoom {
             this.removeTypingIndicator();
             this.setStatus('');
 
-            const errorMsg = `抱歉，发生错误：\n${error.message}`;
+            const errorMsg = `抱歉，遇到了一些问题：\n${error.message}`;
 
             this.sessionManager.addMessageToCurrentSession({
                 role: 'ai',
@@ -490,7 +490,7 @@ class AIChatRoom {
     // 调用API（使用新的LLMClient）
     async callAPI(userMessage, context) {
         if (!this.config.apiKey) {
-            throw new Error('请先配置API Key');
+            throw new Error('请先配置API密钥');
         }
 
         // 构建消息数组
@@ -628,16 +628,16 @@ class AIChatRoom {
         if (messages.length === 0) {
             container.innerHTML = `
                 <div class="welcome-message">
-                    <h2>👋 欢迎使用AI聊天室</h2>
-                    <p>这是一个轻量级的AI对话工具，支持各种OpenAI兼容的API</p>
+                    <h2>👋 欢迎进入思绪的空间</h2>
+                    <p>在这里，每个问题都值得被倾听，每份困惑都能得到解答</p>
                     <div class="quick-tips">
-                        <h4>💡 快速开始：</h4>
+                        <h4>💡 开始对话：</h4>
                         <ul>
-                            <li>点击右上角⚙️配置您的API信息</li>
+                            <li>点击右上角⚙️配置您的AI服务</li>
                             <li>支持New API、OpenAI、DeepSeek等服务</li>
                             <li>只需填写base URL，系统会自动补全</li>
-                            <li>对话历史自动保存到本地</li>
-                            <li>支持多轮上下文对话</li>
+                            <li>对话会被妥善保存在本地</li>
+                            <li>支持连贯的多轮对话</li>
                             <li>支持多会话管理，左侧查看历史对话</li>
                         </ul>
                     </div>
