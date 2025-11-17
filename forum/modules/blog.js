@@ -115,11 +115,15 @@ async function loadBlogPosts() {
  */
 function renderCategoryFilter() {
     const issuesList = document.getElementById('issues-list');
+
+    // 计算"全部"分类的文章数（排除日志）
+    const allPostsCount = blogState.posts.filter(p => p.category !== 'diary').length;
+
     const filterHTML = `
         <div class="blog-category-filter">
             <button class="category-btn ${blogState.currentCategory === 'all' ? 'active' : ''}"
                     data-category="all">
-                📖 全部 (${blogState.posts.length})
+                📖 全部 (${allPostsCount})
             </button>
             ${Object.entries(blogState.categories).map(([key, config]) => {
                 const count = blogState.posts.filter(p => p.category === key).length;
@@ -141,8 +145,14 @@ function renderCategoryFilter() {
         btn.addEventListener('click', () => {
             const category = btn.dataset.category;
 
-            // 日志分类需要先验证密码
-            if (category === 'diary' && !isAuthenticated()) {
+            // 日志分类需要密码验证
+            // 每次点击都清除认证状态，要求重新输入密码
+            if (category === 'diary') {
+                // 清除认证状态
+                sessionStorage.removeItem('blog_authenticated');
+                blogState.authenticated = false;
+
+                // 显示密码提示
                 showCategoryPasswordPrompt();
                 return;
             }
@@ -467,6 +477,9 @@ function renderBlogList() {
     let filteredPosts = blogState.posts;
     if (blogState.currentCategory !== 'all') {
         filteredPosts = blogState.posts.filter(p => p.category === blogState.currentCategory);
+    } else {
+        // "全部"分类中排除日志（日志是私密的）
+        filteredPosts = blogState.posts.filter(p => p.category !== 'diary');
     }
 
     if (filteredPosts.length === 0) {
