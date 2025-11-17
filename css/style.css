@@ -641,3 +641,34 @@ body {
     /* 告诉浏览器这些内容很重要 */
     content-visibility: auto;
 } 
+/* ========== 主页论坛/博客模式切换样式 ========== */
+
+/* 论坛模式标题可点击 */
+.forum-mode-title {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+    display: inline-block;
+}
+
+.forum-mode-title:hover {
+    color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.forum-mode-icon {
+    margin-left: 8px;
+    font-size: 0.9em;
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.forum-mode-title:hover + .forum-mode-icon {
+    transform: scale(1.2) rotate(10deg);
+}
+
+/* 论坛卡片过渡效果 */
+.forum-preview .description,
+.forum-preview .features-list {
+    transition: opacity 0.3s ease;
+}
