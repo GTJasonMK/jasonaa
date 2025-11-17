@@ -226,10 +226,10 @@ export function showPermissionWarning() {
     warningElement.innerHTML = `
         <span class="warning-icon">⚠️</span>
         <div class="warning-content">
-            <h4>权限不足提示</h4>
-            <p>当前令牌缺少gist权限，您的个人资料信息只能保存在本地设备，无法跨设备同步。</p>
+            <h4>温馨提醒</h4>
+            <p>当前令牌缺少gist权限，您的个人信息只能保存在本地设备，无法跨设备同步。</p>
             <p>建议：<a href="https://github.com/settings/tokens" target="_blank">创建新的访问令牌</a>，同时勾选 <code>public_repo</code> 和 <code>gist</code> 权限。</p>
-            <button class="close-warning">我知道了</button>
+            <button class="close-warning">明白了</button>
         </div>
     `;
 
@@ -250,7 +250,7 @@ export function showPermissionWarning() {
 /**
  * 显示加载状态
  */
-export function showLoading(container, message = '加载中...') {
+export function showLoading(container, message = '聆听中...') {
     if (!container) return;
     container.innerHTML = `<div class="loading">${message}</div>`;
 }

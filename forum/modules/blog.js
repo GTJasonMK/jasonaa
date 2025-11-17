@@ -123,7 +123,7 @@ function renderCategoryFilter() {
         <div class="blog-category-filter">
             <button class="category-btn ${blogState.currentCategory === 'all' ? 'active' : ''}"
                     data-category="all">
-                📖 全部 (${allPostsCount})
+                📚 览胜 (${allPostsCount})
             </button>
             ${Object.entries(blogState.categories).map(([key, config]) => {
                 const count = blogState.posts.filter(p => p.category === key).length;
@@ -216,21 +216,21 @@ function showCategoryPasswordPrompt() {
     issuesList.innerHTML = `
         <div class="password-prompt">
             <div class="password-card">
-                <div class="password-icon">🔒</div>
-                <h2>日志访问验证</h2>
-                <p>此分类需要密码才能访问</p>
-                <p class="post-title">您正在尝试查看：日志分类</p>
+                <div class="password-icon">🗝️</div>
+                <h2>寻找心门的钥匙</h2>
+                <p>这里藏着只属于时光的私语</p>
+                <p class="post-title">您正在尝试进入：${blogState.categories.diary.icon} ${blogState.categories.diary.name}</p>
                 <form id="password-form" class="password-form">
                     <input type="password"
                            id="password-input"
-                           placeholder="请输入密码"
+                           placeholder="请输入那串只有你知道的密语"
                            class="password-input"
                            autofocus>
                     <div class="password-actions">
-                        <button type="submit" class="primary-button">解锁</button>
+                        <button type="submit" class="primary-button">开启</button>
                         <button type="button"
                                 class="secondary-button"
-                                onclick="window.blogModule.backToList()">返回</button>
+                                onclick="window.blogModule.backToList()">离开</button>
                     </div>
                     <div id="password-error" class="password-error"></div>
                 </form>
@@ -250,7 +250,7 @@ function showCategoryPasswordPrompt() {
             renderCategoryFilter();
             renderBlogList();
         } else {
-            errorEl.textContent = '密码错误，请重试';
+            errorEl.textContent = '钥匙似乎不对，再试试看？';
             document.getElementById('password-input').value = '';
             document.getElementById('password-input').focus();
         }
@@ -267,21 +267,21 @@ function showPasswordPrompt(postId) {
     issuesList.innerHTML = `
         <div class="password-prompt">
             <div class="password-card">
-                <div class="password-icon">🔒</div>
-                <h2>受保护的内容</h2>
-                <p>这篇日志需要密码才能查看</p>
+                <div class="password-icon">🗝️</div>
+                <h2>心门上了锁</h2>
+                <p>这篇私语需要钥匙才能开启</p>
                 <p class="post-title">${escapeHtml(post.title)}</p>
                 <form id="password-form" class="password-form">
                     <input type="password"
                            id="password-input"
-                           placeholder="请输入密码"
+                           placeholder="请输入那串只有你知道的密语"
                            class="password-input"
                            autofocus>
                     <div class="password-actions">
-                        <button type="submit" class="primary-button">解锁</button>
+                        <button type="submit" class="primary-button">开启</button>
                         <button type="button"
                                 class="secondary-button"
-                                onclick="window.blogModule.backToList()">返回</button>
+                                onclick="window.blogModule.backToList()">离开</button>
                     </div>
                     <div id="password-error" class="password-error"></div>
                 </form>
@@ -298,7 +298,7 @@ function showPasswordPrompt(postId) {
         if (verifyPassword(password)) {
             loadBlogPost(postId);
         } else {
-            errorEl.textContent = '密码错误，请重试';
+            errorEl.textContent = '钥匙似乎不对，再试试看？';
             document.getElementById('password-input').value = '';
             document.getElementById('password-input').focus();
         }
@@ -459,9 +459,9 @@ function renderNoPosts() {
 
     container.innerHTML = `
         <div class="blog-empty">
-            <div class="empty-icon">📝</div>
-            <h3>暂无博客文章</h3>
-            <p>作者还未发布任何文章，敬请期待！</p>
+            <div class="empty-icon">🌙</div>
+            <h3>此处暂无文字</h3>
+            <p>或许，有些故事还在路上，静候时光将它们写下</p>
         </div>
     `;
 }
@@ -485,7 +485,7 @@ function renderBlogList() {
     if (filteredPosts.length === 0) {
         container.innerHTML = `
             <div class="blog-empty">
-                <p>该分类下暂无文章</p>
+                <p>此处空空如也，等待文字的到来</p>
             </div>
         `;
         return;

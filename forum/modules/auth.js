@@ -91,7 +91,7 @@ export async function login(username, token) {
         const userData = await authAPI.getUser(token);
 
         if (userData.login.toLowerCase() !== username.toLowerCase()) {
-            throw new Error('令牌与用户名不匹配');
+            throw new Error('令牌与用户名似乎不相配');
         }
 
         // 步骤2: 检查gist权限

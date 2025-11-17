@@ -19,19 +19,19 @@ const OUTPUT_FILE = path.join(BLOG_DIR, 'posts.json');
 // 分类配置
 const CATEGORIES = {
     essays: {
-        name: '随笔',
+        name: '光阴手札',
         protected: false,
-        icon: '📝'
+        icon: '🖋️'
     },
     diary: {
-        name: '日志',
+        name: '私语时光',
         protected: true,  // 密码保护
-        icon: '🔒'
+        icon: '🗝️'
     },
     notes: {
-        name: '知识点',
+        name: '拾遗录',
         protected: false,
-        icon: '📚'
+        icon: '📖'
     }
 };
 

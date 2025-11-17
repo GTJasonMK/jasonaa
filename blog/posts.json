@@ -1,21 +1,21 @@
 {
-  "generated": "2025-11-17T12:50:07.752Z",
+  "generated": "2025-11-17T13:12:31.026Z",
   "totalPosts": 4,
   "categories": {
     "essays": {
-      "name": "随笔",
+      "name": "光阴手札",
       "protected": false,
-      "icon": "📝"
+      "icon": "🖋️"
     },
     "diary": {
-      "name": "日志",
+      "name": "私语时光",
       "protected": true,
-      "icon": "🔒"
+      "icon": "🗝️"
     },
     "notes": {
-      "name": "知识点",
+      "name": "拾遗录",
       "protected": false,
-      "icon": "📚"
+      "icon": "📖"
     }
   },
   "posts": [
@@ -24,8 +24,8 @@
       "title": "欢迎访问我的博客",
       "date": "2025-01-17",
       "category": "essays",
-      "categoryName": "随笔",
-      "categoryIcon": "📝",
+      "categoryName": "光阴手札",
+      "categoryIcon": "🖋️",
       "tags": [
         "公告",
         "介绍"
@@ -41,8 +41,8 @@
       "title": "纯前端多功能娱乐平台开发心得",
       "date": "2025-01-17",
       "category": "essays",
-      "categoryName": "随笔",
-      "categoryIcon": "📝",
+      "categoryName": "光阴手札",
+      "categoryIcon": "🖋️",
       "tags": [
         "技术",
         "前端",
@@ -59,8 +59,8 @@
       "title": "2025年1月17日 - 项目开发日记",
       "date": "2025-01-17",
       "category": "diary",
-      "categoryName": "日志",
-      "categoryIcon": "🔒",
+      "categoryName": "私语时光",
+      "categoryIcon": "🗝️",
       "tags": [
         "日常",
         "开发"
@@ -108,8 +108,8 @@
       "title": "JavaScript闭包详解",
       "date": "2025-01-17",
       "category": "notes",
-      "categoryName": "知识点",
-      "categoryIcon": "📚",
+      "categoryName": "拾遗录",
+      "categoryIcon": "📖",
       "tags": [
         "JavaScript",
         "前端",

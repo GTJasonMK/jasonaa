@@ -30,7 +30,7 @@ export async function loadIssuesList(options = {}) {
     currentSearchQuery = searchQuery;
 
     const issuesList = getElement('issuesList');
-    showLoading(issuesList, '加载帖子中...');
+    showLoading(issuesList, '倾听广场的声音...');
 
     try {
         const { owner, name } = getRepoConfig();
@@ -82,7 +82,7 @@ export async function loadIssuesList(options = {}) {
     } catch (error) {
         console.error('加载Issues失败:', error);
         if (issuesList) {
-            issuesList.innerHTML = `<div class="error">加载失败: ${error.message}</div>`;
+            issuesList.innerHTML = `<div class="error">加载遇到了问题: ${error.message}</div>`;
         }
         throw error;
     }
@@ -150,7 +150,7 @@ async function renderIssuesList(issues) {
     if (!issuesList) return;
 
     if (!issues || issues.length === 0) {
-        issuesList.innerHTML = '<div class="no-issues">暂无帖子</div>';
+        issuesList.innerHTML = '<div class="no-issues">此处空空如也，等待第一个声音的出现</div>';
         return;
     }
 
