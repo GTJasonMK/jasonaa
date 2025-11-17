@@ -1,0 +1,24 @@
+{
+  "posts": [
+    {
+      "id": "welcome",
+      "title": "欢迎访问我的博客",
+      "date": "2025-01-17",
+      "excerpt": "欢迎来到我的个人博客！这里我会分享关于项目开发、技术学习和生活感悟的文章。希望我的分享能对你有所帮助。",
+      "tags": ["公告", "介绍"],
+      "file": "blog/posts/welcome.md",
+      "author": "作者",
+      "readingTime": 3
+    },
+    {
+      "id": "first-tech-post",
+      "title": "纯前端多功能娱乐平台开发心得",
+      "date": "2025-01-17",
+      "excerpt": "分享我在开发这个纯前端多功能娱乐平台时的技术选型、架构设计和开发经验。包括游戏模块、AI工具、语言学习等功能的实现思路。",
+      "tags": ["技术", "前端", "项目总结"],
+      "file": "blog/posts/first-tech-post.md",
+      "author": "作者",
+      "readingTime": 8
+    }
+  ]
+}

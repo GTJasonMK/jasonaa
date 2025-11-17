@@ -77,8 +77,15 @@ async function init() {
             ui.showPermissionWarning();
         }
     } else {
-        // 未登录，显示登录表单
-        ui.showLoginForm();
+        // 未登录
+        if (appState.currentMode === 'blog') {
+            // 博客模式允许匿名访问
+            ui.showAnonymousBlogContent();
+            await blog.loadBlogPosts();
+        } else {
+            // 论坛模式需要登录
+            ui.showLoginForm();
+        }
     }
 
     // 设置事件监听器
@@ -152,6 +159,14 @@ async function switchMode(newMode) {
     // 加载对应内容
     if (auth.isAuthenticated()) {
         await loadContentByMode();
+    } else {
+        // 未登录时切换
+        if (newMode === 'blog') {
+            ui.showAnonymousBlogContent();
+            await blog.loadBlogPosts();
+        } else {
+            ui.showLoginForm();
+        }
     }
 }
 
@@ -160,9 +175,35 @@ async function switchMode(newMode) {
  */
 async function loadContentByMode() {
     try {
+        // 获取标签按钮
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const createTab = document.getElementById('create-tab');
+        const profileTab = document.getElementById('profile-tab');
+
         if (appState.currentMode === 'blog') {
+            // 博客模式：隐藏发表新贴和个人主页标签
+            tabButtons.forEach(button => {
+                const tabId = button.getAttribute('data-tab');
+                if (tabId === 'create' || tabId === 'profile') {
+                    button.style.display = 'none';
+                } else {
+                    button.style.display = 'inline-block';
+                }
+            });
+
+            // 隐藏对应的标签内容
+            if (createTab) createTab.style.display = 'none';
+            if (profileTab) profileTab.style.display = 'none';
+
+            // 加载博客内容
             await blog.loadBlogPosts();
         } else {
+            // 论坛模式：显示所有标签
+            tabButtons.forEach(button => {
+                button.style.display = 'inline-block';
+            });
+
+            // 加载论坛内容
             await issues.loadIssuesList();
         }
     } catch (error) {

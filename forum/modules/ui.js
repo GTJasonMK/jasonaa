@@ -90,6 +90,30 @@ export function showForumContent(userData = null) {
 }
 
 /**
+ * 显示匿名博客内容（博客模式允许匿名访问）
+ */
+export function showAnonymousBlogContent() {
+    if (!elements.authContainer) return;
+
+    // 隐藏登录表单
+    elements.authContainer.style.display = 'none';
+    // 显示论坛容器（用于显示博客）
+    elements.forumContainer.style.display = 'block';
+    elements.issueDetail.style.display = 'none';
+
+    // 隐藏用户信息区域（匿名访问）
+    if (elements.userInfo) {
+        elements.userInfo.style.display = 'none';
+    }
+
+    // 隐藏管理员标识
+    const adminBadge = document.getElementById('admin-badge');
+    if (adminBadge) {
+        adminBadge.style.display = 'none';
+    }
+}
+
+/**
  * 显示Issue详情页
  */
 export function showIssueDetail() {
