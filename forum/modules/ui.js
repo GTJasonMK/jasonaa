@@ -269,6 +269,7 @@ export default {
     initUI,
     showLoginForm,
     showForumContent,
+    showAnonymousBlogContent,
     showIssueDetail,
     backToList,
     showTab,
