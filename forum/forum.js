@@ -84,7 +84,8 @@ async function init() {
             // 博客模式允许匿名访问
             console.log('博客模式：匿名访问');
             ui.showAnonymousBlogContent();
-            await blog.loadBlogPosts();
+            // 调用loadContentByMode来隐藏不需要的tab并加载内容
+            await loadContentByMode();
         } else {
             // 论坛模式需要登录
             console.log('论坛模式：需要登录');

@@ -116,6 +116,15 @@ export function showAnonymousBlogContent() {
         adminBadge.style.display = 'none';
     }
 
+    // 隐藏不需要的tab（发表新贴、个人主页）
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+        const tabId = button.getAttribute('data-tab');
+        if (tabId === 'create' || tabId === 'profile') {
+            button.style.display = 'none';
+        }
+    });
+
     console.log('UI: 博客模式UI已设置完成');
 }
 
