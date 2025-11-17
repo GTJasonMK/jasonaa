@@ -12,7 +12,8 @@ const blogState = {
     categories: {},
     currentPost: null,
     currentCategory: 'all', // 当前筛选的分类
-    authenticated: false    // 是否已通过密码验证
+    authenticated: false,    // 是否已通过密码验证
+    clockTimer: null         // 时钟定时器
 };
 
 /**
@@ -139,6 +140,13 @@ function renderCategoryFilter() {
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const category = btn.dataset.category;
+
+            // 日志分类需要先验证密码
+            if (category === 'diary' && !isAuthenticated()) {
+                showCategoryPasswordPrompt();
+                return;
+            }
+
             blogState.currentCategory = category;
             renderBlogList();
         });
@@ -190,7 +198,57 @@ async function loadBlogPost(postId) {
 }
 
 /**
- * 显示密码输入提示
+ * 显示分类级别密码输入提示
+ */
+function showCategoryPasswordPrompt() {
+    const issuesList = document.getElementById('issues-list');
+
+    issuesList.innerHTML = `
+        <div class="password-prompt">
+            <div class="password-card">
+                <div class="password-icon">🔒</div>
+                <h2>日志访问验证</h2>
+                <p>此分类需要密码才能访问</p>
+                <p class="post-title">您正在尝试查看：日志分类</p>
+                <form id="password-form" class="password-form">
+                    <input type="password"
+                           id="password-input"
+                           placeholder="请输入密码"
+                           class="password-input"
+                           autofocus>
+                    <div class="password-actions">
+                        <button type="submit" class="primary-button">解锁</button>
+                        <button type="button"
+                                class="secondary-button"
+                                onclick="window.blogModule.backToList()">返回</button>
+                    </div>
+                    <div id="password-error" class="password-error"></div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // 绑定表单提交
+    document.getElementById('password-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const password = document.getElementById('password-input').value;
+        const errorEl = document.getElementById('password-error');
+
+        if (verifyPassword(password)) {
+            blogState.authenticated = true;
+            blogState.currentCategory = 'diary';
+            renderCategoryFilter();
+            renderBlogList();
+        } else {
+            errorEl.textContent = '密码错误，请重试';
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-input').focus();
+        }
+    });
+}
+
+/**
+ * 显示密码输入提示（单篇文章）
  */
 function showPasswordPrompt(postId) {
     const issuesList = document.getElementById('issues-list');
@@ -263,6 +321,41 @@ async function renderBlogPost() {
         .map(tag => `<span class="blog-tag">#${tag}</span>`)
         .join('');
 
+    // 如果是日志，渲染任务列表
+    let taskListHTML = '';
+    if (post.tasks && Array.isArray(post.tasks) && post.tasks.length > 0) {
+        const stats = post.taskStats;
+        const progressColor = stats.progress === 100 ? '#4CAF50' :
+                             stats.progress > 0 ? '#FFC107' : '#9E9E9E';
+
+        taskListHTML = `
+            <div class="diary-task-list">
+                <h3 class="task-list-title">任务清单</h3>
+                <div class="task-progress-detail">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill"
+                             style="width: ${stats.progress}%; background-color: ${progressColor};">
+                        </div>
+                    </div>
+                    <div class="progress-info">
+                        <span>完成进度: ${stats.progress}%</span>
+                        <span>(${stats.completed}/${stats.total})</span>
+                    </div>
+                </div>
+                <ul class="task-items">
+                    ${post.tasks.map(task => `
+                        <li class="task-item ${task.completed ? 'completed' : ''}">
+                            <span class="task-checkbox ${task.completed ? 'checked' : ''}">
+                                ${task.completed ? '✓' : ''}
+                            </span>
+                            <span class="task-text">${escapeHtml(task.text)}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
     issuesList.innerHTML = `
         <div class="blog-detail">
             <div class="blog-detail-header">
@@ -281,6 +374,9 @@ async function renderBlogPost() {
                 </div>
                 ${categoryTags ? `<div class="blog-tags">${categoryTags}</div>` : ''}
             </div>
+
+            ${taskListHTML}
+
             <div class="blog-detail-content markdown-body">
                 ${htmlContent}
             </div>
@@ -298,6 +394,50 @@ function backToList() {
     renderCategoryFilter();
     renderBlogList();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/**
+ * 启动实时时钟
+ */
+function startClock() {
+    // 先停止可能存在的旧时钟
+    stopClock();
+
+    // 更新时间的函数
+    function updateTime() {
+        const now = new Date();
+        const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const date = String(now.getDate()).padStart(2, '0');
+        const weekDay = weekDays[now.getDay()];
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+
+        const timeString = `${year}年${month}月${date}日 ${weekDay} ${hours}:${minutes}:${seconds}`;
+
+        const timeEl = document.getElementById('current-time');
+        if (timeEl) {
+            timeEl.textContent = timeString;
+        }
+    }
+
+    // 立即更新一次
+    updateTime();
+
+    // 每秒更新
+    blogState.clockTimer = setInterval(updateTime, 1000);
+}
+
+/**
+ * 停止实时时钟
+ */
+function stopClock() {
+    if (blogState.clockTimer) {
+        clearInterval(blogState.clockTimer);
+        blogState.clockTimer = null;
+    }
 }
 
 /**
@@ -343,9 +483,26 @@ function renderBlogList() {
         btn.classList.toggle('active', btn.dataset.category === blogState.currentCategory);
     });
 
+    // 如果是日志分类，显示实时时钟
+    let clockHTML = '';
+    if (blogState.currentCategory === 'diary') {
+        clockHTML = `
+            <div class="diary-clock">
+                <div class="clock-icon">⏰</div>
+                <div id="current-time" class="clock-time"></div>
+            </div>
+        `;
+        // 启动时钟
+        startClock();
+    } else {
+        // 停止时钟
+        stopClock();
+    }
+
     const blogCards = filteredPosts.map(post => createBlogCard(post)).join('');
 
     container.innerHTML = `
+        ${clockHTML}
         <div class="blog-grid">
             ${blogCards}
         </div>
@@ -368,6 +525,54 @@ function createBlogCard(post) {
     const categoryLabel = `${post.categoryIcon} ${post.categoryName}`;
     const protectedIcon = post.protected ? ' 🔒' : '';
 
+    // 日志分类特殊渲染：显示任务统计
+    if (post.category === 'diary' && post.taskStats) {
+        const stats = post.taskStats;
+        const progressColor = stats.progress === 100 ? '#4CAF50' :
+                             stats.progress > 0 ? '#FFC107' : '#9E9E9E';
+
+        return `
+            <article class="blog-card diary-card ${post.protected ? 'protected' : ''}"
+                     data-post-id="${post.id}"
+                     data-progress="${stats.progress}">
+                <div class="blog-card-header">
+                    <div class="blog-card-category">${categoryLabel}${protectedIcon}</div>
+                    <h3 class="blog-title">${escapeHtml(post.title)}</h3>
+                </div>
+
+                <div class="diary-task-summary">
+                    <div class="task-stats">
+                        <span class="stat-item">
+                            <span class="stat-icon">✅</span>
+                            <span class="stat-text">已完成: ${stats.completed}</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-icon">⏳</span>
+                            <span class="stat-text">进行中: ${stats.pending}</span>
+                        </span>
+                        <span class="stat-item">
+                            <span class="stat-icon">📊</span>
+                            <span class="stat-text">总计: ${stats.total}</span>
+                        </span>
+                    </div>
+                    <div class="task-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill"
+                                 style="width: ${stats.progress}%; background-color: ${progressColor};">
+                            </div>
+                        </div>
+                        <span class="progress-text">${stats.progress}%</span>
+                    </div>
+                </div>
+
+                <div class="blog-meta">
+                    <span class="blog-date">📅 ${formattedDate}</span>
+                </div>
+            </article>
+        `;
+    }
+
+    // 普通博客卡片渲染
     return `
         <article class="blog-card ${post.protected ? 'protected' : ''}" data-post-id="${post.id}">
             <div class="blog-card-header">

@@ -1,5 +1,5 @@
 {
-  "generated": "2025-11-17T12:24:28.162Z",
+  "generated": "2025-11-17T12:50:07.752Z",
   "totalPosts": 4,
   "categories": {
     "essays": {
@@ -68,8 +68,40 @@
       "excerpt": "今天完成了博客系统的重构，实现了三分类和密码保护功能。",
       "file": "blog/diary/2025-01-17-project-dev-diary.md",
       "author": "作者",
-      "readingTime": 2,
-      "protected": true
+      "readingTime": 3,
+      "protected": true,
+      "tasks": [
+        {
+          "text": "完成博客系统重构",
+          "completed": true
+        },
+        {
+          "text": "实现密码保护功能",
+          "completed": true
+        },
+        {
+          "text": "添加分类筛选UI",
+          "completed": true
+        },
+        {
+          "text": "编写使用文档",
+          "completed": true
+        },
+        {
+          "text": "实现日志任务管理系统",
+          "completed": false
+        },
+        {
+          "text": "优化移动端适配",
+          "completed": false
+        }
+      ],
+      "taskStats": {
+        "total": 6,
+        "completed": 4,
+        "pending": 2,
+        "progress": 67
+      }
     },
     {
       "id": "notes-2025-01-17-javascript-closure",

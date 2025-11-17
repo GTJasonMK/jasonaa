@@ -51,15 +51,90 @@ function parseFrontMatter(content) {
     const metadata = {};
 
     // 解析YAML格式的元数据
-    const lines = frontMatter.split('\n');
-    for (const line of lines) {
+    // 统一处理各种换行符
+    const lines = frontMatter.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i];
         const colonIndex = line.indexOf(':');
-        if (colonIndex === -1) continue;
+        if (colonIndex === -1) {
+            i++;
+            continue;
+        }
 
         const key = line.slice(0, colonIndex).trim();
         let value = line.slice(colonIndex + 1).trim();
 
-        // 处理数组格式 [tag1, tag2]
+        // 处理tasks数组（多行YAML数组）
+        if (key === 'tasks' && value === '') {
+            const tasks = [];
+            i++;
+            while (i < lines.length) {
+                const taskLine = lines[i];
+                const trimmed = taskLine.trim();
+
+                // 如果不是以 - 开头，说明tasks数组结束
+                if (!trimmed.startsWith('-')) break;
+
+                // 解析任务对象
+                const task = {};
+
+                // 检查 - 后面是否直接跟了第一个属性
+                const firstPropMatch = taskLine.match(/^\s+-\s+(\w+):\s*(.+)$/);
+                if (firstPropMatch) {
+                    const propKey = firstPropMatch[1];
+                    let propValue = firstPropMatch[2].trim();
+
+                    // 处理布尔值
+                    if (propValue === 'true') propValue = true;
+                    else if (propValue === 'false') propValue = false;
+                    // 移除引号
+                    else if ((propValue.startsWith('"') && propValue.endsWith('"')) ||
+                             (propValue.startsWith("'") && propValue.endsWith("'"))) {
+                        propValue = propValue.slice(1, -1);
+                    }
+
+                    task[propKey] = propValue;
+                }
+
+                i++; // 移动到下一行
+
+                // 读取后续的属性（缩进更深的行）
+                while (i < lines.length) {
+                    const propLine = lines[i];
+                    const propTrimmed = propLine.trim();
+
+                    // 如果是空行、新的任务项或缩进不够，结束当前任务
+                    if (!propTrimmed || propTrimmed.startsWith('-')) break;
+
+                    const propMatch = propLine.match(/^\s+(\w+):\s*(.+)$/);
+                    if (propMatch) {
+                        const propKey = propMatch[1];
+                        let propValue = propMatch[2].trim();
+
+                        // 处理布尔值
+                        if (propValue === 'true') propValue = true;
+                        else if (propValue === 'false') propValue = false;
+                        // 移除引号
+                        else if ((propValue.startsWith('"') && propValue.endsWith('"')) ||
+                                 (propValue.startsWith("'") && propValue.endsWith("'"))) {
+                            propValue = propValue.slice(1, -1);
+                        }
+
+                        task[propKey] = propValue;
+                        i++;
+                    } else {
+                        break;
+                    }
+                }
+
+                tasks.push(task);
+            }
+            metadata[key] = tasks;
+            continue;
+        }
+
+        // 处理普通数组格式 [tag1, tag2]
         if (value.startsWith('[') && value.endsWith(']')) {
             value = value.slice(1, -1)
                 .split(',')
@@ -73,6 +148,7 @@ function parseFrontMatter(content) {
         }
 
         metadata[key] = value;
+        i++;
     }
 
     return { metadata, body };
@@ -171,6 +247,21 @@ function scanCategory(categoryKey) {
             readingTime: calculateReadingTime(body),
             protected: categoryConfig.protected
         };
+
+        // 如果是日志分类且有tasks数组，计算任务统计
+        if (categoryKey === 'diary' && metadata.tasks && Array.isArray(metadata.tasks)) {
+            const tasks = metadata.tasks;
+            const completedTasks = tasks.filter(t => t.completed === true).length;
+            const totalTasks = tasks.length;
+
+            post.tasks = tasks;
+            post.taskStats = {
+                total: totalTasks,
+                completed: completedTasks,
+                pending: totalTasks - completedTasks,
+                progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+            };
+        }
 
         posts.push(post);
         console.log(`    + ${post.title} (${post.date})`);
