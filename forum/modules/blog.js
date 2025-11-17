@@ -49,13 +49,18 @@ function loadScript(src) {
  * 加载博客文章列表
  */
 async function loadBlogPosts() {
+    console.log('Blog: loadBlogPosts 被调用');
     const issuesList = document.getElementById('issues-list');
-    if (!issuesList) return;
+    if (!issuesList) {
+        console.error('Blog: issues-list 元素未找到');
+        return;
+    }
 
     issuesList.innerHTML = '<div class="loading">加载博客文章中...</div>';
 
     try {
         // 从本地加载posts.json
+        console.log('Blog: 开始加载 ../blog/posts.json');
         const response = await fetch('../blog/posts.json');
 
         if (!response.ok) {
@@ -63,6 +68,7 @@ async function loadBlogPosts() {
         }
 
         const data = await response.json();
+        console.log('Blog: 成功加载文章数据', data);
         blogState.posts = data.posts || [];
 
         if (blogState.posts.length === 0) {

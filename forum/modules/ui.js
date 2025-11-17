@@ -93,6 +93,10 @@ export function showForumContent(userData = null) {
  * 显示匿名博客内容（博客模式允许匿名访问）
  */
 export function showAnonymousBlogContent() {
+    console.log('UI: showAnonymousBlogContent 被调用');
+    console.log('authContainer:', elements.authContainer);
+    console.log('forumContainer:', elements.forumContainer);
+
     if (!elements.authContainer) return;
 
     // 隐藏登录表单
@@ -111,6 +115,8 @@ export function showAnonymousBlogContent() {
     if (adminBadge) {
         adminBadge.style.display = 'none';
     }
+
+    console.log('UI: 博客模式UI已设置完成');
 }
 
 /**

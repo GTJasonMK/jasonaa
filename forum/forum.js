@@ -82,10 +82,12 @@ async function init() {
         // 未登录
         if (appState.currentMode === 'blog') {
             // 博客模式允许匿名访问
+            console.log('博客模式：匿名访问');
             ui.showAnonymousBlogContent();
             await blog.loadBlogPosts();
         } else {
             // 论坛模式需要登录
+            console.log('论坛模式：需要登录');
             ui.showLoginForm();
         }
     }
