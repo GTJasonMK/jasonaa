@@ -27,17 +27,6 @@ const appState = {
  * 初始化应用
  */
 async function init() {
-    // 获取仓库配置
-    const repoConfig = getRepoConfig();
-    appState.repoOwner = repoConfig.owner;
-    appState.repoName = repoConfig.name;
-
-    // 显示仓库信息
-    displayRepoInfo();
-
-    // 初始化UI
-    ui.initUI();
-
     // 检查URL hash决定初始模式
     const hash = window.location.hash.substring(1);
     if (hash === 'blog') {
@@ -45,6 +34,19 @@ async function init() {
     } else {
         appState.currentMode = localStorage.getItem('forum_mode') || 'forum';
     }
+
+    // 获取仓库配置
+    const repoConfig = getRepoConfig();
+    appState.repoOwner = repoConfig.owner;
+    appState.repoName = repoConfig.name;
+
+    // 只在论坛模式下显示仓库信息
+    if (appState.currentMode === 'forum') {
+        displayRepoInfo();
+    }
+
+    // 初始化UI
+    ui.initUI();
 
     // 更新标题显示
     updateModeTitle();
