@@ -7,7 +7,8 @@
   "scripts": {
     "generate": "node generate-pregenerated.js",
     "test": "node generate-pregenerated.js --test-mode 5",
-    "validate": "node generate-pregenerated.js --validate"
+    "validate": "node generate-pregenerated.js --validate",
+    "update-blog": "node update-blog.js"
   },
   "keywords": [
     "vocabulary",

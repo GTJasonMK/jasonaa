@@ -1476,3 +1476,199 @@ button:disabled:hover {
         padding-left: 24px;
     }
 }
+
+/* ========== 博客分类筛选器 ========== */
+
+.blog-category-filter {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    padding: 20px;
+    background: var(--container-bg);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px var(--box-shadow-color);
+}
+
+.category-btn {
+    padding: 10px 20px;
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.category-btn:hover {
+    background: var(--primary-color-transparent);
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.category-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.blog-card-category {
+    display: inline-block;
+    padding: 4px 12px;
+    background: var(--primary-color-transparent);
+    color: var(--primary-color);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 12px;
+}
+
+.blog-card.protected {
+    border: 2px dashed var(--accent-color);
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--primary-color-transparent);
+    color: var(--primary-color);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+/* ========== 密码保护提示 ========== */
+
+.password-prompt {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    padding: 40px 20px;
+}
+
+.password-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 450px;
+    width: 100%;
+    box-shadow: 0 8px 24px var(--box-shadow-color);
+    text-align: center;
+}
+
+.password-icon {
+    font-size: 4rem;
+    margin-bottom: 20px;
+}
+
+.password-card h2 {
+    color: var(--header-color);
+    margin-bottom: 12px;
+    font-size: 1.8rem;
+}
+
+.password-card p {
+    color: var(--text-color);
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.password-card .post-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+    margin: 20px 0;
+}
+
+.password-form {
+    margin-top: 24px;
+}
+
+.password-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    background: var(--container-bg);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+}
+
+.password-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px var(--primary-color-transparent);
+}
+
+.password-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.password-actions button {
+    flex: 1;
+    padding: 12px 24px;
+    font-size: 1rem;
+}
+
+.password-error {
+    color: var(--accent-color);
+    font-size: 0.9rem;
+    margin-top: 12px;
+    min-height: 20px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .blog-category-filter {
+        padding: 15px;
+        gap: 8px;
+    }
+
+    .category-btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .password-card {
+        padding: 30px 20px;
+    }
+
+    .password-icon {
+        font-size: 3rem;
+    }
+
+    .password-card h2 {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .blog-category-filter {
+        padding: 12px;
+    }
+
+    .category-btn {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .password-actions {
+        flex-direction: column;
+    }
+
+    .password-actions button {
+        width: 100%;
+    }
+}
+

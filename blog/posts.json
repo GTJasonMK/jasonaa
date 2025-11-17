@@ -1,24 +1,93 @@
 {
+  "generated": "2025-11-17T12:24:28.162Z",
+  "totalPosts": 4,
+  "categories": {
+    "essays": {
+      "name": "随笔",
+      "protected": false,
+      "icon": "📝"
+    },
+    "diary": {
+      "name": "日志",
+      "protected": true,
+      "icon": "🔒"
+    },
+    "notes": {
+      "name": "知识点",
+      "protected": false,
+      "icon": "📚"
+    }
+  },
   "posts": [
     {
-      "id": "welcome",
+      "id": "essays-2025-01-17-welcome",
       "title": "欢迎访问我的博客",
       "date": "2025-01-17",
-      "excerpt": "欢迎来到我的个人博客！这里我会分享关于项目开发、技术学习和生活感悟的文章。希望我的分享能对你有所帮助。",
-      "tags": ["公告", "介绍"],
-      "file": "blog/posts/welcome.md",
+      "category": "essays",
+      "categoryName": "随笔",
+      "categoryIcon": "📝",
+      "tags": [
+        "公告",
+        "介绍"
+      ],
+      "excerpt": "欢迎来到我的个人博客！这里我会分享关于项目开发、技术学习和生活感悟的文章。",
+      "file": "blog/essays/2025-01-17-welcome.md",
       "author": "作者",
-      "readingTime": 3
+      "readingTime": 3,
+      "protected": false
     },
     {
-      "id": "first-tech-post",
+      "id": "essays-2025-01-17-first-tech-post",
       "title": "纯前端多功能娱乐平台开发心得",
       "date": "2025-01-17",
-      "excerpt": "分享我在开发这个纯前端多功能娱乐平台时的技术选型、架构设计和开发经验。包括游戏模块、AI工具、语言学习等功能的实现思路。",
-      "tags": ["技术", "前端", "项目总结"],
-      "file": "blog/posts/first-tech-post.md",
+      "category": "essays",
+      "categoryName": "随笔",
+      "categoryIcon": "📝",
+      "tags": [
+        "技术",
+        "前端",
+        "项目总结"
+      ],
+      "excerpt": "分享我在开发这个纯前端多功能娱乐平台时的技术选型、架构设计和开发经验。",
+      "file": "blog/essays/2025-01-17-first-tech-post.md",
       "author": "作者",
-      "readingTime": 8
+      "readingTime": 10,
+      "protected": false
+    },
+    {
+      "id": "diary-2025-01-17-project-dev-diary",
+      "title": "2025年1月17日 - 项目开发日记",
+      "date": "2025-01-17",
+      "category": "diary",
+      "categoryName": "日志",
+      "categoryIcon": "🔒",
+      "tags": [
+        "日常",
+        "开发"
+      ],
+      "excerpt": "今天完成了博客系统的重构，实现了三分类和密码保护功能。",
+      "file": "blog/diary/2025-01-17-project-dev-diary.md",
+      "author": "作者",
+      "readingTime": 2,
+      "protected": true
+    },
+    {
+      "id": "notes-2025-01-17-javascript-closure",
+      "title": "JavaScript闭包详解",
+      "date": "2025-01-17",
+      "category": "notes",
+      "categoryName": "知识点",
+      "categoryIcon": "📚",
+      "tags": [
+        "JavaScript",
+        "前端",
+        "概念"
+      ],
+      "excerpt": "深入理解JavaScript闭包的概念、原理和应用场景。",
+      "file": "blog/notes/2025-01-17-javascript-closure.md",
+      "author": "作者",
+      "readingTime": 8,
+      "protected": false
     }
   ]
 }

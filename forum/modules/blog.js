@@ -1,27 +1,28 @@
 /**
- * 博客模块
+ * 博客模块 - 支持分类和密码保护
  * 处理本地博客文章的加载和展示
  */
+
+// 博客密码（实际使用时请修改）
+const DIARY_PASSWORD = 'your-secret-password-123';
 
 // 博客状态
 const blogState = {
     posts: [],
+    categories: {},
     currentPost: null,
-    currentPage: 1,
-    postsPerPage: 10
+    currentCategory: 'all', // 当前筛选的分类
+    authenticated: false    // 是否已通过密码验证
 };
 
 /**
  * 初始化Markdown渲染器
  */
 async function initMarkdown() {
-    // 检查marked是否已加载
     if (typeof marked === 'undefined') {
-        // 动态加载marked.js
         await loadScript('https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js');
     }
 
-    // 配置marked选项
     if (typeof marked !== 'undefined' && marked.setOptions) {
         marked.setOptions({
             breaks: true,
@@ -46,6 +47,25 @@ function loadScript(src) {
 }
 
 /**
+ * 检查密码验证状态
+ */
+function isAuthenticated() {
+    // 从sessionStorage检查（关闭浏览器后失效）
+    return sessionStorage.getItem('blog_authenticated') === 'true';
+}
+
+/**
+ * 验证密码
+ */
+function verifyPassword(password) {
+    if (password === DIARY_PASSWORD) {
+        sessionStorage.setItem('blog_authenticated', 'true');
+        return true;
+    }
+    return false;
+}
+
+/**
  * 加载博客文章列表
  */
 async function loadBlogPosts() {
@@ -59,7 +79,6 @@ async function loadBlogPosts() {
     issuesList.innerHTML = '<div class="loading">加载博客文章中...</div>';
 
     try {
-        // 从本地加载posts.json
         console.log('Blog: 开始加载 ../blog/posts.json');
         const response = await fetch('../blog/posts.json');
 
@@ -69,11 +88,14 @@ async function loadBlogPosts() {
 
         const data = await response.json();
         console.log('Blog: 成功加载文章数据', data);
+
         blogState.posts = data.posts || [];
+        blogState.categories = data.categories || {};
 
         if (blogState.posts.length === 0) {
             renderNoPosts();
         } else {
+            renderCategoryFilter();
             renderBlogList();
         }
     } catch (error) {
@@ -85,6 +107,42 @@ async function loadBlogPosts() {
             </div>
         `;
     }
+}
+
+/**
+ * 渲染分类筛选器
+ */
+function renderCategoryFilter() {
+    const issuesList = document.getElementById('issues-list');
+    const filterHTML = `
+        <div class="blog-category-filter">
+            <button class="category-btn ${blogState.currentCategory === 'all' ? 'active' : ''}"
+                    data-category="all">
+                📖 全部 (${blogState.posts.length})
+            </button>
+            ${Object.entries(blogState.categories).map(([key, config]) => {
+                const count = blogState.posts.filter(p => p.category === key).length;
+                return `
+                    <button class="category-btn ${blogState.currentCategory === key ? 'active' : ''}"
+                            data-category="${key}">
+                        ${config.icon} ${config.name} (${count})
+                    </button>
+                `;
+            }).join('')}
+        </div>
+        <div id="blog-posts-container"></div>
+    `;
+
+    issuesList.innerHTML = filterHTML;
+
+    // 绑定筛选事件
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const category = btn.dataset.category;
+            blogState.currentCategory = category;
+            renderBlogList();
+        });
+    });
 }
 
 /**
@@ -101,6 +159,12 @@ async function loadBlogPost(postId) {
         const post = blogState.posts.find(p => p.id === postId);
         if (!post) {
             throw new Error('文章不存在');
+        }
+
+        // 检查是否需要密码
+        if (post.protected && !isAuthenticated()) {
+            showPasswordPrompt(postId);
+            return;
         }
 
         // 加载Markdown文件
@@ -126,19 +190,65 @@ async function loadBlogPost(postId) {
 }
 
 /**
+ * 显示密码输入提示
+ */
+function showPasswordPrompt(postId) {
+    const issuesList = document.getElementById('issues-list');
+    const post = blogState.posts.find(p => p.id === postId);
+
+    issuesList.innerHTML = `
+        <div class="password-prompt">
+            <div class="password-card">
+                <div class="password-icon">🔒</div>
+                <h2>受保护的内容</h2>
+                <p>这篇日志需要密码才能查看</p>
+                <p class="post-title">${escapeHtml(post.title)}</p>
+                <form id="password-form" class="password-form">
+                    <input type="password"
+                           id="password-input"
+                           placeholder="请输入密码"
+                           class="password-input"
+                           autofocus>
+                    <div class="password-actions">
+                        <button type="submit" class="primary-button">解锁</button>
+                        <button type="button"
+                                class="secondary-button"
+                                onclick="window.blogModule.backToList()">返回</button>
+                    </div>
+                    <div id="password-error" class="password-error"></div>
+                </form>
+            </div>
+        </div>
+    `;
+
+    // 绑定表单提交
+    document.getElementById('password-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const password = document.getElementById('password-input').value;
+        const errorEl = document.getElementById('password-error');
+
+        if (verifyPassword(password)) {
+            loadBlogPost(postId);
+        } else {
+            errorEl.textContent = '密码错误，请重试';
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-input').focus();
+        }
+    });
+}
+
+/**
  * 渲染博客文章详情
  */
 async function renderBlogPost() {
     const issuesList = document.getElementById('issues-list');
     if (!issuesList || !blogState.currentPost) return;
 
-    // 确保marked已加载
     await initMarkdown();
 
     const post = blogState.currentPost;
-
-    // 渲染Markdown
     let htmlContent = post.content;
+
     if (typeof marked !== 'undefined') {
         htmlContent = marked.parse(post.content);
     }
@@ -159,6 +269,10 @@ async function renderBlogPost() {
                 <button class="back-button" onclick="window.blogModule.backToList()">
                     ← 返回列表
                 </button>
+                <div class="category-badge">
+                    ${post.categoryIcon} ${post.categoryName}
+                    ${post.protected ? ' 🔒' : ''}
+                </div>
                 <h1 class="blog-detail-title">${escapeHtml(post.title)}</h1>
                 <div class="blog-detail-meta">
                     <span class="blog-author">✍️ ${escapeHtml(post.author)}</span>
@@ -173,7 +287,6 @@ async function renderBlogPost() {
         </div>
     `;
 
-    // 滚动到顶部
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -182,6 +295,7 @@ async function renderBlogPost() {
  */
 function backToList() {
     blogState.currentPost = null;
+    renderCategoryFilter();
     renderBlogList();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -190,9 +304,10 @@ function backToList() {
  * 渲染无文章提示
  */
 function renderNoPosts() {
-    const issuesList = document.getElementById('issues-list');
+    const container = document.getElementById('blog-posts-container') ||
+                     document.getElementById('issues-list');
 
-    issuesList.innerHTML = `
+    container.innerHTML = `
         <div class="blog-empty">
             <div class="empty-icon">📝</div>
             <h3>暂无博客文章</h3>
@@ -205,11 +320,32 @@ function renderNoPosts() {
  * 渲染博客列表
  */
 function renderBlogList() {
-    const issuesList = document.getElementById('issues-list');
+    const container = document.getElementById('blog-posts-container') ||
+                     document.getElementById('issues-list');
 
-    const blogCards = blogState.posts.map(post => createBlogCard(post)).join('');
+    // 筛选文章
+    let filteredPosts = blogState.posts;
+    if (blogState.currentCategory !== 'all') {
+        filteredPosts = blogState.posts.filter(p => p.category === blogState.currentCategory);
+    }
 
-    issuesList.innerHTML = `
+    if (filteredPosts.length === 0) {
+        container.innerHTML = `
+            <div class="blog-empty">
+                <p>该分类下暂无文章</p>
+            </div>
+        `;
+        return;
+    }
+
+    // 更新筛选按钮状态
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.category === blogState.currentCategory);
+    });
+
+    const blogCards = filteredPosts.map(post => createBlogCard(post)).join('');
+
+    container.innerHTML = `
         <div class="blog-grid">
             ${blogCards}
         </div>
@@ -229,15 +365,14 @@ function createBlogCard(post) {
         day: 'numeric'
     });
 
-    const categoryLabels = post.tags
-        .map(tag => `<span class="blog-category">${tag}</span>`)
-        .join('');
+    const categoryLabel = `${post.categoryIcon} ${post.categoryName}`;
+    const protectedIcon = post.protected ? ' 🔒' : '';
 
     return `
-        <article class="blog-card" data-post-id="${post.id}">
+        <article class="blog-card ${post.protected ? 'protected' : ''}" data-post-id="${post.id}">
             <div class="blog-card-header">
+                <div class="blog-card-category">${categoryLabel}${protectedIcon}</div>
                 <h3 class="blog-title">${escapeHtml(post.title)}</h3>
-                ${categoryLabels ? `<div class="blog-categories">${categoryLabels}</div>` : ''}
             </div>
             <div class="blog-excerpt">
                 ${escapeHtml(post.excerpt)}
@@ -245,7 +380,6 @@ function createBlogCard(post) {
             <div class="blog-meta">
                 <span class="blog-date">📅 ${formattedDate}</span>
                 <span class="blog-reading-time">⏱️ ${post.readingTime} 分钟</span>
-                <span class="blog-author">✍️ ${escapeHtml(post.author)}</span>
             </div>
         </article>
     `;
@@ -280,7 +414,6 @@ const blogModule = {
     backToList
 };
 
-// 暴露到全局作用域供onclick使用
 window.blogModule = blogModule;
 
 export default blogModule;
