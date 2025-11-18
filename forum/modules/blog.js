@@ -4,7 +4,7 @@
  */
 
 // 博客密码（实际使用时请修改）
-const DIARY_PASSWORD = 'your-secret-password-123';
+const DIARY_PASSWORD = '999gml';
 
 // 博客状态
 const blogState = {
